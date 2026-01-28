@@ -10,10 +10,19 @@ import ReviewSection from "./components/ReviewSection";
 import CulinaryStorySection from "./components/CulinaryStorySection";
 import HistorySection from "./components/HistorySection";
 import HomeFooter from "./components/HomeFooter";
-
+import { useUserLocation } from "@/hooks/useUserLocation"; 
+import LocationAlert from "@/components/LocationAlert";
 const HomePage = () => {
+      const { loading, error, isValid } = useUserLocation();
     return (
-        <div className="min-h-screen bg-gray-50/50 text-slate-800 font-sans selection:bg-orange-100 selection:text-orange-600">
+        <>
+          <LocationAlert
+           loading={loading}
+            error={error}
+            isValid={isValid}
+  />
+       <div className="min-h-screen">
+
             {/* --- HEADER --- */}
             <HomeHeader />
 
@@ -54,6 +63,7 @@ const HomePage = () => {
             {/* --- FOOTER --- */}
             <HomeFooter />
         </div>
+        </>
     );
 };
 
