@@ -51,12 +51,6 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 2 }: HomeHeaderPr
                         </div>
                         <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
                     </div>
-
-                    <div className="hidden lg:flex items-center gap-3 bg-gray-100/80 px-4 py-2 rounded-full cursor-pointer hover:bg-orange-50 hover:text-orange-600 transition-all duration-300">
-                        <div className="bg-white p-1 rounded-full shadow-sm"><MapPin className="w-3.5 h-3.5 text-orange-600" /></div>
-                        <span className="text-sm font-semibold truncate max-w-[150px]">Đà Nẵng, Việt Nam</span>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                    </div>
                 </div>
 
                 {/* Search */}
