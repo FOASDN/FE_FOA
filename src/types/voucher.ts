@@ -1,15 +1,17 @@
-export const enum VoucherCategory {
-    DISCOUNT = 'discount',
-    FREESHIP = 'freeship',
-    NEWUSER = 'newuser',
-    SPECIAL = 'special',
-}
+export const VoucherCategory = {
+    DISCOUNT: 'discount',
+    FREESHIP: 'freeship',
+    NEWUSER: 'newuser',
+    SPECIAL: 'special',
+} as const;
+export type VoucherCategory = typeof VoucherCategory[keyof typeof VoucherCategory];
 
-export const enum DiscountType {
-    NONE = 'none',
-    PERCENTAGE = 'percentage',
-    FIXED_AMOUNT = 'fixed_amount',
-}
+export const DiscountType = {
+    NONE: 'none',
+    PERCENTAGE: 'percentage',
+    FIXED_AMOUNT: 'fixed_amount',
+} as const;
+export type DiscountType = typeof DiscountType[keyof typeof DiscountType];
 
 export interface Voucher {
     _id: string;

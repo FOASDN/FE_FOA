@@ -1,4 +1,3 @@
-import React from "react";
 import { Quote, Star, CheckCircle } from "lucide-react";
 
 const ReviewSection = () => {

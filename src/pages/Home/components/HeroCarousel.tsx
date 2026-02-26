@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
     ChevronLeft,
@@ -29,7 +29,7 @@ const HeroCarousel = () => {
             title: "Đại tiệc",
             highlight: "Giảm giá 50%",
             description: "Trải nghiệm ẩm thực tuyệt vời ngay tại nhà. Giao hàng miễn phí cho đơn từ 100k.",
-            tag: "Weekend Special",
+            tag: "Ưu đãi cuối tuần",
             image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&h=800&fit=crop",
             bgGradient: "from-black/90 via-black/40",
             highlightColor: "from-orange-400 to-yellow-400",
@@ -39,7 +39,7 @@ const HeroCarousel = () => {
             title: "Freeship",
             highlight: "0đ toàn quốc",
             description: "Miễn phí giao hàng cho mọi đơn hàng trong bán kính 5km. Nhanh chóng và tiện lợi.",
-            tag: "Free Delivery",
+            tag: "Miễn phí giao hàng",
             image: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=1600&h=800&fit=crop",
             bgGradient: "from-black/90 via-black/40",
             highlightColor: "from-blue-400 to-cyan-400",
@@ -49,7 +49,7 @@ const HeroCarousel = () => {
             title: "Pizza",
             highlight: "Mua 1 Tặng 1",
             description: "Khuyến mãi đặc biệt cho Pizza size L. Áp dụng từ 18h-20h hàng ngày.",
-            tag: "BOGO Deal",
+            tag: "Mua 1 Tặng 1",
             image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1600&h=800&fit=crop",
             bgGradient: "from-black/90 via-black/40",
             highlightColor: "from-green-400 to-emerald-400",

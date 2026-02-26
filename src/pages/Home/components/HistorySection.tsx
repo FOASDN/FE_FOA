@@ -1,5 +1,4 @@
-import React from "react";
-import { History, Plus, ArrowRight } from "lucide-react";
+import { History, Plus } from "lucide-react";
 
 const HistorySection = () => {
     return (

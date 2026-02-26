@@ -1,9 +1,10 @@
-import React from "react";
 import { Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 const VoucherSection = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation(['customer', 'common']);
     return (
         <section>
             <div className="flex items-center justify-between mb-6">
@@ -11,9 +12,9 @@ const VoucherSection = () => {
                     <div className="bg-red-100 p-2 rounded-full">
                         <Ticket className="w-5 h-5 text-red-600" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900">Ưu đãi độc quyền</h2>
+                    <h2 className="text-2xl font-black text-slate-900">{t('customer:voucher.title')}</h2>
                 </div>
-                <Link to="/vouchers" className="text-sm font-bold text-slate-500 hover:text-orange-600 transition-colors">Xem kho voucher</Link>
+                <Link to="/vouchers" className="text-sm font-bold text-slate-500 hover:text-orange-600 transition-colors">{t('customer:voucher.myVouchers')}</Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

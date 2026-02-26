@@ -1,52 +1,54 @@
-import React from "react";
-import { Utensils } from "lucide-react";
+
+
 
 const HomeFooter = () => {
     return (
-        <footer className="bg-slate-900 text-white pt-20 pb-10 rounded-t-[3rem] mt-auto">
+        <footer className="bg-white text-gray-800 pt-20 pb-10 rounded-t-[3rem] border-t border-gray-200 mt-auto">
             <div className="max-w-7xl mx-auto px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     <div className="col-span-1 md:col-span-1">
-                        <div className="flex items-center gap-2 text-white mb-6">
-                            <div className="bg-orange-600 p-1.5 rounded-lg"><Utensils className="w-6 h-6" /></div>
-                            <h2 className="text-2xl font-black">FoodieDash</h2>
+                        <div className="flex items-center gap-2.5 mb-6 group cursor-pointer hover:scale-105 transition-transform">
+                            <div className="bg-orange-600 text-white p-2 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+                                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
+                            </div>
+                            <h2 className="text-2xl font-black tracking-tighter text-orange-600">FoodieDash</h2>
                         </div>
-                        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                        <p className="text-gray-500 text-sm leading-relaxed mb-6">
                             Trải nghiệm dịch vụ giao đồ ăn nhanh nhất với các nhà hàng địa phương tốt nhất.
                         </p>
                     </div>
 
                     <div>
-                        <h4 className="font-bold text-lg mb-6 text-orange-500">Công ty</h4>
-                        <ul className="flex flex-col gap-3 text-slate-400 text-sm">
-                            <li><a href="#" className="hover:text-white transition-colors">Về chúng tôi</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Tuyển dụng</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                        <h4 className="font-bold text-lg mb-6 text-orange-600">Công ty</h4>
+                        <ul className="flex flex-col gap-3 text-gray-500 text-sm">
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Về chúng tôi</a></li>
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Tuyển dụng</a></li>
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Blog</a></li>
                         </ul>
                     </div>
                     <div>
-                        <h4 className="font-bold text-lg mb-6 text-orange-500">Hỗ trợ</h4>
-                        <ul className="flex flex-col gap-3 text-slate-400 text-sm">
-                            <li><a href="#" className="hover:text-white transition-colors">Trung tâm trợ giúp</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Điều khoản dịch vụ</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Chính sách bảo mật</a></li>
+                        <h4 className="font-bold text-lg mb-6 text-orange-600">Hỗ trợ</h4>
+                        <ul className="flex flex-col gap-3 text-gray-500 text-sm">
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Trung tâm trợ giúp</a></li>
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Điều khoản dịch vụ</a></li>
+                            <li><a href="#" className="hover:text-orange-600 transition-colors">Chính sách bảo mật</a></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 className="font-bold text-lg mb-6 text-orange-500">Tải App</h4>
+                        <h4 className="font-bold text-lg mb-6 text-orange-600">Tải App</h4>
                         <div className="flex flex-col gap-3">
-                            <button className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3 flex items-center gap-3 transition-all">
-                                <div className="w-8 h-8 rounded bg-white text-black flex items-center justify-center font-bold text-xl">A</div>
+                            <button className="bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3 transition-all">
+                                <div className="w-8 h-8 rounded bg-gray-900 text-white flex items-center justify-center font-bold text-xl">A</div>
                                 <div className="text-left leading-tight">
-                                    <div className="text-[10px] text-slate-400 uppercase font-bold">Download on</div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Tải trên</div>
                                     <div className="font-bold">App Store</div>
                                 </div>
                             </button>
-                            <button className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-3 flex items-center gap-3 transition-all">
-                                <div className="w-8 h-8 rounded bg-white text-black flex items-center justify-center font-bold text-xl">G</div>
+                            <button className="bg-gray-50 hover:bg-orange-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3 transition-all">
+                                <div className="w-8 h-8 rounded bg-gray-900 text-white flex items-center justify-center font-bold text-xl">G</div>
                                 <div className="text-left leading-tight">
-                                    <div className="text-[10px] text-slate-400 uppercase font-bold">Get it on</div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Tải trên</div>
                                     <div className="font-bold">Google Play</div>
                                 </div>
                             </button>
@@ -54,12 +56,12 @@ const HomeFooter = () => {
                     </div>
                 </div>
 
-                <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-xs font-medium">
-                    <p>© 2026 FoodieDash Inc. All rights reserved.</p>
+                <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400 text-xs font-medium">
+                    <p>© 2026 FoodieDash Inc. Đã đăng ký bản quyền.</p>
                     <div className="flex gap-6">
-                        <a href="#" className="hover:text-white">Privacy</a>
-                        <a href="#" className="hover:text-white">Terms</a>
-                        <a href="#" className="hover:text-white">Sitemap</a>
+                        <a href="#" className="hover:text-orange-600">Quyền riêng tư</a>
+                        <a href="#" className="hover:text-orange-600">Điều khoản</a>
+                        <a href="#" className="hover:text-orange-600">Sơ đồ trang</a>
                     </div>
                 </div>
             </div>

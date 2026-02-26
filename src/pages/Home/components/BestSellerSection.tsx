@@ -1,20 +1,23 @@
-import React from "react";
 import { TrendingUp, ArrowRight, Zap, Star, Heart, Store, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const BestSellerSection = () => {
+    const navigate = useNavigate();
+    const { t } = useTranslation(['customer', 'common']);
     return (
         <section>
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-3xl font-black text-slate-900">Món đang Hot</h2>
+                    <h2 className="text-3xl font-black text-slate-900">{t('customer:home.trending')}</h2>
                     <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-md uppercase flex items-center gap-1">
                         <TrendingUp className="w-3 h-3" /> Trending
                     </span>
                 </div>
-                <a href="#" className="text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
-                    Xem tất cả <ArrowRight className="w-4 h-4" />
-                </a>
+                <Link to="/menu" className="text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
+                    {t('common:actions.viewAll')} <ArrowRight className="w-4 h-4" />
+                </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -59,7 +62,7 @@ const BestSellerSection = () => {
                         image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=500&h=500&fit=crop"
                     },
                 ].map((dish, idx) => (
-                    <div key={idx} className="group bg-white rounded-[2rem] border border-gray-100 p-3 hover:border-orange-100 shadow-sm hover:shadow-2xl hover:shadow-orange-900/5 transition-all duration-300">
+                    <div key={idx} onClick={() => navigate("/food/1")} className="group bg-white rounded-[2rem] border border-gray-100 p-3 hover:border-orange-100 shadow-sm hover:shadow-2xl hover:shadow-orange-900/5 transition-all duration-300 cursor-pointer">
                         {/* Image Container */}
                         <div className="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden mb-4">
                             <img
@@ -88,7 +91,7 @@ const BestSellerSection = () => {
                             {/* Timer Overlay for Flash Sales */}
                             {dish.flashSale && (
                                 <div className="absolute bottom-3 left-3 right-3 bg-slate-900/80 backdrop-blur-md p-2 rounded-xl flex items-center justify-between border border-white/10">
-                                    <span className="text-white/70 text-[10px] font-bold uppercase">Kết thúc</span>
+                                    <span className="text-white/70 text-[10px] font-bold uppercase">{t('customer:home.ending', 'Kết thúc')}</span>
                                     <div className="text-white font-mono font-bold text-xs">{dish.timer}</div>
                                 </div>
                             )}
@@ -122,7 +125,7 @@ const BestSellerSection = () => {
                                 : 'bg-slate-100 text-slate-900 hover:bg-slate-900 hover:text-white'
                                 }`}>
                                 {dish.flashSale ? <Zap className="w-4 h-4 fill-white" /> : <Plus className="w-4 h-4" />}
-                                Thêm vào giỏ
+                                {t('customer:menu.addToCart')}
                             </Button>
                         </div>
                     </div>

@@ -16,9 +16,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import voucherAPI from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
+import { useTranslation } from "react-i18next";
 
 const VoucherDetailPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation(['customer', 'common']);
     const { id } = useParams<{ id: string }>();
     const [copied, setCopied] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -122,7 +124,8 @@ const VoucherDetailPage = () => {
     return (
         <div className="min-h-screen bg-gray-50/50">
             {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+            {/* Action Bar */}
+            <div className="bg-white/80 backdrop-blur-xl border-b border-gray-100">
                 <div className="max-w-4xl mx-auto px-4 md:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <button
@@ -130,7 +133,7 @@ const VoucherDetailPage = () => {
                             className="flex items-center gap-2 text-slate-600 hover:text-orange-600 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />
-                            <span className="font-semibold">Quay lại</span>
+                            <span className="font-semibold">{t('customer:voucherDetail.back')}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -146,7 +149,7 @@ const VoucherDetailPage = () => {
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* Main Content */}
             <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
@@ -171,7 +174,7 @@ const VoucherDetailPage = () => {
                         <div className="bg-white/60 backdrop-blur rounded-2xl p-6 mb-6">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <p className="text-sm text-slate-600 mb-1">Mã voucher</p>
+                                    <p className="text-sm text-slate-600 mb-1">{t('customer:voucherDetail.voucherCode')}</p>
                                     <p className="text-2xl font-black font-mono text-orange-600">{voucher.code}</p>
                                 </div>
                                 <button
@@ -181,12 +184,12 @@ const VoucherDetailPage = () => {
                                     {copied ? (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Đã sao chép
+                                            {t('customer:voucherDetail.copied')}
                                         </>
                                     ) : (
                                         <>
                                             <Copy className="w-4 h-4" />
-                                            Sao chép
+                                            {t('customer:voucherDetail.copy')}
                                         </>
                                     )}
                                 </button>
@@ -194,24 +197,24 @@ const VoucherDetailPage = () => {
 
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1">Giá trị giảm</p>
+                                    <p className="text-xs text-slate-500 mb-1">{t('customer:voucherDetail.discountValue')}</p>
                                     <p className="text-lg font-black text-slate-900">{formatDiscount()}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1">Đơn tối thiểu</p>
+                                    <p className="text-xs text-slate-500 mb-1">{t('customer:voucherDetail.minOrder')}</p>
                                     <p className="text-lg font-black text-slate-900">
                                         {voucher.min_order_amount.toLocaleString()}đ
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1">Hết hạn</p>
+                                    <p className="text-xs text-slate-500 mb-1">{t('customer:voucherDetail.expires')}</p>
                                     <p className="text-sm font-bold text-red-600 flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
                                         {formatDate(voucher.end_date)}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1">Đã sử dụng</p>
+                                    <p className="text-xs text-slate-500 mb-1">{t('customer:voucherDetail.used')}</p>
                                     <p className="text-sm font-bold text-slate-700">
                                         {voucher.current_usage_count}
                                         {voucher.total_usage_limit && `/${voucher.total_usage_limit}`} lần
@@ -222,7 +225,7 @@ const VoucherDetailPage = () => {
 
                         {/* Action Button */}
                         <Button className="w-full h-14 bg-orange-600 hover:bg-orange-700 text-white font-bold text-lg rounded-2xl shadow-lg shadow-orange-500/30">
-                            Sử dụng ngay
+                            {t('customer:voucherDetail.useNow')}
                         </Button>
                     </div>
                 </div>
@@ -233,7 +236,7 @@ const VoucherDetailPage = () => {
                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                             <CheckCircle2 className="w-5 h-5 text-green-600" />
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900">Lợi ích</h2>
+                        <h2 className="text-2xl font-black text-slate-900">{t('customer:voucherDetail.benefits')}</h2>
                     </div>
                     <div className="space-y-3">
                         {benefits.map((benefit, idx) => (
@@ -253,7 +256,7 @@ const VoucherDetailPage = () => {
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <Info className="w-5 h-5 text-blue-600" />
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900">Hướng dẫn sử dụng</h2>
+                        <h2 className="text-2xl font-black text-slate-900">{t('customer:voucherDetail.howToUse')}</h2>
                     </div>
                     <div className="space-y-4">
                         {instructions.map((instruction, idx) => (
@@ -273,7 +276,7 @@ const VoucherDetailPage = () => {
                         <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                             <AlertCircle className="w-5 h-5 text-amber-600" />
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900">Điều khoản & Điều kiện</h2>
+                        <h2 className="text-2xl font-black text-slate-900">{t('customer:voucherDetail.terms')}</h2>
                     </div>
                     <div className="space-y-3">
                         {voucher.conditions.map((term, idx) => (
@@ -289,7 +292,7 @@ const VoucherDetailPage = () => {
                 <div className="mt-8 bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-6 text-center">
                     <p className="text-white/90 text-sm mb-3">Đừng bỏ lỡ cơ hội tiết kiệm!</p>
                     <Button className="bg-white text-orange-600 hover:bg-gray-100 font-bold h-12 px-8 rounded-xl">
-                        Áp dụng voucher ngay
+                        {t('customer:voucherDetail.applyNow')}
                     </Button>
                 </div>
             </main>

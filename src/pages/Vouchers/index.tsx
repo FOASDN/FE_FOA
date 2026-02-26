@@ -19,9 +19,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import voucherAPI from "@/services/voucher.service";
 import type { Voucher, VoucherCategory } from "@/types/voucher";
+import { useTranslation } from "react-i18next";
 
 const VouchersPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation(['customer', 'common']);
     const [activeCategory, setActiveCategory] = useState<string>("all");
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -104,7 +106,7 @@ const VouchersPage = () => {
                                 <ArrowLeft className="w-5 h-5 text-slate-600" />
                             </button>
                             <div>
-                                <h1 className="text-xl font-bold text-slate-900">Kho Voucher</h1>
+                                <h1 className="text-xl font-bold text-slate-900">{t('customer:voucher.title')}</h1>
                                 <p className="text-xs text-slate-500">
                                     {loading ? "Đang tải..." : `${vouchers.length} voucher có sẵn`}
                                 </p>
@@ -270,7 +272,7 @@ const VouchersPage = () => {
                                             }}
                                             className="h-10 px-5 rounded-lg text-xs font-bold shadow-sm transition-all bg-slate-900 text-white hover:bg-slate-800"
                                         >
-                                            Chi tiết
+                                            {t('common:actions.details', 'Chi tiết')}
                                         </Button>
                                     </div>
                                 </div>

@@ -1,13 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-    MapPin,
-    Search,
-    ChevronRight,
-    ShoppingCart,
-    Utensils,
-    Heart,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../../hooks/useAuth";
+import { getOrdersNeedingReviewCount } from "../../../constants/mockOrders";
+import i18n from "../../../config/i18n";
 
 interface HomeHeaderProps {
     searchQuery?: string;
@@ -15,175 +11,389 @@ interface HomeHeaderProps {
     cartCount?: number;
 }
 
-const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 2 }: HomeHeaderProps) => {
+const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderProps) => {
     const navigate = useNavigate();
-    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const { t } = useTranslation(['common', 'customer']);
+    const { user, isAuthenticated, logout } = useAuth();
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [showMobileSearch, setShowMobileSearch] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown when clicking outside
+    const ordersNeedingReview = getOrdersNeedingReviewCount();
+    const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+    const handleLogout = () => {
+        logout();
+        setShowDropdown(false);
+        navigate('/');
+    };
+
+    const displayName = user?.username || user?.email?.split('@')[0] || 'User';
+    const displayEmail = user?.email || '';
+    const initial = displayName.charAt(0).toUpperCase();
+    const isVN = i18n.language === 'vi-VN';
+
+    // Countdown
+    const [now, setNow] = useState(new Date());
+    useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
+    const eod = new Date(); eod.setHours(23, 59, 59, 999);
+    const diff = eod.getTime() - now.getTime();
+    const cH = String(Math.floor((diff / 3600000) % 24)).padStart(2, '0');
+    const cM = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
+    const cS = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+
+    // Close dropdowns
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsUserMenuOpen(false);
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (dropdownRef.current && !dropdownRef.current.contains(target)) setShowDropdown(false);
+            if (mobileMenuRef.current && isMobileMenuOpen && !mobileMenuRef.current.contains(target)) {
+                const hamburger = document.querySelector('[data-mobile-trigger]');
+                if (hamburger && !hamburger.contains(target)) setIsMobileMenuOpen(false);
             }
         };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isMobileMenuOpen]);
 
-        if (isUserMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isUserMenuOpen]);
+    useEffect(() => {
+        document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+        return () => { document.body.style.overflow = ""; };
+    }, [isMobileMenuOpen]);
 
     return (
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 md:px-8 py-4 transition-all duration-300">
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
-                {/* Logo */}
-                <div className="flex items-center gap-6 md:gap-10">
-                    <div
-                        onClick={() => navigate("/")}
-                        className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
-                    >
-                        <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
-                            <Utensils className="w-5 h-5" />
+        <>
+            {/* ═══════ TOP BANNER — scrolls away ═══════ */}
+            <div className="bg-[#3c2415] text-white/90 py-1.5 text-[11px] lg:text-xs font-medium z-50">
+                <div className="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-1.5">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="flex items-center gap-1.5 hover:text-orange-300 transition-colors cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">location_on</span>
+                            <span>Đà Nẵng, VN</span>
                         </div>
-                        <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
+                        <div className="flex items-center gap-1.5 hover:text-orange-300 transition-colors cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">call</span>
+                            <span>1900 xxxx</span>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-1.5 hover:text-orange-300 transition-colors cursor-pointer">
+                            <span className="material-symbols-outlined text-[14px]">mail</span>
+                            <span>contact@foodiedash.vn</span>
+                        </div>
                     </div>
-
-                    <div className="hidden lg:flex items-center gap-3 bg-gray-100/80 px-4 py-2 rounded-full cursor-pointer hover:bg-orange-50 hover:text-orange-600 transition-all duration-300">
-                        <div className="bg-white p-1 rounded-full shadow-sm"><MapPin className="w-3.5 h-3.5 text-orange-600" /></div>
-                        <span className="text-sm font-semibold truncate max-w-[150px]">Đà Nẵng, Việt Nam</span>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                    </div>
-                </div>
-
-                {/* Search */}
-                <div className="flex-1 max-w-xl hidden md:block">
-                    <div className="relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Bạn thèm món gì hôm nay?"
-                            value={searchQuery}
-                            onChange={(e) => onSearchChange?.(e.target.value)}
-                            className="w-full bg-gray-100/50 border border-transparent group-hover:bg-white group-hover:border-gray-200 focus:bg-white focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 rounded-full py-3 pl-12 pr-6 text-sm font-medium outline-none transition-all duration-300"
-                        />
-                    </div>
-                </div>
-
-                {/* Menu & Actions */}
-                <div className="flex items-center gap-1 md:gap-4">
-                    <nav className="hidden lg:flex items-center gap-6 mr-4 font-bold text-sm text-slate-600">
-                        <a href="/menu" className="hover:text-orange-600 transition-colors">Thực đơn</a>
-                        <a href="#" className="hover:text-orange-600 transition-colors">Đặt bàn</a>
-                        <a href="#" className="hover:text-orange-600 transition-colors">Về chúng tôi</a>
-                        <a href="#" className="flex items-center gap-1 hover:text-orange-600 transition-colors">
-                            Theo dõi đơn <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full">1</span>
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <a href="#" className="hidden md:flex items-center gap-1.5 hover:text-orange-300 transition-colors">
+                            <span className="material-symbols-outlined text-[14px]">help</span>
+                            <span>Hỗ Trợ</span>
                         </a>
-                    </nav>
-
-                    <div className="h-6 w-px bg-gray-200 hidden lg:block mx-2"></div>
-
-                    {/* Cart Button */}
-                    <button className="relative p-2.5 rounded-full bg-white border border-gray-200 text-gray-700 hover:border-orange-200 hover:text-orange-600 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 group">
-                        <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        <span className="absolute -top-0.5 -right-0.5 bg-orange-600 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>
-                    </button>
-
-                    {/* User Avatar with Dropdown */}
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className="w-10 h-10 rounded-full p-0.5 bg-gradient-to-tr from-orange-500 to-yellow-400 cursor-pointer hover:scale-105 transition-transform"
-                        >
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover rounded-full border-2 border-white" />
+                        <button onClick={() => i18n.changeLanguage(isVN ? 'en-US' : 'vi-VN')} className="flex items-center gap-1.5 hover:text-orange-300 transition-colors">
+                            <span className="text-sm leading-none">{isVN ? '🇻🇳' : '🇺🇸'}</span>
+                            <span>{isVN ? 'VI' : 'EN'}</span>
                         </button>
-
-                        {/* Dropdown Menu */}
-                        {isUserMenuOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                                {/* User Info */}
-                                <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 border-b border-gray-100">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-orange-500 to-yellow-400">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover rounded-full border-2 border-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-slate-900">Nguyễn Văn A</h4>
-                                            <p className="text-xs text-slate-500">nguyenvana@email.com</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Menu Items */}
-                                <div className="p-2">
-                                    <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 transition-colors group">
-                                        <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm text-slate-800">Tài khoản</p>
-                                            <p className="text-xs text-slate-500">Quản lý thông tin cá nhân</p>
-                                        </div>
-                                    </a>
-
-                                    <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 transition-colors group">
-                                        <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm text-slate-800">Đơn hàng</p>
-                                            <p className="text-xs text-slate-500">Xem lịch sử đặt hàng</p>
-                                        </div>
-                                    </a>
-
-                                    <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 transition-colors group">
-                                        <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                                            <Heart className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm text-slate-800">Yêu thích</p>
-                                            <p className="text-xs text-slate-500">Món ăn đã lưu</p>
-                                        </div>
-                                    </a>
-
-                                    <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 transition-colors group">
-                                        <div className="w-9 h-9 rounded-full bg-green-100 text-green-600 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-sm text-slate-800">Cài đặt</p>
-                                            <p className="text-xs text-slate-500">Tùy chỉnh ứng dụng</p>
-                                        </div>
-                                    </a>
-                                </div>
-
-                                {/* Logout */}
-                                <div className="p-2 border-t border-gray-100">
-                                    <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 transition-colors group">
-                                        <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                            </svg>
-                                        </div>
-                                        <p className="font-semibold text-sm text-slate-800">Đăng xuất</p>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <div className="bg-orange-500 text-white px-3 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm font-bold text-[11px]">
+                            <span className="material-symbols-outlined text-[13px]">timer</span>
+                            <span>Ưu đãi: {cH}:{cM}:{cS}</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </header>
+
+            {/* ═══════ STICKY HEADER + NAVBAR ═══════ */}
+            <header className="sticky top-0 z-50">
+                {/* ═══════ MAIN HEADER — white, clean ═══════ */}
+                <div className="bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 lg:gap-8">
+                        {/* Logo — orange icon + dark text (original style) */}
+                        <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+                            <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
+                            </div>
+                            <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
+                        </Link>
+
+                        {/* Search Bar — bold styled, stands out */}
+                        <div className="flex-1 max-w-2xl hidden md:block mx-4">
+                            <div className="relative group">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-orange-400 group-focus-within:text-orange-600 transition-colors">search</span>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => onSearchChange?.(e.target.value)}
+                                    placeholder={t('customer:menu.searchPlaceholder')}
+                                    className="w-full h-12 pl-12 pr-28 bg-orange-50/60 text-gray-900 rounded-full border-2 border-orange-200 placeholder:text-gray-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 focus:outline-none transition-all duration-300 text-sm font-medium"
+                                />
+                                <button className="absolute right-1.5 top-1.5 h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-md text-sm font-semibold">
+                                    <span className="material-symbols-outlined text-[18px]">search</span>
+                                    <span className="hidden lg:inline">Tìm kiếm</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Action Icons */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                            {/* Mobile search */}
+                            <button onClick={() => setShowMobileSearch(true)} className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 md:hidden">
+                                <span className="material-symbols-outlined text-[22px]">search</span>
+                            </button>
+
+                            {/* Favorites */}
+                            {isAuthenticated && (
+                                <Link to="/favorites" className="p-2.5 rounded-xl text-gray-500 hover:bg-pink-50 hover:text-pink-600 transition-all duration-200 hidden sm:block relative">
+                                    <span className="material-symbols-outlined text-[22px]">favorite</span>
+                                </Link>
+                            )}
+
+                            {/* Cart */}
+                            <button onClick={() => navigate("/cart")} className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 relative group">
+                                <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">shopping_cart</span>
+                                {cartCount > 0 && (
+                                    <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-black w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                                        {cartCount > 99 ? '99+' : cartCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            <div className="h-7 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+
+                            {/* ── User Account ── */}
+                            {!isAuthenticated ? (
+                                <div className="flex items-center gap-2">
+                                    <Link to="/login" className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-all duration-200">
+                                        <span className="material-symbols-outlined text-[18px]">login</span>
+                                        Đăng nhập
+                                    </Link>
+                                    <Link to="/register" className="hidden sm:inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-bold bg-orange-500 text-white hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-px transition-all duration-200">
+                                        <span className="material-symbols-outlined text-[18px]">person_add</span>
+                                        Đăng ký
+                                    </Link>
+                                    <Link to="/login" className="sm:hidden p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all">
+                                        <span className="material-symbols-outlined text-[22px]">person</span>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="relative" ref={dropdownRef}>
+                                    <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-2 h-10 px-2.5 rounded-xl hover:bg-orange-50 transition-all duration-200">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-sm font-bold text-white ring-2 ring-orange-200">
+                                            {initial}
+                                        </div>
+                                        <span className="hidden lg:inline text-sm font-semibold text-gray-700 max-w-[100px] truncate">{displayName.split(' ')[0]}</span>
+                                        <span className="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
+                                    </button>
+
+                                    {showDropdown && (
+                                        <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                                            <div className="px-5 py-4 bg-gradient-to-br from-orange-50 to-yellow-50/50 border-b border-orange-100/50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative">
+                                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center shadow-md ring-2 ring-orange-100"><span className="text-white font-bold text-lg">{initial}</span></div>
+                                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
+                                                        <p className="text-xs text-gray-500 truncate mt-0.5">{displayEmail}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="py-2">
+                                                <Link to="/profile" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-all group" onClick={() => setShowDropdown(false)}>
+                                                    <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 group-hover:scale-110 transition-all"><span className="material-symbols-outlined text-[18px] text-orange-600">person</span></div>
+                                                    <div><p className="font-semibold">{t('common:nav.profile')}</p><p className="text-xs text-gray-500">{t('customer:profile.personalInfo')}</p></div>
+                                                </Link>
+                                                <Link to="/profile/history" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all group" onClick={() => setShowDropdown(false)}>
+                                                    <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative"><span className="material-symbols-outlined text-[18px] text-blue-600">receipt_long</span>{ordersNeedingReview > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>}</div>
+                                                    <div><p className="font-semibold">{t('common:nav.orders')}</p><p className="text-xs text-gray-500">{t('customer:profile.orderHistory')}</p></div>
+                                                </Link>
+                                                <Link to="/favorites" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-700 transition-all group" onClick={() => setShowDropdown(false)}>
+                                                    <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center group-hover:bg-pink-100 group-hover:scale-110 transition-all"><span className="material-symbols-outlined text-[18px] text-pink-600">favorite</span></div>
+                                                    <div><p className="font-semibold">{t('common:nav.favorites')}</p><p className="text-xs text-gray-500">{t('customer:profile.myFavorites')}</p></div>
+                                                </Link>
+                                            </div>
+                                            <div className="border-t border-gray-100 bg-gray-50/50">
+                                                <button onClick={handleLogout} className="flex items-center gap-3 px-5 py-3.5 text-sm text-red-600 hover:bg-red-50 w-full transition-all group font-semibold">
+                                                    <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 group-hover:scale-110 transition-all"><span className="material-symbols-outlined text-[18px] text-red-600">logout</span></div>
+                                                    <span>{t('customer:profile.logout')}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <button data-mobile-trigger onClick={() => setIsMobileMenuOpen(true)} className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 lg:hidden ml-0.5" aria-label="Menu">
+                                <span className="material-symbols-outlined text-[24px]">menu</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════ NAV BAR — warm cream, content on both sides ═══════ */}
+                <div className="bg-[#fef7f0] border-b border-orange-100 hidden md:block">
+                    <div className="max-w-7xl mx-auto px-4 lg:px-8">
+                        <div className="flex items-center justify-between h-11 text-[13px] font-semibold">
+                            {/* Left: main nav */}
+                            <nav className="flex items-center gap-1">
+                                <Link to="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#3c2415] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200 font-bold">
+                                    <span className="material-symbols-outlined text-[16px]">home</span>
+                                    {t('common:nav.home', 'Trang chủ')}
+                                </Link>
+                                <Link to="/menu" className="px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200">
+                                    {t('common:nav.menu')}
+                                </Link>
+                                <Link to="/about" className="px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200">
+                                    {t('common:nav.about')}
+                                </Link>
+                                {isAuthenticated && (
+                                    <Link to="/profile/history" className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200">
+                                        {t('common:nav.orders')}
+                                        {ordersNeedingReview > 0 && <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{ordersNeedingReview}</span>}
+                                    </Link>
+                                )}
+                            </nav>
+
+                            {/* Right: secondary info */}
+                            <div className="flex items-center gap-5 text-[#6b4c2a]">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <span className="material-symbols-outlined text-orange-500 text-[15px]">local_shipping</span>
+                                    <span>Miễn phí giao hàng từ 50K</span>
+                                </div>
+                                <div className="h-3.5 w-px bg-orange-200"></div>
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <span className="material-symbols-outlined text-orange-500 text-[15px]">schedule</span>
+                                    <span>7:00 - 22:00</span>
+                                </div>
+                                <div className="h-3.5 w-px bg-orange-200"></div>
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <span className="material-symbols-outlined text-orange-500 text-[15px]">location_on</span>
+                                    <span>Đà Nẵng, VN</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </header>
+
+            {/* ═══════ MOBILE SEARCH MODAL ═══════ */}
+            {showMobileSearch && (
+                <div className="fixed inset-0 z-[100] md:hidden">
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowMobileSearch(false)} />
+                    <div className="absolute top-0 left-0 right-0 bg-white shadow-2xl">
+                        <div className="max-w-7xl mx-auto px-4 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 relative">
+                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-orange-400">search</span>
+                                    <input
+                                        value={searchQuery}
+                                        onChange={(e) => onSearchChange?.(e.target.value)}
+                                        placeholder={t('customer:menu.searchPlaceholder')}
+                                        className="w-full h-12 pl-12 pr-4 bg-orange-50/60 text-gray-900 rounded-full border-2 border-orange-200 placeholder:text-gray-400 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 focus:outline-none text-sm"
+                                        autoFocus
+                                    />
+                                </div>
+                                <button onClick={() => setShowMobileSearch(false)} className="h-12 w-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
+                                    <span className="material-symbols-outlined text-[22px]">close</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════ MOBILE SLIDE MENU ═══════ */}
+            <div
+                ref={mobileMenuRef}
+                className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+                aria-hidden={!isMobileMenuOpen}
+            >
+                <div className="absolute inset-0 bg-black/50" onClick={closeMobileMenu} />
+                <div className={`absolute top-0 right-0 h-full w-full max-w-[300px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`} style={{ zIndex: 101 }}>
+                    <div className="flex items-center justify-between p-4 border-b border-orange-100 bg-[#fef7f0]">
+                        {isAuthenticated ? (
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold shrink-0">{initial}</div>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-sm text-gray-900 truncate">{displayName}</p>
+                                    <p className="text-xs text-gray-500 truncate">{displayEmail}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <span className="font-bold text-gray-800">Menu</span>
+                        )}
+                        <button onClick={closeMobileMenu} className="p-2 rounded-xl text-gray-500 hover:bg-orange-100 transition-colors shrink-0">
+                            <span className="material-symbols-outlined text-[22px]">close</span>
+                        </button>
+                    </div>
+
+                    <nav className="flex flex-col p-4 gap-1 flex-1 overflow-y-auto">
+                        <Link to="/" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                            <span className="material-symbols-outlined text-[22px] text-orange-500">home</span>
+                            {t('common:nav.home', 'Trang chủ')}
+                        </Link>
+                        <Link to="/menu" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                            <span className="material-symbols-outlined text-[22px] text-orange-500">restaurant</span>
+                            {t('common:nav.menu')}
+                        </Link>
+                        <Link to="/about" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                            <span className="material-symbols-outlined text-[22px] text-orange-500">info</span>
+                            {t('common:nav.about')}
+                        </Link>
+
+                        <div className="border-t border-orange-100 my-2" />
+
+                        <button onClick={() => i18n.changeLanguage(isVN ? 'en-US' : 'vi-VN')} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 text-left w-full">
+                            <span className="text-[22px] leading-none">{isVN ? '🇻🇳' : '🇺🇸'}</span>
+                            {isVN ? 'English' : 'Tiếng Việt'}
+                        </button>
+
+                        <button onClick={() => { closeMobileMenu(); navigate("/cart"); }} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 text-left w-full">
+                            <span className="material-symbols-outlined text-[22px] text-orange-500">shopping_cart</span>
+                            {t('common:nav.cart')}
+                            {cartCount > 0 && <span className="ml-auto bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">{cartCount}</span>}
+                        </button>
+
+                        {isAuthenticated && (
+                            <>
+                                <div className="border-t border-orange-100 my-2" />
+                                <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                                    <span className="material-symbols-outlined text-[22px] text-orange-500">person</span>
+                                    {t('common:nav.profile')}
+                                </Link>
+                                <Link to="/profile/history" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                                    <span className="material-symbols-outlined text-[22px] text-orange-500">receipt_long</span>
+                                    {t('common:nav.orders')}
+                                    {ordersNeedingReview > 0 && <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{ordersNeedingReview}</span>}
+                                </Link>
+                                <Link to="/favorites" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
+                                    <span className="material-symbols-outlined text-[22px] text-orange-500">favorite</span>
+                                    {t('common:nav.favorites')}
+                                </Link>
+                            </>
+                        )}
+
+                        <div className="mt-auto border-t border-orange-100 pt-3">
+                            {isAuthenticated ? (
+                                <button onClick={() => { closeMobileMenu(); handleLogout(); }} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-red-600 hover:bg-red-50 transition-all duration-200 w-full">
+                                    <span className="material-symbols-outlined text-[22px]">logout</span>
+                                    Đăng xuất
+                                </button>
+                            ) : (
+                                <div className="flex flex-col gap-2">
+                                    <Link to="/login" onClick={closeMobileMenu} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-orange-600 border-2 border-orange-200 hover:bg-orange-50 hover:border-orange-400 transition-all duration-200">
+                                        <span className="material-symbols-outlined text-[20px]">login</span>
+                                        Đăng nhập
+                                    </Link>
+                                    <Link to="/register" onClick={closeMobileMenu} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200">
+                                        <span className="material-symbols-outlined text-[20px]">person_add</span>
+                                        Đăng ký
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </>
     );
 };
 

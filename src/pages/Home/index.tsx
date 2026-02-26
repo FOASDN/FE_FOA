@@ -1,5 +1,5 @@
-import React from "react";
-import HomeHeader from "./components/HomeHeader";
+
+
 import HeroCarousel from "./components/HeroCarousel";
 import CategorySection from "./components/CategorySection";
 import RecommendedSection from "./components/RecommendedSection";
@@ -9,13 +9,14 @@ import LoyaltySection from "./components/LoyaltySection";
 import ReviewSection from "./components/ReviewSection";
 import CulinaryStorySection from "./components/CulinaryStorySection";
 import HistorySection from "./components/HistorySection";
-import HomeFooter from "./components/HomeFooter";
+
 
 const HomePage = () => {
     return (
         <div className="min-h-screen bg-gray-50/50 text-slate-800 font-sans selection:bg-orange-100 selection:text-orange-600">
             {/* --- HEADER --- */}
-            <HomeHeader />
+            {/* --- HEADER --- */}
+
 
             {/* --- MAIN CONTENT --- */}
             <main className="flex-1 flex flex-col items-center pb-20">
@@ -52,7 +53,8 @@ const HomePage = () => {
             </main>
 
             {/* --- FOOTER --- */}
-            <HomeFooter />
+            {/* --- FOOTER --- */}
+
         </div>
     );
 };
