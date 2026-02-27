@@ -1,35 +1,38 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/useAuth";
 import authService from "@/services/auth.service";
 
 const HEALTH_COLOR = "var(--health)";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation(['auth', 'common']);
-  const { login } = useAuth();
+  const { t } = useTranslation(["auth", "common"]);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [aiOptIn, setAiOptIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setSuccess("");
     try {
-      const response = await authService.register({ username, email, password });
-      // BE register sends verification email — user needs to verify before login
-      setSuccess(response.message || 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.');
+      await authService.register({
+        username,
+        email,
+        password,
+        confirm_password: confirmPassword,
+      });
+      // Redirect to OTP verification page
+      localStorage.setItem("pending_verify_email", email);
+      navigate("/verify-email", { state: { email } });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || t('auth:register.registerFailed');
+      const msg =
+        err?.response?.data?.message || t("auth:register.registerFailed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -55,18 +58,27 @@ const RegisterPage = () => {
               className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
             >
               <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  restaurant_menu
+                </span>
               </div>
-              <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
+              <h2 className="text-2xl font-black tracking-tighter">
+                FoodieDash
+              </h2>
             </div>
           </div>
           <div className="max-w-md">
             <h1 className="text-5xl font-extrabold text-white leading-tight mb-6">
-              {t('auth:register.heroTitle', 'Nuôi dưỡng cơ thể với')}{" "}
-              <span className="text-orange-600">{t('auth:register.heroHighlight', 'trí tuệ nhân tạo.')}</span>
+              {t("auth:register.heroTitle", "Nuôi dưỡng cơ thể với")}{" "}
+              <span className="text-orange-600">
+                {t("auth:register.heroHighlight", "trí tuệ nhân tạo.")}
+              </span>
             </h1>
             <p className="text-white/80 text-lg">
-              {t('auth:register.heroDescription', 'Tham gia hàng ngàn thực khách quan tâm sức khỏe tin dùng AI của chúng tôi để thiết kế thực đơn dinh dưỡng hoàn hảo mỗi ngày.')}
+              {t(
+                "auth:register.heroDescription",
+                "Tham gia hàng ngàn thực khách quan tâm sức khỏe tin dùng AI của chúng tôi để thiết kế thực đơn dinh dưỡng hoàn hảo mỗi ngày.",
+              )}
             </p>
           </div>
         </div>
@@ -81,7 +93,9 @@ const RegisterPage = () => {
             className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
           >
             <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
+              <span className="material-symbols-outlined text-[20px]">
+                restaurant_menu
+              </span>
             </div>
             <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
           </div>
@@ -90,43 +104,69 @@ const RegisterPage = () => {
         {/* Page Heading */}
         <div className="mb-8">
           <h2 className="text-foreground text-3xl font-black leading-tight tracking-tight">
-            {t('auth:register.title')}
+            {t("auth:register.title")}
           </h2>
           <p className="text-muted-foreground text-base font-normal mt-2">
-            {t('auth:register.subtitle')}
+            {t("auth:register.subtitle")}
           </p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm flex items-center gap-2 rounded-r-lg">
+            <span className="material-symbols-outlined text-lg">error</span>
+            {error}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="flex flex-col gap-2">
-            <label className="text-foreground text-sm font-semibold">{t('auth:register.fullName')}</label>
+            <label className="text-foreground text-sm font-semibold">
+              {t("auth:register.fullName")}
+            </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="flex w-full rounded-lg border border-input bg-transparent h-12 px-4 text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 placeholder:text-muted-foreground/50 text-foreground"
-              placeholder={t('auth:register.fullNamePlaceholder')}
+              placeholder={t("auth:register.fullNamePlaceholder")}
               required
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-foreground text-sm font-semibold">{t('auth:register.email')}</label>
+            <label className="text-foreground text-sm font-semibold">
+              {t("auth:register.email")}
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="flex w-full rounded-lg border border-input bg-transparent h-12 px-4 text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 placeholder:text-muted-foreground/50 text-foreground"
-              placeholder={t('auth:register.emailPlaceholder')}
+              placeholder={t("auth:register.emailPlaceholder")}
               required
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-foreground text-sm font-semibold">{t('auth:register.password')}</label>
+            <label className="text-foreground text-sm font-semibold">
+              {t("auth:register.password")}
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="flex w-full rounded-lg border border-input bg-transparent h-12 px-4 text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 placeholder:text-muted-foreground/50 text-foreground"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-foreground text-sm font-semibold">
+              Xác nhận mật khẩu
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="flex w-full rounded-lg border border-input bg-transparent h-12 px-4 text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 placeholder:text-muted-foreground/50 text-foreground"
               placeholder="••••••••"
               required
@@ -137,7 +177,8 @@ const RegisterPage = () => {
           <div
             className="flex items-start gap-3 p-4 rounded-lg border mt-6"
             style={{
-              backgroundColor: "color-mix(in srgb, var(--health) 8%, transparent)",
+              backgroundColor:
+                "color-mix(in srgb, var(--health) 8%, transparent)",
               borderColor: "color-mix(in srgb, var(--health) 25%, transparent)",
             }}
           >
@@ -162,20 +203,24 @@ const RegisterPage = () => {
                   className="text-sm font-bold uppercase tracking-wider"
                   style={{ color: HEALTH_COLOR }}
                 >
-                  {t('auth:register.aiPersonalize', 'Cá nhân hóa AI')}
+                  {t("auth:register.aiPersonalize", "Cá nhân hóa AI")}
                 </span>
               </div>
               <p className="text-xs text-foreground opacity-80 leading-relaxed">
-                {t('auth:register.aiDescription', 'Tôi muốn AI cá nhân hóa món ăn dựa trên hồ sơ sức khỏe của mình.')}
+                {t(
+                  "auth:register.aiDescription",
+                  "Tôi muốn AI cá nhân hóa món ăn dựa trên hồ sơ sức khỏe của mình.",
+                )}
               </p>
             </label>
           </div>
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center rounded-lg h-14 px-6 bg-orange-600 hover:bg-orange-500 text-white text-base font-bold transition-all shadow-md shadow-orange-600/25 mt-4"
+            className="flex w-full items-center justify-center rounded-lg h-14 px-6 bg-orange-600 hover:bg-orange-500 text-white text-base font-bold transition-all shadow-md shadow-orange-600/25 mt-4 disabled:opacity-50"
+            disabled={loading}
           >
-            {t('auth:register.submit')}
+            {loading ? "Đang xử lý..." : t("auth:register.submit")}
           </button>
         </form>
 
@@ -184,7 +229,7 @@ const RegisterPage = () => {
           <div className="relative flex items-center mb-8">
             <div className="flex-grow border-t border-border" />
             <span className="mx-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {t('auth:login.orLoginWith')}
+              {t("auth:login.orLoginWith")}
             </span>
             <div className="flex-grow border-t border-border" />
           </div>
@@ -194,10 +239,22 @@ const RegisterPage = () => {
               className="flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent h-12 px-4 text-sm font-semibold hover:bg-accent transition-colors text-foreground"
             >
               <svg className="size-5" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
               </svg>
               <span>Google</span>
             </button>
@@ -216,9 +273,12 @@ const RegisterPage = () => {
         {/* Footer */}
         <div className="mt-auto pt-10 text-center">
           <p className="text-sm text-muted-foreground">
-            {t('auth:register.haveAccount')}{" "}
-            <Link to="/login" className="text-orange-600 font-bold hover:text-orange-700 hover:underline ml-1">
-              {t('auth:register.signIn')}
+            {t("auth:register.haveAccount")}{" "}
+            <Link
+              to="/login"
+              className="text-orange-600 font-bold hover:text-orange-700 hover:underline ml-1"
+            >
+              {t("auth:register.signIn")}
             </Link>
           </p>
         </div>
