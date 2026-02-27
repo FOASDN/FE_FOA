@@ -11,6 +11,7 @@ import ShoppingCartPage from "./pages/ShoppingCart";
 import CheckoutPage from "./pages/Checkout";
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
+import VerifyEmailPage from "./pages/Register/VerifyEmail";
 import ForgotPasswordPage from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPassword";
 import OnboardingPage from "./pages/Onboarding";
@@ -81,7 +82,10 @@ function App() {
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
               <Route path="favorites" element={<FavoritesPage />} />
             </Route>
-            <Route path="/history" element={<Navigate to="/profile/history" replace />} />
+            <Route
+              path="/history"
+              element={<Navigate to="/profile/history" replace />}
+            />
             <Route path="/addresses" element={<AddressesPage />} />
             <Route path="/ai-suggestions" element={<SafeAlternativesPage />} />
             <Route path="/wallet" element={<VoucherWalletPage />} />
@@ -95,12 +99,13 @@ function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         {/* Staff — protected by role */}
         <Route element={<RequireAuth />}>
-          <Route element={<RequireRole allowedRoles={['STAFF', 'ADMIN']} />}>
+          <Route element={<RequireRole allowedRoles={["STAFF", "ADMIN"]} />}>
             <Route path="/staff" element={<StaffLayout />}>
               <Route index element={<StaffDashboard />} />
               <Route path="orders" element={<StaffOrders />} />
@@ -113,7 +118,7 @@ function App() {
         </Route>
         {/* Admin — protected by role */}
         <Route element={<RequireAuth />}>
-          <Route element={<RequireRole allowedRoles={['ADMIN']} />}>
+          <Route element={<RequireRole allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="menu" element={<AdminMenuManagement />} />
