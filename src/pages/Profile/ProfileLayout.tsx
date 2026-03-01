@@ -1,35 +1,114 @@
 import { Outlet } from "react-router-dom";
 import { NavLink } from "react-router-dom";
-
+import { useEffect, useRef, useState } from "react";
+import { userService,type UserMeResponse } from "@/services/profile.service";
+import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/hooks/useAuth";
 const ProfileLayout = () => {
+  const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const [me, setMe] = useState<UserMeResponse | null>(null);
+  const [loadingMe, setLoadingMe] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const { setUser, user } = useAuth();
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingMe(true);
+        const res = await userService.getMe();
+        if (!mounted) return;
+        setMe(res.data.data);
+      } catch (e: any) {
+        toast(e?.message || "Không thể tải thông tin", "error");
+      } finally {
+        if (mounted) setLoadingMe(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const onPickAvatar = () => fileRef.current?.click();
+
+  const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const res = await userService.updateAvatar(file);
+      setMe(res.data.data);
+      if (user) {
+        setUser({ ...user, avatar: res.data.data.avatar });
+      }
+      toast("Cập nhật avatar thành công", "success");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Upload avatar thất bại";
+      toast(msg, "error");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const avatarUrl = me?.avatar || "";
+
   return (
     <div className="bg-background text-foreground font-sans min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: Profile Overview & Navigation */}
           <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-            {/* Profile Card */}
             <div className="bg-card rounded-2xl p-8 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent" />
+
               <div className="relative mb-4">
-                <div
-                  className="size-28 rounded-full bg-cover bg-center border-4 border-card shadow-md"
-                  style={{
-                    backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuCv4PSDDhCtUBfVmS8ouPp1wu7J68i3dBlwrZZaxiPuTY84XYLSLFprJ9p1RGVfq2YZ01-vr3JRZXiPYzp13HQoDKApebF1pj3y7qQ_z3VTOHAuVCnmUu8Ciym319lPFLa4wx5-qmxhGSOdOHqgHbNckj6E3Nf04mx7tVoFmyNEyfhOBjqjo9TM_3q05JfnfGCvt_S0sEuUdhrP0LvnnF7pu9ii6-KtKBAF2gsi2dKSpszo9ppz9QWS1kbcEMcLtusOJ9RCtyTDPPc')`,
-                  }}
+                <div className="size-28 rounded-full border-4 border-card shadow-md overflow-hidden bg-accent flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-bold text-muted-foreground">
+                      {(me?.username?.[0] || "?").toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onAvatarChange}
                 />
+
                 <button
                   type="button"
-                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full border-2 border-card shadow-sm hover:scale-105 transition-transform"
+                  onClick={onPickAvatar}
+                  disabled={uploading || loadingMe}
+                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full border-2 border-card shadow-sm hover:scale-105 transition-transform disabled:opacity-60"
+                  title="Đổi ảnh đại diện"
                 >
-                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    {uploading ? "progress_activity" : "edit"}
+                  </span>
                 </button>
               </div>
-              <h2 className="text-2xl font-bold mb-1">Nguyễn Văn A</h2>
-              <p className="text-muted-foreground text-sm mb-4">Thành viên từ 2021</p>
+
+              <h2 className="text-2xl font-bold mb-1">
+                {loadingMe ? "..." : (me?.username || "—")}
+              </h2>
+
+              <p className="text-muted-foreground text-sm mb-4">
+                {loadingMe ? "" : (me?.email || "")}
+              </p>
+
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-6 border border-primary/20">
                 <span className="material-symbols-outlined text-sm">stars</span>
-                Thực khách Bạch kim
+                {typeof me?.collected_points === "number" ? `${me.collected_points} điểm` : "—"}
               </div>
               <div className="grid grid-cols-3 gap-4 w-full border-t border-border pt-6">
                 <div>

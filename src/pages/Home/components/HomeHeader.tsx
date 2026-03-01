@@ -33,6 +33,7 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
     const displayName = user?.username || user?.email?.split('@')[0] || 'User';
     const displayEmail = user?.email || '';
     const initial = displayName.charAt(0).toUpperCase();
+    const avatarUrl = user?.avatar || "";
     const isVN = i18n.language === 'vi-VN';
 
     // Countdown
@@ -174,9 +175,20 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                             ) : (
                                 <div className="relative" ref={dropdownRef}>
                                     <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-2 h-10 px-2.5 rounded-xl hover:bg-orange-50 transition-all duration-200">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-sm font-bold text-white ring-2 ring-orange-200">
-                                            {initial}
-                                        </div>
+                                        <div className="w-8 h-8 rounded-full ring-2 ring-orange-200 overflow-hidden bg-orange-100">
+                                            {avatarUrl ? (
+                                                <img
+                                                    src={avatarUrl}
+                                                    alt="avatar"
+                                                    className="w-full h-full object-cover block"
+                                                    referrerPolicy="no-referrer"
+                                                />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-sm font-bold text-white">
+                                                        {initial}
+                                                    </div>
+                                            )}
+                                </div>
                                         <span className="hidden lg:inline text-sm font-semibold text-gray-700 max-w-[100px] truncate">{displayName.split(' ')[0]}</span>
                                         <span className="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
                                     </button>
@@ -186,7 +198,15 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                             <div className="px-5 py-4 bg-gradient-to-br from-orange-50 to-yellow-50/50 border-b border-orange-100/50">
                                                 <div className="flex items-center gap-3">
                                                     <div className="relative">
-                                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center shadow-md ring-2 ring-orange-100"><span className="text-white font-bold text-lg">{initial}</span></div>
+                                                        <div className="w-12 h-12 rounded-full ring-2 ring-orange-100 overflow-hidden bg-orange-100">
+                                                            {avatarUrl ? (
+                                                                <img src={avatarUrl} className="w-full h-full object-cover block" alt="avatar" />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold text-lg">
+                                                                    {initial}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                                                     </div>
                                                     <div className="flex-1 min-w-0">

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
+import { useToast } from "@/hooks/useToast";
+import { userService } from "@/services/profile.service";
 const HEALTH_COLOR = "var(--health)";
-
 const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
   { id: "vegetarian", label: "Ăn chay", checked: true },
   { id: "vegan", label: "Thuần chay", checked: false },
@@ -12,7 +12,6 @@ const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
   { id: "gluten-free", label: "Không gluten", checked: true },
   { id: "pescatarian", label: "Ăn cá", checked: false },
 ];
-
 const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: string; checked: boolean }[] = [
   { id: "peanuts", label: "Đậu phộng", icon: "spa", colorClass: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400", checked: false },
   { id: "shellfish", label: "Hải sản có vỏ", icon: "set_meal", colorClass: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", checked: true },
@@ -21,14 +20,23 @@ const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: st
   { id: "wheat", label: "Lúa mì", icon: "grain", colorClass: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", checked: false },
   { id: "soy", label: "Đậu nành", icon: "grass", colorClass: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400", checked: false },
 ];
-
 const ProfileSettingsPage = () => {
-  const [fullName, setFullName] = useState("Nguyễn Văn A");
-  const [email, setEmail] = useState("nguyenvana@example.com");
-  const [phone, setPhone] = useState("+84 (555) 012-3456");
+  const { t } = useTranslation(["customer", "common"]);
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [initial, setInitial] = useState<{ username: string; phone: string }>({
+    username: "",
+    phone: "",
+  });
   const [diet, setDiet] = useState(DIET_OPTIONS.map((d) => ({ ...d })));
   const [allergies, setAllergies] = useState(ALLERGY_OPTIONS.map((a) => ({ ...a })));
-  const { t } = useTranslation(['customer', 'common']);
+
 
   const toggleDiet = (id: string) => {
     setDiet((prev) =>
@@ -42,53 +50,130 @@ const ProfileSettingsPage = () => {
     );
   };
 
+
+  const normalize = (v: string) => v.trim();
+
+  const isDirty =
+    normalize(username) !== normalize(initial.username) ||
+    normalize(phone) !== normalize(initial.phone);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await userService.getMe();
+        const me = res.data.data;
+
+        setUsername(me.username ?? "");
+        setEmail(me.email ?? "");
+        setPhone(me.phone ?? "");
+        setInitial({
+          username: me.username ?? "",
+          phone: me.phone ?? "",
+        });
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(
+          e?.response?.data?.message ||
+            e?.message ||
+            "Không thể tải thông tin người dùng",
+        );
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const onUpdateProfile = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      await userService.updateMe({
+        username: username.trim(),
+        phone: phone.trim() || undefined,
+      });
+
+      setInitial({
+        username: username.trim(),
+        phone: phone.trim(),
+      });
+      toast(t("customer:profileSettings.updateSuccess"), "success");
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Cập nhật thông tin không thành công";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
-      {/* Page Heading */}
       <div className="mb-8">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mb-3">
-          {t('customer:profileSettings.title')}
+          {t("customer:profileSettings.title")}
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl">
-          {t('customer:profileSettings.subtitle')}
+          {t("customer:profileSettings.subtitle")}
         </p>
       </div>
 
       <div className="space-y-8">
-        {/* Personal Info Card */}
         <div className="bg-card rounded-2xl p-6 md:p-10 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold mb-1">
-                {t('customer:profileSettings.personalInfo')}
+                {t("customer:profileSettings.personalInfo")}
               </h3>
               <p className="text-muted-foreground text-sm">
-                {t('customer:profileSettings.personalInfoDesc')}
+                {t("customer:profileSettings.personalInfoDesc")}
               </p>
             </div>
             <div className="p-2 bg-accent rounded-full text-foreground">
               <span className="material-symbols-outlined">badge</span>
             </div>
           </div>
+
+          {error && (
+            <div className="border border-destructive/30 bg-destructive/10 text-destructive rounded-2xl px-5 py-4 mb-6">
+              {error}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2 space-y-2">
-              <label className="text-sm font-semibold ml-1">{t('customer:profileSettings.fullName')}</label>
+              <label className="text-sm font-semibold ml-1">Username</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                   person
                 </span>
                 <input
                   type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground"
-                  placeholder="Nhập họ và tên"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading || saving}
+                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
+                  placeholder="Nhập username"
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <label className="text-sm font-semibold ml-1">
-                {t('customer:profileSettings.email')}
+                {t("customer:profileSettings.email")}
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -97,15 +182,16 @@ const ProfileSettingsPage = () => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground"
-                  placeholder="Nhập email"
+                  readOnly
+                  className="w-full pl-12 pr-4 py-3.5 bg-muted/40 border border-input rounded-2xl text-foreground cursor-not-allowed"
+                  placeholder="Email"
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <label className="text-sm font-semibold ml-1">
-                {t('customer:profileSettings.phone')}
+                {t("customer:profileSettings.phone")}
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -115,7 +201,8 @@ const ProfileSettingsPage = () => {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground"
+                  disabled={loading || saving}
+                  className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
                   placeholder="Nhập số điện thoại"
                 />
               </div>
@@ -123,7 +210,38 @@ const ProfileSettingsPage = () => {
           </div>
         </div>
 
-        {/* AI Health Profile Card */}
+        <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
+          {isDirty && (
+            <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
+              <button
+                type="button"
+                className="bg-background text-foreground px-8 py-4 rounded-2xl font-bold border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                onClick={() => {
+                  setUsername(initial.username);
+                  setPhone(initial.phone);
+                  setError(null);
+                }}
+                disabled={saving}
+              >
+                {t("customer:profileSettings.cancel")}
+              </button>
+
+              <button
+                type="button"
+                onClick={onUpdateProfile}
+                disabled={loading || saving || username.trim().length === 0}
+                className="bg-primary disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
+              >
+                <span>
+                  {saving
+                    ? "Đang lưu..."
+                    : t("customer:profileSettings.updateProfile")}
+                </span>
+                <span className="material-symbols-outlined">check_circle</span>
+              </button>
+            </div>
+          )}
+        </div>
         <div className="bg-card rounded-2xl p-6 md:p-10 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border relative overflow-hidden">
           <div
             className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none opacity-50"
@@ -243,23 +361,6 @@ const ProfileSettingsPage = () => {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
-          <button
-            type="button"
-            className="bg-background text-foreground px-8 py-4 rounded-2xl font-bold border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          >
-            {t('customer:profileSettings.cancel')}
-          </button>
-          <button
-            type="button"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
-          >
-            <span>{t('customer:profileSettings.updateProfile')}</span>
-            <span className="material-symbols-outlined">check_circle</span>
-          </button>
         </div>
       </div>
     </>
