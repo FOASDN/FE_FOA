@@ -9,6 +9,7 @@ export interface AuthUser {
     username: string;
     email: string;
     phone?: string;
+    avatar?: string;
     role: UserRole;
     isActive: boolean;
     verified_at: string | null;
