@@ -10,25 +10,29 @@ type LocationState = {
 };
 
 export function useUserLocation() {
-  const [state, setState] = useState<LocationState>({
-    lat: null,
-    lng: null,
-    loading: true,
-    error: null,
-    isValid: null, 
-    area: null,
+  const [state, setState] = useState<LocationState>(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return {
+        lat: null,
+        lng: null,
+        loading: false,
+        error: "Trình duyệt không hỗ trợ định vị",
+        isValid: false,
+        area: null,
+      };
+    }
+    return {
+      lat: null,
+      lng: null,
+      loading: true,
+      error: null,
+      isValid: null,
+      area: null,
+    };
   });
 
   useEffect(() => {
-
-    if (!navigator.geolocation) {
-      setState((s) => ({
-        ...s,
-        loading: false,
-        error: "Trình duyệt không hỗ trợ định vị",
-      }));
-      return;
-    }
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -54,7 +58,7 @@ export function useUserLocation() {
             isValid: data.isValid,
             area: data.area,
           });
-        } catch (e) {
+        } catch {
           setState((s) => ({
             ...s,
             loading: false,
@@ -63,15 +67,28 @@ export function useUserLocation() {
         }
       },
       (err) => {
-        console.log("❌ getCurrentPosition ERROR", err);
+        // code 1: user từ chối — hành vi bình thường, không log error
+        // code 2: vị trí không xác định được
+        // code 3: timeout
+        const messages: Record<number, string> = {
+          1: "Bạn chưa cho phép truy cập vị trí",
+          2: "Không xác định được vị trí",
+          3: "Hết thời gian lấy vị trí",
+        };
+        const message = messages[err.code] ?? "Không lấy được vị trí";
+
+        if (err.code !== 1) {
+          console.warn("⚠ Geolocation error:", err.message);
+        }
 
         setState((s) => ({
           ...s,
           loading: false,
-          error: err.message,
-          isValid: null,
+          error: message,
+          isValid: false,
         }));
-      }
+      },
+      { timeout: 10000, maximumAge: 60000 }
     );
   }, []);
 

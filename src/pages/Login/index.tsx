@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import authService from "@/services/auth.service";
+import { userService } from "@/services/profile.service";
+import { PENDING_PREFS_KEY, type PendingPreferences } from "@/constants/preferences";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -38,10 +40,23 @@ const LoginPage = () => {
         collected_points: user.collected_points,
       });
 
+      // Sync onboarding preferences saved before login
+      const pendingRaw = localStorage.getItem(PENDING_PREFS_KEY);
+      if (pendingRaw) {
+        try {
+          const prefs = JSON.parse(pendingRaw) as PendingPreferences;
+          await userService.updatePreferences(prefs);
+        } catch {
+          // preferences are non-critical — silently ignore
+        } finally {
+          localStorage.removeItem(PENDING_PREFS_KEY);
+        }
+      }
+
       // Delay navigation to let Zustand state propagate before route guards evaluate
       setTimeout(() => {
         const from = (location.state as { from?: { pathname: string } })?.from?.pathname;
-        if (from) {
+        if (from && from !== '/profile') {
           navigate(from, { replace: true });
         } else if (user.role === 'ADMIN') {
           navigate('/admin');
@@ -134,6 +149,17 @@ const LoginPage = () => {
             <span className="text-muted-foreground text-sm font-medium">{t('auth:login.orLoginWith')}</span>
             <div className="h-px grow bg-border" />
           </div>
+
+          {/* Welcome banner after onboarding */}
+          {(location.state as any)?.fromOnboarding && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <span className="material-symbols-outlined text-green-600 text-[20px] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              <div>
+                <p className="text-green-700 dark:text-green-400 text-sm font-bold">Thiết lập hồ sơ hoàn tất!</p>
+                <p className="text-green-600 dark:text-green-500 text-xs mt-0.5">Đăng nhập để bắt đầu trải nghiệm FoodieDash.</p>
+              </div>
+            </div>
+          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
