@@ -18,6 +18,8 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
     const [showDropdown, setShowDropdown] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
+    // Local input state for header search
+    const [localSearch, setLocalSearch] = useState(searchQuery || "");
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +30,14 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
         logout();
         setShowDropdown(false);
         navigate('/');
+    };
+
+    // Navigate to /menu with search keyword
+    const handleSearch = (q: string) => {
+        const trimmed = q.trim();
+        if (!trimmed) return;
+        navigate(`/menu?search=${encodeURIComponent(trimmed)}`);
+        setShowMobileSearch(false);
     };
 
     const displayName = user?.username || user?.email?.split('@')[0] || 'User';
@@ -113,18 +123,30 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                             <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
                         </Link>
 
-                        {/* Search Bar — bold styled, stands out */}
+                        {/* Search Bar */}
                         <div className="flex-1 max-w-2xl hidden md:block mx-4">
                             <div className="relative group">
                                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-orange-400 group-focus-within:text-orange-600 transition-colors">search</span>
                                 <input
                                     type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => onSearchChange?.(e.target.value)}
+                                    value={onSearchChange ? (searchQuery || "") : localSearch}
+                                    onChange={(e) => {
+                                        if (onSearchChange) onSearchChange(e.target.value);
+                                        else setLocalSearch(e.target.value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            if (onSearchChange) onSearchChange((e.target as HTMLInputElement).value);
+                                            else handleSearch(localSearch);
+                                        }
+                                    }}
                                     placeholder={t('customer:menu.searchPlaceholder')}
                                     className="w-full h-12 pl-12 pr-28 bg-orange-50/60 text-gray-900 rounded-full border-2 border-orange-200 placeholder:text-gray-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 focus:outline-none transition-all duration-300 text-sm font-medium"
                                 />
-                                <button className="absolute right-1.5 top-1.5 h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-md text-sm font-semibold">
+                                <button
+                                    onClick={() => handleSearch(onSearchChange ? (searchQuery || "") : localSearch)}
+                                    className="absolute right-1.5 top-1.5 h-9 px-5 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center gap-1.5 transition-all hover:scale-[1.02] shadow-md text-sm font-semibold"
+                                >
                                     <span className="material-symbols-outlined text-[18px]">search</span>
                                     <span className="hidden lg:inline">Tìm kiếm</span>
                                 </button>
@@ -304,13 +326,15 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                 <div className="flex-1 relative">
                                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-orange-400">search</span>
                                     <input
-                                        value={searchQuery}
-                                        onChange={(e) => onSearchChange?.(e.target.value)}
+                                        value={localSearch}
+                                        onChange={(e) => setLocalSearch(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch(localSearch)}
                                         placeholder={t('customer:menu.searchPlaceholder')}
                                         className="w-full h-12 pl-12 pr-4 bg-orange-50/60 text-gray-900 rounded-full border-2 border-orange-200 placeholder:text-gray-400 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 focus:outline-none text-sm"
                                         autoFocus
                                     />
                                 </div>
+                                <button onClick={() => handleSearch(localSearch)} className="h-12 px-4 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors">Tìm</button>
                                 <button onClick={() => setShowMobileSearch(false)} className="h-12 w-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
                                     <span className="material-symbols-outlined text-[22px]">close</span>
                                 </button>
@@ -323,11 +347,11 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
             {/* ═══════ MOBILE SLIDE MENU ═══════ */}
             <div
                 ref={mobileMenuRef}
-                className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+                className={`fixed inset - 0 z - [100] lg:hidden transition - opacity duration - 300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} `}
                 aria-hidden={!isMobileMenuOpen}
             >
                 <div className="absolute inset-0 bg-black/50" onClick={closeMobileMenu} />
-                <div className={`absolute top-0 right-0 h-full w-full max-w-[300px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}`} style={{ zIndex: 101 }}>
+                <div className={`absolute top - 0 right - 0 h - full w - full max - w - [300px] bg - white shadow - 2xl flex flex - col transition - transform duration - 300 ease - out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"} `} style={{ zIndex: 101 }}>
                     <div className="flex items-center justify-between p-4 border-b border-orange-100 bg-[#fef7f0]">
                         {isAuthenticated ? (
                             <div className="flex items-center gap-3 flex-1 min-w-0">

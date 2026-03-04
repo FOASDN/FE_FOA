@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/hooks/useToast";
-import { userService } from "@/services/profile.service";
+import apiClient from "@/lib/api-client";
+
 const HEALTH_COLOR = "var(--health)";
 const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
-  { id: "vegetarian", label: "Ăn chay", checked: true },
+  { id: "vegetarian", label: "Ăn chay", checked: false },
   { id: "vegan", label: "Thuần chay", checked: false },
   { id: "keto", label: "Keto", checked: false },
   { id: "paleo", label: "Paleo", checked: false },
-  { id: "gluten-free", label: "Không gluten", checked: true },
+  { id: "gluten-free", label: "Không gluten", checked: false },
   { id: "pescatarian", label: "Ăn cá", checked: false },
 ];
 const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: string; checked: boolean }[] = [
   { id: "peanuts", label: "Đậu phộng", icon: "spa", colorClass: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400", checked: false },
-  { id: "shellfish", label: "Hải sản có vỏ", icon: "set_meal", colorClass: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", checked: true },
+  { id: "shellfish", label: "Hải sản có vỏ", icon: "set_meal", colorClass: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", checked: false },
   { id: "eggs", label: "Trứng", icon: "egg", colorClass: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400", checked: false },
   { id: "dairy", label: "Sữa", icon: "water_drop", colorClass: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600", checked: false },
   { id: "wheat", label: "Lúa mì", icon: "grain", colorClass: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", checked: false },
@@ -22,32 +24,84 @@ const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: st
 ];
 const ProfileSettingsPage = () => {
   const { t } = useTranslation(["customer", "common"]);
+  const { user, getUser } = useAuthStore();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [initial, setInitial] = useState<{ username: string; phone: string }>({
-    username: "",
-    phone: "",
-  });
+  const [initial, setInitial] = useState<{ username: string; phone: string }>({ username: "", phone: "" });
   const [diet, setDiet] = useState(DIET_OPTIONS.map((d) => ({ ...d })));
   const [allergies, setAllergies] = useState(ALLERGY_OPTIONS.map((a) => ({ ...a })));
 
+  const normalize = (v: string) => v.trim();
+  const isDirty =
+    normalize(username) !== normalize(initial.username) ||
+    normalize(phone) !== normalize(initial.phone);
 
-  const toggleDiet = (id: string) => {
-    setDiet((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, checked: !d.checked } : d))
-    );
+  // Load user data from authStore (no extra API call needed)
+  useEffect(() => {
+    if (!user) return;
+    setUsername(user.username || "");
+    setEmail(user.email || "");
+    setPhone(user.phone || "");
+    setInitial({ username: user.username || "", phone: user.phone || "" });
+
+    const hp = user.healthProfile;
+    if (hp) {
+      setAllergies((prev) =>
+        prev.map((a) => ({ ...a, checked: hp.allergies.includes(a.id) || hp.allergies.includes(a.label) }))
+      );
+      setDiet((prev) =>
+        prev.map((d) => ({ ...d, checked: hp.dietaryGoals.includes(d.id) || hp.dietaryGoals.includes(d.label) }))
+      );
+    }
+  }, [user]);
+
+  const toggleDiet = (id: string) => setDiet((prev) => prev.map((d) => (d.id === id ? { ...d, checked: !d.checked } : d)));
+  const toggleAllergy = (id: string) => setAllergies((prev) => prev.map((a) => (a.id === id ? { ...a, checked: !a.checked } : a)));
+
+  // Update username + phone
+  const onUpdateProfile = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      await apiClient.patch("/user/me", { username: username.trim(), phone: phone.trim() || undefined });
+      setInitial({ username: username.trim(), phone: phone.trim() });
+      await getUser();
+      toast(t("customer:profileSettings.updateSuccess"), "success");
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Cập nhật thông tin không thành công";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleAllergy = (id: string) => {
-    setAllergies((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, checked: !a.checked } : a))
-    );
+  // Update health profile
+  const handleUpdateHealth = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      await apiClient.patch("/user/me", {
+        healthProfile: {
+          allergies: allergies.filter((a) => a.checked).map((a) => a.label),
+          conditions: user?.healthProfile?.conditions || [],
+          dietaryGoals: diet.filter((d) => d.checked).map((d) => d.label),
+        },
+      });
+      await getUser();
+      toast("Cập nhật hồ sơ sức khỏe thành công", "success");
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Cập nhật thất bại";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -157,14 +211,12 @@ const ProfileSettingsPage = () => {
             <div className="col-span-1 md:col-span-2 space-y-2">
               <label className="text-sm font-semibold ml-1">Username</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  person
-                </span>
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">person</span>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  disabled={loading || saving}
+                  disabled={saving}
                   className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
                   placeholder="Nhập username"
                 />
@@ -176,9 +228,7 @@ const ProfileSettingsPage = () => {
                 {t("customer:profileSettings.email")}
               </label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  mail
-                </span>
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">mail</span>
                 <input
                   type="email"
                   value={email}
@@ -194,20 +244,40 @@ const ProfileSettingsPage = () => {
                 {t("customer:profileSettings.phone")}
               </label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  call
-                </span>
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">call</span>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  disabled={loading || saving}
+                  disabled={saving}
                   className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
                   placeholder="Nhập số điện thoại"
                 />
               </div>
             </div>
           </div>
+
+          {isDirty && (
+            <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-6">
+              <button
+                type="button"
+                onClick={() => { setUsername(initial.username); setPhone(initial.phone); setError(null); }}
+                disabled={saving}
+                className="bg-background text-foreground px-8 py-4 rounded-2xl font-bold border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                {t("customer:profileSettings.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={onUpdateProfile}
+                disabled={saving || username.trim().length === 0}
+                className="bg-primary disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
+              >
+                <span>{saving ? "Đang lưu..." : t("customer:profileSettings.updateProfile")}</span>
+                <span className="material-symbols-outlined">check_circle</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
@@ -250,7 +320,7 @@ const ProfileSettingsPage = () => {
           <div className="flex items-center justify-between mb-8 relative z-10">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-xl font-bold">{t('customer:profileSettings.aiHealthProfile')}</h3>
+                <h3 className="text-xl font-bold">{t("customer:profileSettings.aiHealthProfile")}</h3>
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border"
                   style={{
@@ -258,13 +328,9 @@ const ProfileSettingsPage = () => {
                     color: "var(--health)",
                     borderColor: "color-mix(in srgb, var(--health) 30%, transparent)",
                   }}
-                >
-                  Beta
-                </span>
+                >Beta</span>
               </div>
-              <p className="text-muted-foreground text-sm mb-2">
-                AI sẽ gợi ý thực đơn dựa trên các tùy chọn của bạn.
-              </p>
+              <p className="text-muted-foreground text-sm mb-2">AI sẽ gợi ý thực đơn dựa trên các tùy chọn của bạn.</p>
               <Link
                 to="/ai-suggestions"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
@@ -274,43 +340,24 @@ const ProfileSettingsPage = () => {
                 Xem gợi ý món ăn phù hợp
               </Link>
             </div>
-            <div
-              className="p-2 rounded-full"
-              style={{
-                backgroundColor: "color-mix(in srgb, var(--health) 15%, transparent)",
-                color: "var(--health)",
-              }}
-            >
-              <span className="material-symbols-outlined">
-                health_and_safety
-              </span>
+            <div className="p-2 rounded-full" style={{ backgroundColor: "color-mix(in srgb, var(--health) 15%, transparent)", color: "var(--health)" }}>
+              <span className="material-symbols-outlined">health_and_safety</span>
             </div>
           </div>
 
           {/* Dietary Preferences */}
           <div className="mb-10">
             <label className="text-sm font-semibold mb-4 block">
-              {t('customer:profileSettings.dietaryPreferences')}
+              {t("customer:profileSettings.dietaryPreferences")}
             </label>
             <div className="flex flex-wrap gap-3">
               {diet.map((d) => (
                 <label key={d.id} className="cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={d.checked}
-                    onChange={() => toggleDiet(d.id)}
-                    className="sr-only peer"
-                  />
+                  <input type="checkbox" checked={d.checked} onChange={() => toggleDiet(d.id)} className="sr-only peer" />
                   <span
-                    className={`px-5 py-2.5 rounded-xl border font-medium transition-all peer-checked:shadow-md hover:border-[var(--health)]/50 ${d.checked
-                      ? "border-[var(--health)] text-white shadow-[var(--health)]/20"
-                      : "border-input bg-background text-muted-foreground"
+                    className={`px-5 py-2.5 rounded-xl border font-medium transition-all peer-checked:shadow-md hover:border-[var(--health)]/50 ${d.checked ? "border-[var(--health)] text-white" : "border-input bg-background text-muted-foreground"
                       }`}
-                    style={
-                      d.checked
-                        ? { backgroundColor: HEALTH_COLOR, boxShadow: `0 4px 14px color-mix(in srgb, var(--health) 25%, transparent)` }
-                        : undefined
-                    }
+                    style={d.checked ? { backgroundColor: HEALTH_COLOR, boxShadow: `0 4px 14px color-mix(in srgb, var(--health) 25%, transparent)` } : undefined}
                   >
                     {d.label}
                   </span>
@@ -321,10 +368,10 @@ const ProfileSettingsPage = () => {
 
           <div className="h-px bg-border w-full mb-8" />
 
-          {/* Allergies & Restrictions */}
+          {/* Allergies */}
           <div>
             <label className="text-sm font-semibold mb-4 block">
-              {t('customer:profileSettings.allergies')}
+              {t("customer:profileSettings.allergies")}
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allergies.map((a) => (
@@ -333,33 +380,34 @@ const ProfileSettingsPage = () => {
                   className="flex items-center justify-between p-3 rounded-xl bg-background border border-transparent hover:border-[var(--health)]/20 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`size-8 rounded-full flex items-center justify-center ${a.colorClass}`}
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        {a.icon}
-                      </span>
+                    <div className={`size-8 rounded-full flex items-center justify-center ${a.colorClass}`}>
+                      <span className="material-symbols-outlined text-sm">{a.icon}</span>
                     </div>
                     <span className="font-medium text-sm">{a.label}</span>
                   </div>
                   <label className="flex items-center cursor-pointer relative">
-                    <input
-                      type="checkbox"
-                      id={`allergy-${a.id}`}
-                      checked={a.checked}
-                      onChange={() => toggleAllergy(a.id)}
-                      className="sr-only peer"
-                    />
+                    <input type="checkbox" checked={a.checked} onChange={() => toggleAllergy(a.id)} className="sr-only peer" />
                     <div
                       className="w-11 h-6 rounded-full peer-focus:outline-none relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:border after:border-gray-300 peer-checked:after:translate-x-5 bg-muted"
-                      style={{
-                        backgroundColor: a.checked ? HEALTH_COLOR : undefined,
-                      }}
+                      style={{ backgroundColor: a.checked ? HEALTH_COLOR : undefined }}
                     />
                   </label>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Health profile save button */}
+          <div className="flex justify-end mt-8">
+            <button
+              type="button"
+              onClick={handleUpdateHealth}
+              disabled={saving}
+              className="bg-primary disabled:opacity-60 hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
+            >
+              <span>{saving ? "Đang lưu..." : "Lưu hồ sơ sức khỏe"}</span>
+              <span className="material-symbols-outlined">health_and_safety</span>
+            </button>
           </div>
         </div>
       </div>
