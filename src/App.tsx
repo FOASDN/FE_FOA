@@ -94,7 +94,7 @@ function App() {
             <Route path="/membership" element={<MembershipBenefitsPage />} />
             <Route path="/rating" element={<OrderRatingPage />} />
             <Route path="/success" element={<OrderSuccessPage />} />
-            <Route path="/order-detail" element={<OrderDetailPage />} />
+            <Route path="/order-detail/:id" element={<OrderDetailPage />} />
             <Route path="/track-order" element={<TrackOrderPage />} />
           </Route>
         </Route>

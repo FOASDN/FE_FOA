@@ -113,9 +113,7 @@ const OrderSuccessPage = () => {
             {orderId && (
               <button
                 id="view-order-btn"
-                onClick={() =>
-                  navigate("/order-detail", { state: { orderId } })
-                }
+                onClick={() => navigate(`/order-detail/${orderId}`)}
                 className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
               >
                 <span className="material-symbols-outlined mr-2">

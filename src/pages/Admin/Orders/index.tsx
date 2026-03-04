@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { clsx } from "clsx";
 import orderService from "@/services/order.service";
 import type { Order } from "@/services/order.service";
@@ -13,6 +14,7 @@ const ORDER_TABS = [
 ];
 
 const AdminOrders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -209,6 +211,17 @@ const AdminOrders = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() =>
+                              navigate(`/order-detail/${order._id}`)
+                            }
+                            className="p-1.5 text-gray-400 hover:text-primary transition-colors"
+                            title="Xem chi tiết"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">
+                              visibility
+                            </span>
+                          </button>
                           {order.status === "pending" && (
                             <button
                               onClick={() =>
@@ -305,21 +318,34 @@ const AdminOrders = () => {
                               : `${card.shipping_fee.toLocaleString("vi-VN")}đ`}
                           </span>
                         </div>
-                        <button
-                          onClick={() =>
-                            handleUpdateStatus(
-                              card._id,
-                              column.status === "pending"
-                                ? "confirmed"
-                                : column.status === "confirmed"
-                                  ? "shipping"
-                                  : "completed",
-                            )
-                          }
-                          className="w-full py-2 bg-gray-50 border border-gray-100 rounded text-xs font-bold hover:bg-gray-100"
-                        >
-                          Tiếp theo
-                        </button>
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          <button
+                            onClick={() =>
+                              navigate(`/order-detail/${card._id}`)
+                            }
+                            className="py-2 bg-gray-50 border border-gray-100 rounded text-[10px] font-bold hover:bg-gray-100 text-gray-500 flex items-center justify-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              visibility
+                            </span>
+                            Chi tiết
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleUpdateStatus(
+                                card._id,
+                                column.status === "pending"
+                                  ? "confirmed"
+                                  : column.status === "confirmed"
+                                    ? "shipping"
+                                    : "completed",
+                              )
+                            }
+                            className="py-2 bg-primary/5 border border-primary/10 rounded text-[10px] font-bold hover:bg-primary/10 text-primary"
+                          >
+                            Tiếp theo
+                          </button>
+                        </div>
                       </div>
                     ))}
                 </div>
