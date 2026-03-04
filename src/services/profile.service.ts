@@ -23,11 +23,23 @@ export type UserMeResponse = {
   preferences?: UserPreferences;
 };
 
+export interface AddressPayload {
+  label?: string;
+  receiver_name: string;
+  phone: string;
+  detail: string;
+  ward: string;
+  district: string;
+  city: string;
+  isDefault: boolean;
+}
+
 export type UpdateMePayload = {
   username?: string;
   phone?: string;
   avatar?: string;
   preferences?: Partial<UserPreferences>;
+  addresses?: AddressPayload[];
 };
 
 export const userService = {
@@ -40,7 +52,9 @@ export const userService = {
   },
 
   updatePreferences(preferences: Partial<UserPreferences>) {
-    return apiClient.patch<ApiResponse<UserMeResponse>>("/users/me", { preferences });
+    return apiClient.patch<ApiResponse<UserMeResponse>>("/users/me", {
+      preferences,
+    });
   },
 
   changePassword(payload: { currentPassword: string; newPassword: string }) {
@@ -51,8 +65,12 @@ export const userService = {
     const form = new FormData();
     form.append("file", file);
 
-    return apiClient.patch<ApiResponse<UserMeResponse>>("/users/me/avatar", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    return apiClient.patch<ApiResponse<UserMeResponse>>(
+      "/users/me/avatar",
+      form,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
   },
 };

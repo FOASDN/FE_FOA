@@ -1,101 +1,168 @@
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from "@/lib/api-client";
 
-// ---- Types ----
+// ────────────────────────────────────────────────────────────────────────────
+// Types — aligned with BE order.validator.ts & IOrder
+// ────────────────────────────────────────────────────────────────────────────
 
-export interface OrderItem {
-    productId: string;
-    name: string;
-    price: number;
+export interface PlaceOrderItemVariation {
+  name: string;
+  choice: string;
+}
+
+export interface PlaceOrderItem {
+  product_id: string;
+  quantity: number;
+  variations?: PlaceOrderItemVariation[];
+}
+
+export interface PlaceOrderAddress {
+  label?: string;
+  receiver_name: string;
+  phone: string;
+  detail: string;
+  ward: string;
+  district: string;
+  city: string;
+}
+
+export type PaymentMethod = "cash_on_delivery" | "credit_card" | "paypal";
+
+export interface PlaceOrderRequest {
+  items: PlaceOrderItem[];
+  payment_method?: PaymentMethod;
+  voucher?: string; // ObjectId string (24 chars) — optional
+  shipping_fee?: number;
+  delivery_address?: PlaceOrderAddress; // optional, BE falls back to default address
+}
+
+export interface PlacedOrder {
+  _id: string;
+  code: string;
+  status: string;
+  items: Array<{
+    product_id: string;
     quantity: number;
-    size?: string;
-    extras?: { id: string; name: string; price: number }[];
-    note?: string;
+    variations: PlaceOrderItemVariation[];
+    sub_total: number;
+  }>;
+  sub_total: number;
+  shipping_fee: number;
+  total_price: number;
+  payment: {
+    method: PaymentMethod;
+    paid_at: string | null;
+  };
+  delivery_address: PlaceOrderAddress;
+  voucher: string | null;
+  createdAt: string;
 }
 
-export interface CreateOrderRequest {
-    items: OrderItem[];
-    addressId: string;
-    paymentMethod: 'cod' | 'vnpay' | 'card';
-    voucherCode?: string;
-    note?: string;
-}
-
+// Unified Order interface for the app
 export interface Order {
+  _id: string;
+  code: string;
+  user_id?: {
     _id: string;
-    orderNumber: string;
-    items: OrderItem[];
-    status: 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'completed' | 'cancelled';
-    totalAmount: number;
-    shippingFee: number;
-    discount: number;
-    paymentMethod: string;
-    address: {
-        label: string;
-        address: string;
+    username: string;
+    email: string;
+    phone: string;
+  };
+  items: Array<{
+    product_id: {
+      _id: string;
+      name: string;
+      image: string | { secure_url: string };
+      price: number;
     };
-    driver?: {
-        name: string;
-        phone: string;
-    };
-    estimatedDelivery?: string;
-    createdAt: string;
-    updatedAt: string;
+    quantity: number;
+    variations: Array<{ name: string; choice: string }>;
+    sub_total: number;
+  }>;
+  status:
+    | "pending"
+    | "confirmed"
+    | "processing"
+    | "shipping"
+    | "completed"
+    | "cancelled";
+  sub_total: number;
+  shipping_fee: number;
+  total_price: number;
+  payment: {
+    method: PaymentMethod;
+    paid_at: string | null;
+  };
+  delivery_address: PlaceOrderAddress;
+  voucher?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderListResponse {
-    success: boolean;
-    data: Order[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
+  success: boolean;
+  data: Order[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
-// ---- Service ----
+// ────────────────────────────────────────────────────────────────────────────
+// Service
+// ────────────────────────────────────────────────────────────────────────────
 
 class OrderService {
-    /** Create a new order */
-    async createOrder(data: CreateOrderRequest): Promise<{ success: boolean; data: Order }> {
-        const response = await apiClient.post('/orders', data);
-        return response.data;
-    }
+  /** Place a new order — Customer */
+  async placeOrder(
+    data: PlaceOrderRequest,
+  ): Promise<{ success: boolean; data: PlacedOrder }> {
+    const response = await apiClient.post("/orders", data);
+    return response.data;
+  }
 
-    /** Get current user's order history */
-    async getMyOrders(page = 1, limit = 10): Promise<OrderListResponse> {
-        const response = await apiClient.get('/orders/me', { params: { page, limit } });
-        return response.data;
-    }
+  /** Get current user's order history */
+  async getMyOrders(page = 1, limit = 10): Promise<OrderListResponse> {
+    const response = await apiClient.get("/orders/me", {
+      params: { page, limit },
+    });
+    return response.data;
+  }
 
-    /** Get order detail by ID */
-    async getOrderById(id: string): Promise<{ success: boolean; data: Order }> {
-        const response = await apiClient.get(`/orders/${id}`);
-        return response.data;
-    }
+  /** Get order detail by ID */
+  async getOrderById(id: string): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.get(`/orders/${id}`);
+    return response.data;
+  }
 
-    /** Update order status (Admin/Staff) */
-    async updateOrderStatus(id: string, status: Order['status']): Promise<{ success: boolean; data: Order }> {
-        const response = await apiClient.patch(`/orders/${id}/status`, { status });
-        return response.data;
-    }
+  /** Update order status (Admin/Staff) */
+  async updateOrderStatus(
+    id: string,
+    status: Order["status"],
+  ): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/status`, { status });
+    return response.data;
+  }
 
-    /** Get all orders — Admin/Staff */
-    async getAllOrders(params?: {
-        status?: string;
-        page?: number;
-        limit?: number;
-        sort?: string;
-    }): Promise<OrderListResponse> {
-        const response = await apiClient.get('/orders', { params });
-        return response.data;
-    }
+  /** Get all orders — Admin/Staff */
+  async getAllOrders(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+  }): Promise<OrderListResponse> {
+    const response = await apiClient.get("/orders", { params });
+    return response.data;
+  }
 
-    /** Cancel an order */
-    async cancelOrder(id: string): Promise<{ success: boolean; message: string }> {
-        const response = await apiClient.patch(`/orders/${id}/cancel`);
-        return response.data;
-    }
+  /** Cancel an order */
+  async cancelOrder(
+    id: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.patch(`/orders/${id}/cancel`);
+    return response.data;
+  }
 }
 
 export default new OrderService();
