@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/store/authStore";
+import { useToast } from "@/hooks/useToast";
+import apiClient from "@/lib/api-client";
 
 const HEALTH_COLOR = "var(--health)";
 
@@ -23,12 +26,36 @@ const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: st
 ];
 
 const ProfileSettingsPage = () => {
-  const [fullName, setFullName] = useState("Nguyễn Văn A");
-  const [email, setEmail] = useState("nguyenvana@example.com");
-  const [phone, setPhone] = useState("+84 (555) 012-3456");
-  const [diet, setDiet] = useState(DIET_OPTIONS.map((d) => ({ ...d })));
-  const [allergies, setAllergies] = useState(ALLERGY_OPTIONS.map((a) => ({ ...a })));
+  const { user, getUser } = useAuthStore();
+  const { toast } = useToast();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [diet, setDiet] = useState(DIET_OPTIONS.map((d) => ({ ...d, checked: false })));
+  const [allergies, setAllergies] = useState(ALLERGY_OPTIONS.map((a) => ({ ...a, checked: false })));
+  const [isUpdating, setIsUpdating] = useState(false);
   const { t } = useTranslation(['customer', 'common']);
+
+  // Load backend data into state
+  useEffect(() => {
+    if (user) {
+      setFullName(user.username || "");
+      setEmail(user.email || "");
+      setPhone(user.phone || "");
+
+      // Apply health profile if exists
+      const hp = user.healthProfile;
+      if (hp) {
+        setAllergies((prev) =>
+          prev.map((a) => ({ ...a, checked: hp.allergies.includes(a.id) }))
+        );
+        setDiet((prev) =>
+          prev.map((d) => ({ ...d, checked: hp.dietaryGoals.includes(d.id) }))
+        );
+      }
+    }
+  }, [user]);
 
   const toggleDiet = (id: string) => {
     setDiet((prev) =>
@@ -40,6 +67,31 @@ const ProfileSettingsPage = () => {
     setAllergies((prev) =>
       prev.map((a) => (a.id === id ? { ...a, checked: !a.checked } : a))
     );
+  };
+
+  const handleUpdate = async () => {
+    if (!user) return;
+    try {
+      setIsUpdating(true);
+      const updatedHealthProfile = {
+        allergies: allergies.filter(a => a.checked).map(a => a.id),
+        conditions: [], // Placeholder for future UI
+        dietaryGoals: diet.filter(d => d.checked).map(d => d.id),
+      };
+
+      await apiClient.patch("/user/me", {
+        username: fullName,
+        phone,
+        healthProfile: updatedHealthProfile
+      });
+
+      await getUser(); // Refresh global auth state
+      toast("Cập nhật hồ sơ sức khỏe thành công", "success");
+    } catch (err: any) {
+      toast(err.response?.data?.message || "Cập nhật thất bại", "error");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -255,10 +307,12 @@ const ProfileSettingsPage = () => {
           </button>
           <button
             type="button"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
+            onClick={handleUpdate}
+            disabled={isUpdating}
+            className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
           >
-            <span>{t('customer:profileSettings.updateProfile')}</span>
-            <span className="material-symbols-outlined">check_circle</span>
+            <span>{isUpdating ? "Đang cập nhật..." : t('customer:profileSettings.updateProfile')}</span>
+            {!isUpdating && <span className="material-symbols-outlined">check_circle</span>}
           </button>
         </div>
       </div>

@@ -13,6 +13,11 @@ export interface AuthUser {
     isActive: boolean;
     verified_at: string | null;
     collected_points: number;
+    healthProfile?: {
+        allergies: string[];
+        conditions: string[];
+        dietaryGoals: string[];
+    };
 }
 
 interface AuthState {
@@ -24,6 +29,7 @@ interface AuthState {
     login: (user: AuthUser) => void;
     logout: () => void;
     setUser: (user: AuthUser) => void;
+    getUser: () => Promise<void>;
     hydrate: () => void;
 }
 
@@ -81,6 +87,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     setUser: (user) => {
         setStoredUser(user);
         set({ user, role: user.role });
+    },
+
+    getUser: async () => {
+        try {
+            // Import dynamically or pass standard way to avoid circular deps
+            // Assuming your authService has getCurrentUser() mapped exactly
+            const { default: authService } = await import('@/services/auth.service');
+            const res = await authService.getCurrentUser();
+            if (res.data) {
+                const user = res.data;
+                setStoredUser(user);
+                set({ user, role: user.role });
+            }
+        } catch (error) {
+            console.error('Failed to update user context:', error);
+        }
     },
 
     /**

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import productAPI from "@/services/product.service";
+import useDebounce from "@/hooks/useDebounce";
 import type { Product } from "@/types/product";
 
 const MenuPage = () => {
@@ -18,6 +19,7 @@ const MenuPage = () => {
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState(categoryParam);
     const [searchQuery, setSearchQuery] = useState(searchParam);
+    const debouncedSearch = useDebounce(searchQuery, 400);
     const [priceRange, setPriceRange] = useState([0, 100]);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [sortBy, setSortBy] = useState("popular");
@@ -38,26 +40,26 @@ const MenuPage = () => {
         // Update URL when category or search changes
         const params: any = {};
         if (activeCategory !== "all") params.category = activeCategory;
-        if (searchQuery) params.search = searchQuery;
+        if (debouncedSearch) params.search = debouncedSearch;
         setSearchParams(params);
 
         // Reset visible count when filters change
         setVisibleCount(6);
 
         fetchProducts();
-    }, [activeCategory, searchQuery, priceRange, selectedRating, sortBy]);
+    }, [activeCategory, debouncedSearch, priceRange, selectedRating, sortBy]);
 
     const fetchProducts = async () => {
         try {
             setLoading(true);
             const filters: any = {
                 page: 1,
-                limit: 100, // Load many for now, implement load more later
+                limit: 100,
                 sort: sortBy,
             };
 
             if (activeCategory !== "all") filters.category = activeCategory;
-            if (searchQuery) filters.search = searchQuery;
+            if (debouncedSearch) filters.search = debouncedSearch;
             if (priceRange[1] < 100) filters.maxPrice = priceRange[1];
             if (selectedRating) filters.minRating = selectedRating;
 
@@ -86,6 +88,31 @@ const MenuPage = () => {
 
                     {/* --- SIDEBAR (FILTERS) --- */}
                     <aside className="w-full lg:w-72 shrink-0 space-y-8">
+
+                        {/* Search Input */}
+                        <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100">
+                            <h3 className="font-black text-lg text-slate-900 mb-4 tracking-tight">Tìm kiếm</h3>
+                            <div className="relative">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 text-[20px]">
+                                    search
+                                </span>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Tìm món ăn..."
+                                    className="w-full h-12 pl-11 pr-10 bg-orange-50/60 rounded-xl border-2 border-orange-100 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-orange-400 focus:bg-white transition-all text-sm font-medium"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">close</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Categories — typography-only, no icons */}
                         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 overflow-hidden">
@@ -168,7 +195,10 @@ const MenuPage = () => {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-white p-4 rounded-[1.5rem] shadow-sm border border-gray-100">
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900">
-                                    {categories.find(c => c.id === activeCategory)?.name}
+                                    {debouncedSearch
+                                        ? <span>Kết quả cho: <span className="text-orange-600">"{debouncedSearch}"</span></span>
+                                        : categories.find(c => c.id === activeCategory)?.name
+                                    }
                                 </h1>
                                 <p className="text-slate-500 text-sm mt-1">{t('customer:menu.foundItems', { count: totalItems, defaultValue: 'Tìm thấy {{count}} món ăn' })}</p>
                             </div>
@@ -286,7 +316,7 @@ const MenuPage = () => {
                                 <h3 className="text-xl font-bold text-slate-900">{t('customer:menu.noResults')}</h3>
                                 <p className="text-slate-500 mt-2">{t('customer:menu.noResultsHint', 'Thử thay đổi bộ lọc hoặc tìm từ khóa khác xem sao.')}</p>
                                 <button
-                                    onClick={() => { setActiveCategory("all"); setSearchQuery(""); setPriceRange([0, 100]); setSelectedRating(null); }}
+                                    onClick={() => { setActiveCategory("all"); setSearchQuery(""); setPriceRange([0, 100]); setSelectedRating(null); setVisibleCount(6); }}
                                     className="mt-6 text-orange-600 font-bold hover:underline"
                                 >
                                     {t('customer:menu.clearFilters', 'Xóa bộ lọc')}
