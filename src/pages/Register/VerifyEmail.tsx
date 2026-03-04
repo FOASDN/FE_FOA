@@ -68,10 +68,10 @@ const VerifyEmailPage = () => {
     try {
       await authService.verifyEmail({ email, code: fullCode });
       setSuccess(
-        "Xác thực thành công! Đang chuyển hướng đến trang đăng nhập...",
+        "Xác thực thành công! Đang chuyển hướng đến trang thiết lập hồ sơ...",
       );
       localStorage.removeItem("pending_verify_email");
-      setTimeout(() => navigate("/login"), 3000);
+      setTimeout(() => navigate("/onboarding", { state: { fromVerify: true, email } }), 1500);
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||

@@ -6,6 +6,12 @@ export type ApiResponse<T> = {
   data: T;
 };
 
+export interface UserPreferences {
+  dietary: string[];
+  allergies: string[];
+  health_goals: string[];
+}
+
 export type UserMeResponse = {
   _id: string;
   username: string;
@@ -14,12 +20,14 @@ export type UserMeResponse = {
   avatar?: string;
   collected_points: number;
   role: string;
+  preferences?: UserPreferences;
 };
 
 export type UpdateMePayload = {
   username?: string;
   phone?: string;
   avatar?: string;
+  preferences?: Partial<UserPreferences>;
 };
 
 export const userService = {
@@ -30,6 +38,15 @@ export const userService = {
   updateMe(payload: UpdateMePayload) {
     return apiClient.patch<ApiResponse<UserMeResponse>>("/users/me", payload);
   },
+
+  updatePreferences(preferences: Partial<UserPreferences>) {
+    return apiClient.patch<ApiResponse<UserMeResponse>>("/users/me", { preferences });
+  },
+
+  changePassword(payload: { currentPassword: string; newPassword: string }) {
+    return apiClient.patch<ApiResponse<null>>("/users/me/password", payload);
+  },
+
   updateAvatar(file: File) {
     const form = new FormData();
     form.append("file", file);
