@@ -7,17 +7,25 @@ type Props = {
   error: string | null;
 };
 
+const DISMISSED_KEY = "location_alert_dismissed";
+
 const LocationAlert = ({ loading, isValid, error }: Props) => {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
+    // Chỉ hiện nếu user CHƯA từng bấm "Đã hiểu"
+    const alreadyDismissed = localStorage.getItem(DISMISSED_KEY) === "true";
+    if (!alreadyDismissed) {
       setVisible(true);
     }
-  }, [loading, isValid, error]);
+  }, []); // dependency rỗng → chỉ chạy 1 lần khi mount
+
+  const handleDismiss = () => {
+    localStorage.setItem(DISMISSED_KEY, "true");
+    setVisible(false);
+  };
 
   if (!visible) return null;
-
   if (!loading && !error && isValid === null) return null;
 
   return (
@@ -54,9 +62,10 @@ const LocationAlert = ({ loading, isValid, error }: Props) => {
           {!loading && isValid === true &&
             "Vị trí hợp lệ. Bạn có thể đặt món trong khu vực Đà Nẵng."}
         </p>
+
         {!loading && (
           <button
-            onClick={() => setVisible(false)}
+            onClick={handleDismiss}
             className="w-full h-11 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700 transition"
           >
             Đã hiểu

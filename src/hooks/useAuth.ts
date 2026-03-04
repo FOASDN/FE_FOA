@@ -10,7 +10,7 @@ import type { AuthUser } from '../store/authStore';
  * const { user, isAuthenticated, login, logout, role } = useAuth();
  * ```
  */
-export const useAuth = () => {
+export const    useAuth = () => {
     const user = useAuthStore((s) => s.user);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const role = useAuthStore((s) => s.role);

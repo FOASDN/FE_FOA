@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/useToast";
 import apiClient from "@/lib/api-client";
 
 const HEALTH_COLOR = "var(--health)";
-
 const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
   { id: "vegetarian", label: "Ăn chay", checked: false },
   { id: "vegan", label: "Thuần chay", checked: false },
@@ -15,7 +14,6 @@ const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
   { id: "gluten-free", label: "Không gluten", checked: false },
   { id: "pescatarian", label: "Ăn cá", checked: false },
 ];
-
 const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: string; checked: boolean }[] = [
   { id: "peanuts", label: "Đậu phộng", icon: "spa", colorClass: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400", checked: false },
   { id: "shellfish", label: "Hải sản có vỏ", icon: "set_meal", colorClass: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", checked: false },
@@ -24,7 +22,6 @@ const ALLERGY_OPTIONS: { id: string; label: string; icon: string; colorClass: st
   { id: "wheat", label: "Lúa mì", icon: "grain", colorClass: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", checked: false },
   { id: "soy", label: "Đậu nành", icon: "grass", colorClass: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400", checked: false },
 ];
-
 const ProfileSettingsPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const { user, getUser } = useAuthStore();
@@ -107,6 +104,76 @@ const ProfileSettingsPage = () => {
     }
   };
 
+
+  const normalize = (v: string) => v.trim();
+
+  const isDirty =
+    normalize(username) !== normalize(initial.username) ||
+    normalize(phone) !== normalize(initial.phone);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await userService.getMe();
+        const me = res.data.data;
+
+        setUsername(me.username ?? "");
+        setEmail(me.email ?? "");
+        setPhone(me.phone ?? "");
+        setInitial({
+          username: me.username ?? "",
+          phone: me.phone ?? "",
+        });
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(
+          e?.response?.data?.message ||
+            e?.message ||
+            "Không thể tải thông tin người dùng",
+        );
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const onUpdateProfile = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      await userService.updateMe({
+        username: username.trim(),
+        phone: phone.trim() || undefined,
+      });
+
+      setInitial({
+        username: username.trim(),
+        phone: phone.trim(),
+      });
+      toast(t("customer:profileSettings.updateSuccess"), "success");
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Cập nhật thông tin không thành công";
+      setError(msg);
+      toast(msg, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="mb-8">
@@ -119,7 +186,6 @@ const ProfileSettingsPage = () => {
       </div>
 
       <div className="space-y-8">
-        {/* Personal Info Card */}
         <div className="bg-card rounded-2xl p-6 md:p-10 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -214,7 +280,38 @@ const ProfileSettingsPage = () => {
           )}
         </div>
 
-        {/* AI Health Profile Card */}
+        <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
+          {isDirty && (
+            <div className="flex flex-col md:flex-row md:justify-end gap-4 pt-4">
+              <button
+                type="button"
+                className="bg-background text-foreground px-8 py-4 rounded-2xl font-bold border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                onClick={() => {
+                  setUsername(initial.username);
+                  setPhone(initial.phone);
+                  setError(null);
+                }}
+                disabled={saving}
+              >
+                {t("customer:profileSettings.cancel")}
+              </button>
+
+              <button
+                type="button"
+                onClick={onUpdateProfile}
+                disabled={loading || saving || username.trim().length === 0}
+                className="bg-primary disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all flex items-center justify-center gap-2"
+              >
+                <span>
+                  {saving
+                    ? "Đang lưu..."
+                    : t("customer:profileSettings.updateProfile")}
+                </span>
+                <span className="material-symbols-outlined">check_circle</span>
+              </button>
+            </div>
+          )}
+        </div>
         <div className="bg-card rounded-2xl p-6 md:p-10 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border relative overflow-hidden">
           <div
             className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none opacity-50"
