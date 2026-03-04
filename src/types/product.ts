@@ -42,4 +42,6 @@ export interface ProductFilters {
   sort?: string;
   page?: number;
   limit?: number;
+  isAvailable?: boolean;
+  health_tags?: string[];
 }
