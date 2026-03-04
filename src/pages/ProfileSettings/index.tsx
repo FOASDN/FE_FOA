@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/hooks/useToast";
-import apiClient from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 
 const HEALTH_COLOR = "var(--health)";
 const DIET_OPTIONS: { id: string; label: string; checked: boolean }[] = [
@@ -97,76 +97,6 @@ const ProfileSettingsPage = () => {
       toast("Cập nhật hồ sơ sức khỏe thành công", "success");
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || "Cập nhật thất bại";
-      setError(msg);
-      toast(msg, "error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-
-  const normalize = (v: string) => v.trim();
-
-  const isDirty =
-    normalize(username) !== normalize(initial.username) ||
-    normalize(phone) !== normalize(initial.phone);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const run = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await userService.getMe();
-        const me = res.data.data;
-
-        setUsername(me.username ?? "");
-        setEmail(me.email ?? "");
-        setPhone(me.phone ?? "");
-        setInitial({
-          username: me.username ?? "",
-          phone: me.phone ?? "",
-        });
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(
-          e?.response?.data?.message ||
-            e?.message ||
-            "Không thể tải thông tin người dùng",
-        );
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const onUpdateProfile = async () => {
-    try {
-      setSaving(true);
-      setError(null);
-
-      await userService.updateMe({
-        username: username.trim(),
-        phone: phone.trim() || undefined,
-      });
-
-      setInitial({
-        username: username.trim(),
-        phone: phone.trim(),
-      });
-      toast(t("customer:profileSettings.updateSuccess"), "success");
-    } catch (e: any) {
-      const msg =
-        e?.response?.data?.message ||
-        e?.message ||
-        "Cập nhật thông tin không thành công";
       setError(msg);
       toast(msg, "error");
     } finally {
