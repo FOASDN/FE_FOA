@@ -1,11 +1,19 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Loader2 } from "lucide-react";
 import orderService from "@/services/order.service";
 import type { Order } from "@/services/order.service";
 
-type StatusFilter = "all" | "pending" | "shipping" | "completed" | "cancelled";
+type StatusFilter =
+  | "all"
+  | "pending"
+  | "confirmed"
+  | "shipping"
+  | "completed"
+  | "cancelled";
 
 export default function StaffOrders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +112,7 @@ export default function StaffOrders() {
             [
               "all",
               "pending",
+              "confirmed",
               "shipping",
               "completed",
               "cancelled",
@@ -118,11 +127,13 @@ export default function StaffOrders() {
                 ? "Tất cả"
                 : f === "pending"
                   ? "Chờ xử lý"
-                  : f === "shipping"
-                    ? "Đang giao"
-                    : f === "completed"
-                      ? "Thành công"
-                      : "Đã hủy"}
+                  : f === "confirmed"
+                    ? "Đã xác nhận"
+                    : f === "shipping"
+                      ? "Đang giao"
+                      : f === "completed"
+                        ? "Thành công"
+                        : "Đã hủy"}
             </button>
           ))}
         </div>
@@ -195,6 +206,18 @@ export default function StaffOrders() {
                       : `${order.shipping_fee.toLocaleString("vi-VN")}đ`}
                   </span>
                 </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Giảm giá:</span>
+                  <span className="font-semibold text-green-600">
+                    -
+                    {(
+                      order.sub_total +
+                      (order.shipping_fee ?? 0) -
+                      order.total_price
+                    ).toLocaleString("vi-VN")}
+                    đ
+                  </span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-[#9a734c]">
                     Tổng thanh toán:
@@ -206,6 +229,15 @@ export default function StaffOrders() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => navigate(`/order-detail/${order._id}`)}
+                  className="col-span-2 py-2.5 bg-gray-50 dark:bg-white/5 text-[#9a734c] rounded-xl text-xs font-bold border border-gray-100 dark:border-white/10 hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    visibility
+                  </span>
+                  Xem chi tiết
+                </button>
                 {order.status === "pending" && (
                   <button
                     onClick={() => handleUpdateStatus(order._id, "confirmed")}
