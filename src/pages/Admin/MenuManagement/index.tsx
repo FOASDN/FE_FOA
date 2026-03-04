@@ -4,16 +4,15 @@ import { useProducts } from "@/hooks/useProducts";
 import { useToast, ToastContainer } from "@/hooks/useToast";
 import type { Product } from "@/types/product";
 import ProductFormModal from "./ProductFormModal";
+import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
 
 // ─── Constants ───
 
-const CATEGORY_CHIPS = [
-  { id: "all", label: "Tất cả món" },
-  { id: "Món chính", label: "Món chính" },
-  { id: "Khai vị", label: "Khai vị" },
-  { id: "Đồ uống", label: "Đồ uống" },
-  { id: "Tráng miệng", label: "Tráng miệng" },
-];
+// Re-map shared constant cho Admin chip UI (tất cả categories)
+const CATEGORY_CHIPS = CUSTOMER_CATEGORY_FILTERS.map((c) => ({
+  id: c.id,
+  label: c.label,
+}));
 
 // ─── Confirm Dialog Component ───
 

@@ -1,60 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import productService from "@/services/product.service";
 import type { Product } from "@/types/product";
+import { CATEGORIES, HEALTH_TAG_OPTIONS } from "@/constants/product.constants";
 
-// ---- Constants ----
-
-export const CATEGORIES = [
-  "Món chính",
-  "Khai vị",
-  "Đồ uống",
-  "Tráng miệng",
-  "Đồ ăn nhanh",
-  "Salad",
-];
-
-export const HEALTH_TAG_OPTIONS = [
-  {
-    id: "heart_healthy",
-    label: "Tốt cho tim mạch",
-    color: "bg-green-100 text-green-700 border-green-200",
-  },
-  {
-    id: "low_sugar",
-    label: "Ít đường",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-  },
-  {
-    id: "low_fat",
-    label: "Ít béo",
-    color: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  },
-  {
-    id: "high_protein",
-    label: "Nhiều đạm",
-    color: "bg-orange-100 text-orange-700 border-orange-200",
-  },
-  {
-    id: "keto",
-    label: "Keto",
-    color: "bg-purple-100 text-purple-700 border-purple-200",
-  },
-  {
-    id: "vegan",
-    label: "Món chay",
-    color: "bg-teal-100 text-teal-700 border-teal-200",
-  },
-  {
-    id: "warning_sodium",
-    label: "Cảnh báo: Cao Natri",
-    color: "bg-red-100 text-red-700 border-red-200",
-  },
-  {
-    id: "warning_sugar",
-    label: "Cảnh báo: Nhiều đường",
-    color: "bg-rose-100 text-rose-700 border-rose-200",
-  },
-];
+// Re-export để các consumer cũ không bị break
+export { CATEGORIES, HEALTH_TAG_OPTIONS };
 
 // ---- Types ----
 
@@ -128,13 +78,33 @@ export const useProductForm = ({
   const [error, setError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(
-    // Khi edit, hiển thị ảnh hiện tại nếu có
     mode === "edit" && product
       ? typeof product.image === "object"
         ? product.image.secure_url
         : ""
       : "",
   );
+
+  /**
+   * FIX: Reset form data khi product thay đổi.
+   * Bug cũ: mở edit A → đóng → mở edit B → form vẫn giữ data của A.
+   * useEffect này chạy mỗi khi mode/product thay đổi để re-initialize đúng.
+   */
+  useEffect(() => {
+    if (mode === "edit" && product) {
+      setFormData(productToFormData(product));
+      setImagePreview(
+        typeof product.image === "object" ? product.image.secure_url : "",
+      );
+      setImageFile(null);
+      setError("");
+    } else if (mode === "add") {
+      setFormData(DEFAULT_FORM);
+      setImagePreview("");
+      setImageFile(null);
+      setError("");
+    }
+  }, [mode, product?._id]); // Dùng product._id thay vì product object để tránh re-render không cần thiết
 
   // ---- Field Handlers ----
 
@@ -213,10 +183,10 @@ export const useProductForm = ({
           recipe: cleanRecipe,
         };
 
-        // Nếu có ảnh mới → upload trước
+        // Nếu có ảnh mới → upload trước, lấy MongoDB ObjectId gán vào payload
         if (imageFile) {
           const uploadRes = await productService.uploadImage(imageFile);
-          payload.image = uploadRes._id; // MongoDB ObjectId từ FileModel
+          payload.image = uploadRes._id;
         }
 
         if (mode === "add") {
