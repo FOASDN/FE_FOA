@@ -76,6 +76,8 @@ function App() {
           {/* Protected customer routes */}
           <Route element={<RequireAuth />}>
             <Route path="/cart" element={<ShoppingCartPage />} />
+            {/* /checkout requires auth — unauthenticated users redirect to login */}
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/profile" element={<ProfileLayout />}>
               <Route index element={<ProfileSettingsPage />} />
               <Route path="history" element={<OrderHistoryTabContent />} />
@@ -96,7 +98,6 @@ function App() {
             <Route path="/track-order" element={<TrackOrderPage />} />
           </Route>
         </Route>
-        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
