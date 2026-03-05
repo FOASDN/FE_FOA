@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
 import { MOCK_UPSELL_ITEMS } from "@/constants/mockOrders";
 import { useEffect } from "react";
+import { itemKey } from "@/store/cartStore";
+import { buildVariantChips } from "@/utils/cartVariants";
 
 const ShoppingCartPage = () => {
   const navigate = useNavigate();
@@ -89,7 +91,7 @@ const ShoppingCartPage = () => {
               ) : (
                 cartItems.map((item, idx) => (
                   <div
-                    key={`${item.productId}-${idx}`}
+                    key={itemKey(item)}
                     className="flex flex-col sm:flex-row gap-4 px-6 py-6 border-b border-gray-100 dark:border-white/10 last:border-b-0"
                   >
                     <div
@@ -105,6 +107,36 @@ const ShoppingCartPage = () => {
                           <p className="text-[#9a734c] text-sm mt-1">
                             {item.size || "Standard"}
                           </p>
+
+                          {(() => {
+                            const chips = buildVariantChips(
+                              (item as any).variations,
+                            );
+                            if (!chips.length) return null;
+
+                            return (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {chips.map((c) => (
+                                  <span
+                                    key={c.key}
+                                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-gray-100 dark:bg-white/10 text-text-main dark:text-white text-xs font-semibold"
+                                    title={
+                                      c.extra > 0
+                                        ? `+${c.extra.toLocaleString("vi-VN")}đ`
+                                        : undefined
+                                    }
+                                  >
+                                    {c.text}
+                                    {c.extra > 0 && (
+                                      <span className="text-[#9a734c] font-bold">
+                                        +{c.extra.toLocaleString("vi-VN")}đ
+                                      </span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <p className="text-lg font-bold text-text-main dark:text-white">
                           {(item.price * item.quantity).toLocaleString("vi-VN")}
@@ -113,7 +145,7 @@ const ShoppingCartPage = () => {
                       </div>
                       <div className="flex items-center justify-between mt-4 sm:mt-0">
                         <button
-                          onClick={() => removeItem(item.productId)}
+                          onClick={() => removeItem(itemKey(item))}
                           className="text-red-500 text-sm font-medium flex items-center gap-1 hover:underline"
                         >
                           <span className="material-symbols-outlined text-lg">
@@ -124,7 +156,7 @@ const ShoppingCartPage = () => {
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() =>
-                              updateQuantity(item.productId, item.quantity - 1)
+                              updateQuantity(itemKey(item), item.quantity - 1)
                             }
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >
@@ -135,7 +167,7 @@ const ShoppingCartPage = () => {
                           </span>
                           <button
                             onClick={() =>
-                              updateQuantity(item.productId, item.quantity + 1)
+                              updateQuantity(itemKey(item), item.quantity + 1)
                             }
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >

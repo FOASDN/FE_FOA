@@ -37,6 +37,9 @@ interface FoodCardProps {
 
 const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
   const imageUrl = getImageUrl(item.image);
+  const rating = Number(item?.rating ?? 0);
+  const reviewCount = Number(item?.review_count ?? 0);
+  const price = Number(item?.price ?? 0);
   return (
     <div
       onClick={() => onNavigate(item._id)}
@@ -79,11 +82,9 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
             star
           </span>
           <span className="text-xs font-bold text-slate-800">
-            {item.rating.toFixed(1)}
+            {rating.toFixed(1)}
           </span>
-          <span className="text-[10px] text-slate-400">
-            ({item.review_count})
-          </span>
+          <span className="text-[10px] text-slate-400">({reviewCount})</span>
         </div>
 
         {/* Health tags overlay */}
@@ -132,7 +133,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
               Giá
             </span>
             <span className="text-xl font-black text-slate-900">
-              {item.price.toLocaleString("vi-VN")}đ
+              {price.toLocaleString("vi-VN")}đ
             </span>
           </div>
           <button
