@@ -7,8 +7,8 @@ const ResetPasswordPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation(['auth', 'common']);
     const [searchParams] = useSearchParams();
-    const token = searchParams.get("token") || "";
-
+    const [otp, setOtp] = useState(searchParams.get("code") || "");
+    const [email] = useState(searchParams.get("email") || "");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -25,11 +25,16 @@ const ResetPasswordPage = () => {
         setLoading(true);
         setError("");
         try {
-            await authService.resetPassword({ verificationCode: token, password, confirm_password: confirmPassword });
+            await authService.resetPassword({
+                email,
+                code: otp,
+                password,
+                confirm_password: confirmPassword
+            });
             setSuccess(true);
             setTimeout(() => navigate("/login"), 2000);
-        } catch {
-            setError(t('auth:resetPassword.invalidToken'));
+        } catch (err: any) {
+            setError(err.response?.data?.message || t('auth:resetPassword.invalidToken'));
         } finally {
             setLoading(false);
         }
@@ -91,6 +96,30 @@ const ResetPasswordPage = () => {
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-foreground text-sm font-semibold px-1">Email</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    readOnly={!!searchParams.get("email")}
+                                    className="w-full rounded-lg border border-input bg-muted h-12 px-4 text-foreground outline-none"
+                                    placeholder="Email của bạn"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-foreground text-sm font-semibold px-1">Mã xác thực (OTP)</label>
+                                <input
+                                    type="text"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    className="w-full rounded-lg border border-input bg-background h-12 px-4 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-center tracking-[0.5em] font-bold text-xl"
+                                    placeholder="------"
+                                    maxLength={6}
+                                    required
+                                />
+                            </div>
+
                             <div className="flex flex-col gap-2">
                                 <label className="text-foreground text-sm font-semibold px-1">
                                     {t('auth:resetPassword.newPassword')}
