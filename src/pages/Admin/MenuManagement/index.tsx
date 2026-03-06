@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { useProducts } from "@/hooks/useProducts";
 import { useToast, ToastContainer } from "@/hooks/useToast";
 import type { Product } from "@/types/product";
 import ProductFormModal from "./ProductFormModal";
 import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
+import { Pagination } from "@/components/shared/Pagination";
 
 // ─── Constants ───
 
@@ -66,6 +67,13 @@ const AdminMenuManagement = () => {
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchTerm]);
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -79,12 +87,16 @@ const AdminMenuManagement = () => {
   const { toasts, toast, dismiss } = useToast();
 
   // Build filters từ state — hook tự fetch lại khi filters thay đổi
-  const filters: Record<string, any> = {};
+  const filters: Record<string, any> = {
+    page: currentPage,
+    limit: pageSize,
+  };
   if (activeCategory !== "all") filters.category = activeCategory;
   if (searchTerm) filters.search = searchTerm;
 
   const {
     products,
+    pagination,
     loading,
     error,
     fetchProducts,
@@ -182,7 +194,7 @@ const AdminMenuManagement = () => {
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block mr-2">
             <p className="text-xl font-bold text-[#ee8c2b]">
-              {products.length}
+              {pagination?.total || 0}
             </p>
             <p className="text-xs uppercase tracking-widest text-[#9a734c] font-bold">
               Tổng món
@@ -544,6 +556,17 @@ const AdminMenuManagement = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Pagination component */}
+      {!loading && pagination && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.total}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       {/* ─── Modals & Dialogs ─── */}

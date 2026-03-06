@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import productService from "@/services/product.service";
-import type { Product, ProductFilters } from "@/types/product";
+import type {
+  Product,
+  ProductFilters,
+  ProductListResponse,
+} from "@/types/product";
 
 interface UseProductsOptions {
   initialFilters?: ProductFilters;
@@ -9,6 +13,7 @@ interface UseProductsOptions {
 
 interface UseProductsReturn {
   products: Product[];
+  pagination: ProductListResponse["pagination"] | null;
   loading: boolean;
   error: string | null;
   fetchProducts: () => Promise<void>;
@@ -26,6 +31,9 @@ export const useProducts = (
 ): UseProductsReturn => {
   const { autoFetch = true } = options;
   const [products, setProducts] = useState<Product[]>([]);
+  const [pagination, setPagination] = useState<
+    ProductListResponse["pagination"] | null
+  >(null);
   const [loading, setLoading] = useState(autoFetch);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +43,7 @@ export const useProducts = (
     try {
       const response = await productService.getProducts(filters);
       setProducts(response.data || []);
+      setPagination(response.pagination);
     } catch (err: any) {
       const message =
         err?.response?.data?.message || "Lỗi khi tải danh sách sản phẩm";
@@ -94,6 +103,7 @@ export const useProducts = (
 
   return {
     products,
+    pagination,
     loading,
     error,
     fetchProducts,
