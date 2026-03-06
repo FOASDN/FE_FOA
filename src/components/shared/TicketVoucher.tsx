@@ -53,23 +53,23 @@ export function TicketVoucher({
                 } transition-all duration-300 ${className}`}
         >
             {/* Left — Discount Value */}
-            <div className={`flex flex-col items-center justify-center px-6 py-5 min-w-[120px] ${isDisabled
+            <div className={`flex flex-col items-center justify-center px-2 py-5 w-[135px] shrink-0 ${isDisabled
                 ? 'bg-gray-100 dark:bg-gray-800'
                 : 'bg-gradient-to-b from-orange-500 to-amber-500'
                 }`}
             >
-                <span className={`text-2xl font-black ${isDisabled ? 'text-gray-400' : 'text-white'}`}>
+                <span className={`text-2xl font-black text-center whitespace-nowrap overflow-hidden text-ellipsis w-full px-1 ${isDisabled ? 'text-gray-400' : 'text-white'}`}>
                     {discountValue}
                 </span>
                 {minOrder && (
-                    <span className={`text-[10px] font-medium mt-1 ${isDisabled ? 'text-gray-400' : 'text-white/80'}`}>
+                    <span className={`text-[10px] font-medium mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis w-full px-1 ${isDisabled ? 'text-gray-400' : 'text-white/80'}`}>
                         Min: {minOrder}
                     </span>
                 )}
             </div>
 
             {/* Dashed border cutout */}
-            <div className="absolute left-[119px] top-0 bottom-0 flex flex-col justify-between py-0">
+            <div className="absolute left-[134px] top-0 bottom-0 flex flex-col justify-between py-0 z-10 pointer-events-none">
                 <div className={`w-5 h-2.5 rounded-b-full ${isDisabled ? 'bg-background' : 'bg-background'} -mt-px`} />
                 <div className="flex-1 border-l-2 border-dashed border-border/60 mx-2.5" />
                 <div className={`w-5 h-2.5 rounded-t-full ${isDisabled ? 'bg-background' : 'bg-background'} -mb-px`} />
