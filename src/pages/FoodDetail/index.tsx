@@ -15,6 +15,7 @@ const getImageUrl = (image: any): string => {
   if (typeof image === "string") return image;
   return "";
 };
+import VariantModal from "@/components/model/VariantModel";
 
 const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,7 @@ const FoodDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [suggestedFoods, setSuggestedFoods] = useState<Product[]>([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [openVariantModal, setOpenVariantModal] = useState(false);
 
   useEffect(() => {
     const fetchProductAndSuggestions = async () => {
@@ -76,6 +78,13 @@ const FoodDetailPage = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    const hasVariants = (product as any).variants?.length > 0;
+    if (hasVariants) {
+      setOpenVariantModal(true);
+      return;
+    }
+
     addItem({
       productId: product._id,
       name: product.name,
@@ -83,6 +92,7 @@ const FoodDetailPage = () => {
       price: product.price,
       quantity,
     });
+
     toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
   };
 
@@ -174,17 +184,17 @@ const FoodDetailPage = () => {
                   </h1>
                   <div className="flex items-center gap-4">
                     <span className="text-2xl md:text-3xl font-bold text-primary">
-                      {product.price.toLocaleString("vi-VN")}đ
+                      {Number(product?.price ?? 0).toLocaleString("vi-VN")}đ
                     </span>
                     <div className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-yellow-400 text-[20px] fill-1">
                         star
                       </span>
                       <span className="text-sm font-bold text-text-main dark:text-white">
-                        {product.rating.toFixed(1)}
+                        {Number(product?.rating ?? 0).toFixed(1)}
                       </span>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
-                        ({product.review_count}+ đánh giá)
+                        ({Number(product?.review_count ?? 0)}+ đánh giá)
                       </span>
                     </div>
                   </div>
@@ -286,7 +296,7 @@ const FoodDetailPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 h-fit text-center">
                   <span className="text-5xl font-extrabold text-text-main dark:text-white mb-2">
-                    {product.rating.toFixed(1)}
+                    {Number(product?.rating ?? 0).toFixed(1)}
                   </span>
                   <div className="flex justify-center gap-1 text-yellow-400 mb-2 mt-2">
                     <span className="material-symbols-outlined fill-1">
@@ -304,7 +314,7 @@ const FoodDetailPage = () => {
                     <span className="material-symbols-outlined">star_half</span>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Dựa trên {product.review_count} đánh giá
+                    Dựa trên {Number(product?.review_count ?? 0)} đánh giá
                   </p>
                 </div>
                 <div className="md:col-span-2 space-y-4">
@@ -363,6 +373,35 @@ const FoodDetailPage = () => {
           </div>
         )}
       </main>
+      <VariantModal
+        open={openVariantModal}
+        onClose={() => setOpenVariantModal(false)}
+        productName={product?.name ?? ""}
+        basePrice={Number(product?.price ?? 0)}
+        variants={(product as any)?.variants ?? []}
+        quantity={quantity}
+        toastError={(msg) => toast(msg, "error")}
+        onConfirm={({ variations, unitPrice }) => {
+          if (!product) return;
+
+          addItem({
+            productId: product._id,
+            name: product.name,
+            image:
+              typeof product.image === "object"
+                ? product.image.secure_url
+                : product.image,
+            price: unitPrice,
+            quantity,
+            variations,
+          });
+
+          toast(
+            t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+            "success",
+          );
+        }}
+      />
       <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );

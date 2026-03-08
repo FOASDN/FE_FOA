@@ -59,15 +59,18 @@ const ProfileSettingsPage = () => {
     allergies: string[];
     health_goals: string[];
   }>({ dietary: [], allergies: [], health_goals: [] });
+  const [isHealthEditMode, setIsHealthEditMode] = useState(false);
 
   /* ── helpers ── */
   const toggleSet = (
     setState: React.Dispatch<React.SetStateAction<string[]>>,
     id: string
-  ) =>
+  ) => {
+    if (!isHealthEditMode) return;
     setState((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
 
   const normalize = (v: string) => v.trim();
   const isDirty =
@@ -144,9 +147,33 @@ const ProfileSettingsPage = () => {
         health_goals: healthGoals,
       });
       setInitialPrefs({ dietary: diet, allergies, health_goals: healthGoals });
+      setIsHealthEditMode(false);
       toast("Cài đặt sức khỏe đã được cập nhật", "success");
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || "Không thể lưu cài đặt";
+      toast(msg, "error");
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  const onDeleteHealthProfile = async () => {
+    if (!window.confirm("Bạn có chắc muốn xóa Hồ sơ Sức khỏe AI?")) return;
+    try {
+      setSavingPrefs(true);
+      await userService.updatePreferences({
+        dietary: [],
+        allergies: [],
+        health_goals: [],
+      });
+      setDiet([]);
+      setAllergies([]);
+      setHealthGoals([]);
+      setInitialPrefs({ dietary: [], allergies: [], health_goals: [] });
+      setIsHealthEditMode(false);
+      toast("Hồ sơ Sức khỏe AI đã được xóa", "success");
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Không thể xóa hồ sơ";
       toast(msg, "error");
     } finally {
       setSavingPrefs(false);
@@ -199,8 +226,8 @@ const ProfileSettingsPage = () => {
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === tab.id
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
@@ -338,14 +365,36 @@ const ProfileSettingsPage = () => {
                 Xem gợi ý món ăn phù hợp
               </Link>
             </div>
-            <div
-              className="p-2 rounded-full"
-              style={{
-                backgroundColor: "color-mix(in srgb, var(--health) 15%, transparent)",
-                color: "var(--health)",
-              }}
-            >
-              <span className="material-symbols-outlined">health_and_safety</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isHealthEditMode) {
+                    setIsHealthEditMode(false);
+                    setDiet(initialPrefs.dietary);
+                    setAllergies(initialPrefs.allergies);
+                    setHealthGoals(initialPrefs.health_goals);
+                  } else {
+                    setIsHealthEditMode(true);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isHealthEditMode
+                  ? "bg-[var(--health)] text-white"
+                  : "bg-[var(--health)]/10 text-[var(--health)] hover:bg-[var(--health)]/20"
+                  }`}
+              >
+                <span className="material-symbols-outlined text-sm">edit</span>
+                {isHealthEditMode ? "Hủy chỉnh sửa" : "Chỉnh sửa"}
+              </button>
+              <button
+                type="button"
+                onClick={onDeleteHealthProfile}
+                disabled={savingPrefs}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">delete</span>
+                Xóa hồ sơ
+              </button>
             </div>
           </div>
 
@@ -358,10 +407,10 @@ const ProfileSettingsPage = () => {
               {DIET_OPTIONS.map((opt) => {
                 const active = diet.includes(opt.id);
                 return (
-                  <label key={opt.id} className="cursor-pointer">
-                    <input type="checkbox" checked={active} onChange={() => toggleSet(setDiet, opt.id)} className="sr-only peer" />
+                  <label key={opt.id} className={isHealthEditMode ? "cursor-pointer" : "cursor-not-allowed"}>
+                    <input type="checkbox" checked={active} disabled={!isHealthEditMode} onChange={() => toggleSet(setDiet, opt.id)} className="sr-only peer" />
                     <span
-                      className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl border font-medium transition-all peer-checked:shadow-md hover:border-[var(--health)]/50 ${active ? "border-[var(--health)] text-white shadow-[var(--health)]/20" : "border-input bg-background text-muted-foreground"
+                      className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl border font-medium transition-all peer-checked:shadow-md ${isHealthEditMode ? "hover:border-[var(--health)]/50" : "opacity-80"} ${active ? "border-[var(--health)] text-white shadow-[var(--health)]/20" : "border-input bg-background text-muted-foreground"
                         }`}
                       style={active ? { backgroundColor: HEALTH_COLOR, boxShadow: `0 4px 14px color-mix(in srgb, var(--health) 25%, transparent)` } : undefined}
                     >
@@ -396,10 +445,10 @@ const ProfileSettingsPage = () => {
                       </div>
                       <span className="font-medium text-sm">{a.label}</span>
                     </div>
-                    <label className="flex items-center cursor-pointer relative">
-                      <input type="checkbox" checked={active} onChange={() => toggleSet(setAllergies, a.id)} className="sr-only peer" />
+                    <label className={`flex items-center relative ${isHealthEditMode ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                      <input type="checkbox" checked={active} disabled={!isHealthEditMode} onChange={() => toggleSet(setAllergies, a.id)} className="sr-only peer" />
                       <div
-                        className="w-11 h-6 rounded-full relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:border after:border-gray-300 peer-checked:after:translate-x-5 bg-muted transition-colors"
+                        className={`w-11 h-6 rounded-full relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:border after:border-gray-300 peer-checked:after:translate-x-5 bg-muted transition-colors ${!isHealthEditMode && "opacity-80"}`}
                         style={{ backgroundColor: active ? HEALTH_COLOR : undefined }}
                       />
                     </label>
@@ -422,10 +471,11 @@ const ProfileSettingsPage = () => {
                     key={g.id}
                     type="button"
                     onClick={() => toggleSet(setHealthGoals, g.id)}
-                    className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all group ${active ? "border-primary bg-primary/5" : "border-transparent bg-background hover:border-primary/30"
-                      }`}
+                    disabled={!isHealthEditMode}
+                    className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all group ${active ? "border-primary bg-primary/5" : "border-transparent bg-background"
+                      } ${isHealthEditMode ? "hover:border-primary/30" : "opacity-80 cursor-not-allowed"}`}
                   >
-                    <div className={`size-9 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? "bg-primary" : "bg-muted"}`}>
+                    <div className={`size-9 rounded-full flex items-center justify-center shrink-0 transition-transform ${isHealthEditMode ? "group-hover:scale-110" : ""} ${active ? "bg-primary" : "bg-muted"}`}>
                       <span className={`material-symbols-outlined text-[18px] ${active ? "text-primary-foreground" : "text-primary"}`}>{g.icon}</span>
                     </div>
                     <div className="min-w-0">
@@ -528,9 +578,9 @@ const ProfileSettingsPage = () => {
                     <div
                       key={i}
                       className={`h-1 flex-1 rounded-full transition-colors ${newPassword.length >= 12 && i < 4 ? "bg-green-500" :
-                          newPassword.length >= 10 && i < 3 ? "bg-yellow-400" :
-                            newPassword.length >= 8 && i < 2 ? "bg-orange-400" :
-                              newPassword.length >= 4 && i < 1 ? "bg-red-400" : "bg-muted"
+                        newPassword.length >= 10 && i < 3 ? "bg-yellow-400" :
+                          newPassword.length >= 8 && i < 2 ? "bg-orange-400" :
+                            newPassword.length >= 4 && i < 1 ? "bg-red-400" : "bg-muted"
                         }`}
                     />
                   ))}
@@ -554,8 +604,8 @@ const ProfileSettingsPage = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={savingPw}
                   className={`w-full pl-12 pr-12 py-3.5 bg-background border rounded-2xl focus:outline-none focus:ring-2 focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70 ${confirmPassword && newPassword !== confirmPassword
-                      ? "border-destructive focus:ring-destructive"
-                      : "border-input focus:ring-primary"
+                    ? "border-destructive focus:ring-destructive"
+                    : "border-input focus:ring-primary"
                     }`}
                   placeholder="Nhập lại mật khẩu mới"
                 />

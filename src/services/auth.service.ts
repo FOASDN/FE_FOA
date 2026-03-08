@@ -57,7 +57,8 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
-  verificationCode: string;
+  email: string;
+  code: string;
   password: string;
   confirm_password: string;
 }
@@ -105,6 +106,14 @@ class AuthService {
    */
   async resetPassword(data: ResetPasswordRequest): Promise<BEResponse> {
     const response = await apiClient.post("/auth/password/reset", data);
+    return response.data;
+  }
+
+  /**
+   * Verify password reset OTP.
+   */
+  async verifyPasswordResetOTP(data: { email: string; code: string }): Promise<BEResponse> {
+    const response = await apiClient.post("/auth/password/verify-otp", data);
     return response.data;
   }
 
