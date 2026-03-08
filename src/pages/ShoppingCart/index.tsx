@@ -24,6 +24,8 @@ const ShoppingCartPage = () => {
     updateQuantity,
     removeItem,
     addItem,
+    orderNote,
+    setOrderNote,
   } = useCart();
 
   // ─── Cleanup: Remove old mock data (ids not length 24) ───
@@ -33,7 +35,7 @@ const ShoppingCartPage = () => {
     );
     if (invalidItems.length > 0) {
       console.warn("Removing legacy mock items from cart:", invalidItems);
-      invalidItems.forEach((item) => removeItem(item.productId));
+      invalidItems.forEach((item) => removeItem(itemKey(item)));
     }
   }, [cartItems, removeItem]);
 
@@ -123,7 +125,7 @@ const ShoppingCartPage = () => {
                   </Link>
                 </div>
               ) : (
-                cartItems.map((item, idx) => (
+                cartItems.map((item) => (
                   <div
                     key={itemKey(item)}
                     className="flex flex-col sm:flex-row gap-4 px-6 py-6 border-b border-gray-100 dark:border-white/10 last:border-b-0"
@@ -131,7 +133,7 @@ const ShoppingCartPage = () => {
                     <div
                       className="bg-center bg-no-repeat aspect-video bg-cover rounded-lg h-[100px] w-full sm:w-[160px] shrink-0 bg-gray-100"
                       style={{ backgroundImage: `url("${item.image}")` }}
-                    ></div>
+                    />
                     <div className="flex flex-1 flex-col justify-between">
                       <div className="flex justify-between items-start">
                         <div>
@@ -143,9 +145,7 @@ const ShoppingCartPage = () => {
                           </p>
 
                           {(() => {
-                            const chips = buildVariantChips(
-                              (item as any).variations,
-                            );
+                            const chips = buildVariantChips((item as any).variations);
                             if (!chips.length) return null;
 
                             return (
@@ -173,8 +173,7 @@ const ShoppingCartPage = () => {
                           })()}
                         </div>
                         <p className="text-lg font-bold text-text-main dark:text-white">
-                          {(item.price * item.quantity).toLocaleString("vi-VN")}
-                          đ
+                          {(item.price * item.quantity).toLocaleString("vi-VN")}đ
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-4 sm:mt-0">
@@ -182,16 +181,12 @@ const ShoppingCartPage = () => {
                           onClick={() => removeItem(itemKey(item))}
                           className="text-red-500 text-sm font-medium flex items-center gap-1 hover:underline"
                         >
-                          <span className="material-symbols-outlined text-lg">
-                            delete
-                          </span>{" "}
+                          <span className="material-symbols-outlined text-lg">delete</span>
                           {t("common:actions.delete")}
                         </button>
                         <div className="flex items-center gap-3">
                           <button
-                            onClick={() =>
-                              updateQuantity(itemKey(item), item.quantity - 1)
-                            }
+                            onClick={() => updateQuantity(itemKey(item), item.quantity - 1)}
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >
                             -
@@ -200,9 +195,7 @@ const ShoppingCartPage = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() =>
-                              updateQuantity(itemKey(item), item.quantity + 1)
-                            }
+                            onClick={() => updateQuantity(itemKey(item), item.quantity + 1)}
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >
                             +
@@ -222,7 +215,7 @@ const ShoppingCartPage = () => {
                   to="/menu"
                   className="inline-flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all mb-4"
                 >
-                  <span className="material-symbols-outlined">add_circle</span>{" "}
+                  <span className="material-symbols-outlined">add_circle</span>
                   {t("customer:cart.continueShopping", "Thêm món khác")}
                 </Link>
 
@@ -277,7 +270,14 @@ const ShoppingCartPage = () => {
                       "Lời nhắn cho nhà hàng...",
                     )}
                     rows={3}
-                  ></textarea>
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                  />
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-[#9a734c]">
+                      {orderNote.length}/500
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -294,17 +294,13 @@ const ShoppingCartPage = () => {
                   </p>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">
-                        {t("customer:cart.subtotal")}
-                      </span>
+                      <span className="text-sm">{t("customer:cart.subtotal")}</span>
                       <span className="text-sm font-medium">
                         {subtotal.toLocaleString("vi-VN")}đ
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">
-                        {t("customer:cart.deliveryFee")}
-                      </span>
+                      <span className="text-sm">{t("customer:cart.deliveryFee")}</span>
                       <span className="text-sm font-medium text-green-600">
                         {deliveryFee === 0
                           ? t("common:status.free", "Miễn phí")
@@ -338,9 +334,7 @@ const ShoppingCartPage = () => {
                     className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg mt-8 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                   >
                     {t("customer:cart.checkout", "Tiến hành thanh toán")}
-                    <span className="material-symbols-outlined">
-                      arrow_forward
-                    </span>
+                    <span className="material-symbols-outlined">arrow_forward</span>
                   </button>
 
                   <p className="text-center text-[10px] text-[#9a734c] mt-4 uppercase tracking-widest font-bold">

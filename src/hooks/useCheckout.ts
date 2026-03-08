@@ -41,7 +41,7 @@ export interface VoucherState {
  */
 export const useCheckout = () => {
   const navigate = useNavigate();
-  const { items: cartItems, totalPrice, clearCart } = useCart();
+  const { items: cartItems, totalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -170,7 +170,7 @@ export const useCheckout = () => {
         items: cartItems.map((item) => ({
           product_id: item.productId,
           quantity: item.quantity,
-          variations: [], // CartItem currently has no variations
+          variations: item.variations ?? [],
         })),
         payment_method: paymentMethod,
         // Only send voucher._id if one is applied (must be 24-char ObjectId)
@@ -180,6 +180,7 @@ export const useCheckout = () => {
         // Send the selected/default address so BE doesn't need to look it up
         delivery_address: effectiveAddress,
         shipping_fee: deliveryFee,
+        note: orderNote?.trim() || undefined,
       };
 
       const response = await orderService.placeOrder(payload);
@@ -210,6 +211,8 @@ export const useCheckout = () => {
     effectiveAddress,
     paymentMethod,
     voucherState.appliedVoucher,
+    deliveryFee,
+    orderNote,
     clearCart,
     navigate,
     toast,

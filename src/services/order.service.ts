@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api-client";
 export interface PlaceOrderItemVariation {
   name: string;
   choice: string;
+  extra_price?: number;
 }
 
 export interface PlaceOrderItem {
@@ -33,6 +34,7 @@ export interface PlaceOrderRequest {
   voucher?: string; // ObjectId string (24 chars) — optional
   shipping_fee?: number;
   delivery_address?: PlaceOrderAddress; // optional, BE falls back to default address
+  note?: string;
 }
 
 export interface PlacedOrder {
@@ -42,10 +44,12 @@ export interface PlacedOrder {
   items: Array<{
     product_id: string;
     quantity: number;
-    variations: PlaceOrderItemVariation[];
+    variations: Array<{ name: string; choice: string; extra_price: number }>;
     sub_total: number;
   }>;
   sub_total: number;
+  note?: string;
+  staff_note_items?: string[];
   shipping_fee: number;
   total_price: number;
   payment: {
@@ -75,9 +79,11 @@ export interface Order {
       price: number;
     };
     quantity: number;
-    variations: Array<{ name: string; choice: string }>;
+    variations: Array<{ name: string; choice: string; extra_price?: number }>;
     sub_total: number;
   }>;
+  note?: string;
+  staff_note_items?: string[];
   status:
     | "pending"
     | "confirmed"

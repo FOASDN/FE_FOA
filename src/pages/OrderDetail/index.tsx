@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import orderService from "@/services/order.service";
 import type { Order } from "@/services/order.service";
+import { buildVariantChips } from "@/utils/cartVariants";
+import { useAuth } from "@/hooks/useAuth";
 
 const OrderDetailPage = () => {
   const navigate = useNavigate();
@@ -22,6 +24,8 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isStaff, isAdmin } = useAuth();
+  const isStaffView = isStaff || isAdmin;
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -199,15 +203,37 @@ const OrderDetailPage = () => {
                           <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-md">
                             Số lượng: {item.quantity}
                           </span>
-                          {item.variations?.map((v, vIdx) => (
-                            <span
-                              key={vIdx}
-                              className="text-xs font-medium text-gray-400"
-                            >
-                              • {v.name}: {v.choice}
-                            </span>
-                          ))}
                         </div>
+
+                        {(() => {
+                          const chips = buildVariantChips(
+                            (item as any).variations,
+                          );
+                          if (!chips.length) return null;
+
+                          return (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {chips.map((c) => (
+                                <span
+                                  key={c.key}
+                                  className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-gray-100 dark:bg-white/10 text-text-main dark:text-white text-xs font-semibold"
+                                  title={
+                                    c.extra > 0
+                                      ? `+${c.extra.toLocaleString("vi-VN")}đ`
+                                      : undefined
+                                  }
+                                >
+                                  {c.text}
+                                  {c.extra > 0 && (
+                                    <span className="text-[#9a734c] font-bold">
+                                      +{c.extra.toLocaleString("vi-VN")}đ
+                                    </span>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <p className="font-black text-lg text-gray-900 dark:text-white">
@@ -266,6 +292,40 @@ const OrderDetailPage = () => {
                 </div>
               </div>
             </div>
+            {(order.note || order.staff_note_items?.length) && (
+              <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <ReceiptText className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-lg">
+                    {isStaffView ? "Lưu ý từ khách hàng" : "Ghi chú đơn hàng"}
+                  </h3>
+                </div>
+
+                {isStaffView ? (
+                  order.staff_note_items?.length ? (
+                    <ul className="space-y-2">
+                      {order.staff_note_items.map((note, index) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200"
+                        >
+                          <span className="mt-1 text-primary font-bold">•</span>
+                          <span>{note}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : order.note ? (
+                    <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line">
+                      {order.note}
+                    </p>
+                  ) : null
+                ) : (
+                  <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line">
+                    {order.note}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bill Sidebar */}

@@ -18,6 +18,9 @@ export const useCart = () => {
     const updateQuantity = useCartStore((s) => s.updateQuantity);
     const clearCart = useCartStore((s) => s.clearCart);
     const hydrate = useCartStore((s) => s.hydrate);
+    const orderNote = useCartStore((s) => s.orderNote);
+    const setOrderNote = useCartStore((s) => s.setOrderNote);
+    const clearOrderNote = useCartStore((s) => s.clearOrderNote);
 
     return {
         items,
@@ -28,6 +31,9 @@ export const useCart = () => {
         updateQuantity,
         clearCart,
         hydrate,
+        orderNote,
+        setOrderNote,
+        clearOrderNote,
     };
 };
 
