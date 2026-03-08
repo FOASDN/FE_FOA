@@ -26,7 +26,11 @@ export interface PlaceOrderAddress {
   city: string;
 }
 
-export type PaymentMethod = "cash_on_delivery" | "credit_card" | "paypal";
+export type PaymentMethod =
+  | "cash_on_delivery"
+  | "credit_card"
+  | "paypal"
+  | "bank_transfer";
 
 export interface PlaceOrderRequest {
   items: PlaceOrderItem[];
@@ -58,6 +62,7 @@ export interface PlacedOrder {
   };
   delivery_address: PlaceOrderAddress;
   voucher: string | null;
+  checkoutUrl?: string;
   createdAt: string;
 }
 

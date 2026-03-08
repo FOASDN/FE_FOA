@@ -213,6 +213,24 @@ const CheckoutPage = () => {
                         {t("customer:checkout.cardPayment", "Thẻ tín dụng")}
                       </span>
                     </button>
+
+                    {/* Bank Transfer (PayOS) */}
+                    <button
+                      id="payment-bank"
+                      onClick={() => setPaymentMethod("bank_transfer")}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
+                        paymentMethod === "bank_transfer"
+                          ? "border-2 border-primary bg-primary/5"
+                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined">
+                        account_balance
+                      </span>
+                      <span className="text-sm font-bold">
+                        Chuyển khoản (PayOS)
+                      </span>
+                    </button>
                   </div>
 
                   {/* COD Info */}
@@ -237,6 +255,27 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
+                  {/* PayOS Info */}
+                  {paymentMethod === "bank_transfer" && (
+                    <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800/30 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-2xl">
+                          account_balance
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-indigo-900 dark:text-indigo-400 mb-1">
+                            Chuyển khoản qua PayOS
+                          </h4>
+                          <p className="text-sm text-indigo-800 dark:text-indigo-500/80">
+                            Bạn sẽ được chuyển hướng đến trang thanh toán an
+                            toàn của PayOS để thực hiện chuyển khoản ngân hàng
+                            hoặc quét QR.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Card (placeholder — no real payment gateway) */}
                   {paymentMethod === "credit_card" && (
                     <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4">
@@ -246,7 +285,8 @@ const CheckoutPage = () => {
                         </span>
                         <p className="text-sm text-blue-800 dark:text-blue-300">
                           Thanh toán thẻ sẽ được hỗ trợ trong phiên bản tới.
-                          Hiện tại vui lòng chọn thanh toán khi nhận hàng.
+                          Hiện tại vui lòng chọn thanh toán khi nhận hàng hoặc
+                          chuyển khoản.
                         </p>
                       </div>
                     </div>

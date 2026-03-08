@@ -13,11 +13,16 @@ const OrderSuccessPage = () => {
   const location = useLocation();
   const { t } = useTranslation(["customer", "common"]);
 
-  // Read the order info passed via navigation state from CheckoutPage
+  // Read the order info passed via navigation state or URL query params
   const state = location.state as OrderSuccessState | null;
-  const orderCode = state?.orderCode;
+  const searchParams = new URLSearchParams(location.search);
+
+  // Try 'code' (our ORD-XXX) first, then 'orderCode' (numeric from PayOS)
+  const orderCode =
+    state?.orderCode ||
+    searchParams.get("code") ||
+    searchParams.get("orderCode");
   const totalPrice = state?.totalPrice;
-  const orderId = state?.orderId;
 
   // Security guard: if someone navigates here directly without placing an order,
   // redirect to home after a brief delay
@@ -110,20 +115,16 @@ const OrderSuccessPage = () => {
 
           {/* Actions */}
           <div className="flex flex-col gap-3 w-full">
-            {orderId && (
-              <button
-                id="view-order-btn"
-                onClick={() => navigate(`/order-detail/${orderId}`)}
-                className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
-              >
-                <span className="material-symbols-outlined mr-2">
-                  visibility
-                </span>
-                <span>
-                  {t("customer:orderSuccess.trackOrder", "Xem đơn hàng")}
-                </span>
-              </button>
-            )}
+            <button
+              id="view-order-btn"
+              onClick={() => navigate("/profile/history")}
+              className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+            >
+              <span className="material-symbols-outlined mr-2">history</span>
+              <span>
+                {t("customer:orderSuccess.trackOrder", "Xem lịch sử đơn hàng")}
+              </span>
+            </button>
 
             <Link to="/" replace>
               <button
