@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { sendChatMessage, type ChatMessage as ChatServiceMessage } from '@/services/chat.service';
 
 // ---- Types ----
 
@@ -46,13 +47,14 @@ export function FloatingAIChatbot() {
         }
     };
 
-    const handleSend = () => {
-        if (!input.trim()) return;
+    const handleSend = async () => {
+        if (!input.trim() || isTyping) return;
 
+        const userMsgContent = input.trim();
         const userMessage: Message = {
             id: Date.now().toString(),
             role: 'user',
-            content: input.trim(),
+            content: userMsgContent,
             timestamp: new Date(),
         };
 
@@ -60,17 +62,34 @@ export function FloatingAIChatbot() {
         setInput('');
         setIsTyping(true);
 
-        // Simulate AI response (replace with real API later)
-        setTimeout(() => {
+        try {
+            // Convert current messages to the format expected by the service
+            const history: ChatServiceMessage[] = messages.map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                content: msg.content
+            }));
+
+            const response = await sendChatMessage(userMsgContent, history);
+
             const aiMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: t('customer:chatbot.defaultReply'),
+                content: response,
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, aiMessage]);
+        } catch (error: any) {
+            console.error('Chat error details:', error);
+            const errorMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: 'Xin lỗi, tôi gặp chút trục trặc. Bạn vui lòng thử lại sau nhé!',
+                timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, errorMessage]);
+        } finally {
             setIsTyping(false);
-        }, 1200);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -107,16 +126,16 @@ export function FloatingAIChatbot() {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/30">
                         {messages.map((msg) => (
                             <div
                                 key={msg.id}
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div
-                                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
                                         ? 'bg-orange-500 text-white rounded-br-lg'
-                                        : 'bg-muted text-foreground rounded-bl-lg'
+                                        : 'bg-white dark:bg-slate-800 text-foreground border border-slate-100 shadow-sm rounded-bl-lg'
                                         }`}
                                 >
                                     {msg.content}
@@ -127,10 +146,10 @@ export function FloatingAIChatbot() {
                         {/* Typing indicator */}
                         {isTyping && (
                             <div className="flex justify-start">
-                                <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-lg flex items-center gap-1.5">
-                                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                <div className="bg-white dark:bg-slate-800 px-4 py-3 border border-slate-100 rounded-2xl rounded-bl-lg flex items-center gap-1.5 shadow-sm">
+                                    <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
                             </div>
                         )}
@@ -138,7 +157,7 @@ export function FloatingAIChatbot() {
                     </div>
 
                     {/* Input */}
-                    <div className="px-4 py-3 border-t border-border bg-card">
+                    <div className="px-4 py-3 border-t border-border bg-white dark:bg-slate-900">
                         <div className="flex items-center gap-2">
                             <input
                                 ref={inputRef}
@@ -147,11 +166,11 @@ export function FloatingAIChatbot() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={t('customer:chatbot.placeholder')}
-                                className="flex-1 h-10 px-4 rounded-xl bg-muted text-foreground text-sm placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                className="flex-1 h-10 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-foreground text-sm placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
                             />
                             <button
                                 onClick={handleSend}
-                                disabled={!input.trim()}
+                                disabled={!input.trim() || isTyping}
                                 className="w-10 h-10 rounded-xl bg-orange-500 hover:bg-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/20 active:scale-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <span className="material-symbols-outlined text-[20px]">send</span>
@@ -165,7 +184,7 @@ export function FloatingAIChatbot() {
             <button
                 onClick={isOpen ? () => setIsOpen(false) : handleOpen}
                 className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 active:scale-90 ${isOpen
-                    ? 'bg-foreground/80 text-background hover:bg-foreground/90 rotate-0'
+                    ? 'bg-slate-800 text-white rotate-0'
                     : 'bg-gradient-to-br from-orange-500 to-amber-500 text-white hover:shadow-orange-500/40 hover:shadow-2xl'
                     }`}
                 aria-label={t('customer:chatbot.title')}
