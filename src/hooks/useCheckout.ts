@@ -188,6 +188,12 @@ export const useCheckout = () => {
       // Clear FE cart after successful order
       clearCart();
 
+      // If there's a checkoutUrl (PayOS), redirect to it
+      if (order.checkoutUrl) {
+        window.location.href = order.checkoutUrl;
+        return;
+      }
+
       // Navigate to success page, passing the order code via navigation state
       navigate("/success", {
         state: {
