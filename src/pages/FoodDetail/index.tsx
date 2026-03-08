@@ -2,9 +2,19 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast, ToastContainer } from "@/hooks/useToast";
 import productAPI from "@/services/product.service";
+import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
+import { FoodCard } from "@/components/shared/FoodCard";
+
+const getImageUrl = (image: any): string => {
+  if (!image) return "";
+  if (typeof image === "object" && image.secure_url) return image.secure_url;
+  if (typeof image === "string") return image;
+  return "";
+};
 import VariantModal from "@/components/model/VariantModel";
 
 const FoodDetailPage = () => {
@@ -12,29 +22,49 @@ const FoodDetailPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
   const { addItem } = useCart();
+  const { isAuthenticated } = useAuth();
   const { toasts, toast, dismiss } = useToast();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [suggestedFoods, setSuggestedFoods] = useState<Product[]>([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [openVariantModal, setOpenVariantModal] = useState(false);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductAndSuggestions = async () => {
       if (!id) return;
       try {
         setLoading(true);
         const res = await productAPI.getProductById(id);
         setProduct(res.data);
+        
+        // Fetch suggested foods
+        setLoadingSuggested(true);
+        if (isAuthenticated) {
+          const safeRes = await recommendationService.getSafeFoods();
+          const filtered = safeRes.data.data
+            .filter((p: Product) => p._id !== id)
+            .slice(0, 4);
+          setSuggestedFoods(filtered);
+        } else {
+          const allRes = await productAPI.getProducts({ limit: 4 });
+          const filtered = allRes.data
+            .filter((p: Product) => p._id !== id)
+            .slice(0, 4);
+          setSuggestedFoods(filtered);
+        }
       } catch (err) {
-        console.error("Failed to fetch product:", err);
+        console.error("Failed to fetch product or suggestions:", err);
         toast("Không tìm thấy sản phẩm", "error");
       } finally {
         setLoading(false);
+        setLoadingSuggested(false);
       }
     };
-    fetchProduct();
-  }, [id]);
+    fetchProductAndSuggestions();
+  }, [id, isAuthenticated]);
 
   const handleDecrease = () => {
     if (quantity > 1) {
@@ -58,15 +88,24 @@ const FoodDetailPage = () => {
     addItem({
       productId: product._id,
       name: product.name,
-      image:
-        typeof product.image === "object"
-          ? product.image.secure_url
-          : product.image,
-      price: Number(product?.price ?? 0),
+      image: getImageUrl(product.image),
+      price: product.price,
       quantity,
     });
 
     toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    addItem({
+      productId: product._id,
+      name: product.name,
+      image: getImageUrl(product.image),
+      price: product.price,
+      quantity,
+    });
+    navigate('/checkout');
   };
 
   return (
@@ -102,11 +141,7 @@ const FoodDetailPage = () => {
                   <div
                     className="absolute inset-0 bg-center bg-cover bg-no-repeat transition-transform duration-700 group-hover:scale-105"
                     style={{
-                      backgroundImage: `url(${
-                        typeof product.image === "object"
-                          ? product.image.secure_url
-                          : product.image
-                      })`,
+                      backgroundImage: `url(${getImageUrl(product.image)})`,
                     }}
                   ></div>
                   <div className="absolute top-4 left-4">
@@ -121,11 +156,7 @@ const FoodDetailPage = () => {
                 <div className="flex gap-4 mt-4 overflow-x-auto pb-2 scrollbar-hide">
                   <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-primary shrink-0 bg-gray-100">
                     <img
-                      src={
-                        typeof product.image === "object"
-                          ? product.image.secure_url
-                          : product.image
-                      }
+                      src={getImageUrl(product.image)}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -198,13 +229,19 @@ const FoodDetailPage = () => {
                 </div>
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-text-main dark:text-white mb-3">
+                  <h3 className="text-lg font-bold text-text-main dark:text-white mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">description</span>
                     {t("customer:foodDetail.description")}
                   </h3>
-                  <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {product.description ||
-                      "Đang cập nhật giới thiệu cho món ăn tuyệt vời này..."}
-                  </p>
+                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 relative">
+                    <span className="material-symbols-outlined absolute top-4 left-4 text-4xl text-gray-200 dark:text-gray-700/50 -z-0 select-none">
+                      format_quote
+                    </span>
+                    <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed tracking-wide relative z-10 pl-6 border-l-2 border-primary/20">
+                      {product.description ||
+                        "Đang cập nhật giới thiệu cho món ăn tuyệt vời này..."}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-100 dark:border-white/10 sticky bottom-0 bg-white/90 dark:bg-black/90 backdrop-blur-lg pb-4 z-20 -mx-4 px-4 md:mx-0 md:rounded-2xl">
@@ -230,18 +267,21 @@ const FoodDetailPage = () => {
                     </div>
                     <button
                       onClick={handleAddToCart}
-                      className="flex-1 h-14 bg-primary text-white font-bold text-lg rounded-xl shadow-lg flex items-center justify-center gap-3 hover:-translate-y-0.5 transition-all"
+                      className="flex-1 h-14 bg-white dark:bg-transparent border-2 border-primary text-primary font-bold text-lg rounded-xl flex items-center justify-center gap-2 hover:bg-primary/5 transition-all"
                     >
-                      <span className="material-symbols-outlined">
-                        shopping_bag
+                      <span className="material-symbols-outlined text-[20px]">
+                        add_shopping_cart
                       </span>
-                      <span>
-                        Thêm vào giỏ hàng •{" "}
-                        {(
-                          Number(product?.price ?? 0) * quantity
-                        ).toLocaleString("vi-VN")}
-                        đ
+                      <span>Thêm vào giỏ</span>
+                    </button>
+                    <button
+                      onClick={handleBuyNow}
+                      className="flex-1 h-14 bg-primary text-white font-bold text-lg rounded-xl shadow-lg flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        flash_on
                       </span>
+                      <span>Mua ngay</span>
                     </button>
                   </div>
                 </div>
@@ -284,6 +324,52 @@ const FoodDetailPage = () => {
                 </div>
               </div>
             </section>
+
+            {/* SUGGESTED / SAFE FOODS SECTION */}
+            {suggestedFoods.length > 0 && (
+              <section className="mt-16 pt-10 border-t border-gray-100 dark:border-white/10 max-w-7xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl">
+                    <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-3xl">
+                      {isAuthenticated ? "health_and_safety" : "restaurant"}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-text-main dark:text-white">
+                      {isAuthenticated ? "Món ăn an toàn cho bạn" : "Có thể bạn sẽ thích"}
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {isAuthenticated 
+                        ? "Được AI chọn lọc dựa trên hồ sơ sức khỏe và phân tích thành phần tỉ mỉ."
+                        : "Khám phá thêm các hương vị hấp dẫn khác từ thực đơn của chúng tôi."}
+                    </p>
+                  </div>
+                </div>
+
+                {loadingSuggested ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-pulse">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    {suggestedFoods.map((suggestedItem) => (
+                      <FoodCard 
+                        key={suggestedItem._id} 
+                        id={suggestedItem._id}
+                        name={suggestedItem.name}
+                        image={getImageUrl(suggestedItem.image)}
+                        price={suggestedItem.price}
+                        rating={suggestedItem.rating}
+                        restaurant={suggestedItem.restaurant}
+                        time={suggestedItem.time}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
           </div>
         )}
       </main>
