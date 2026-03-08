@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import orderService from "@/services/order.service";
 import type { Order } from "@/services/order.service";
+import { buildVariantChips } from "@/utils/cartVariants";
 
 type OrderStatusFilter =
   | "all"
@@ -39,7 +40,6 @@ const OrderHistoryTabContent = () => {
     fetchOrders();
   }, []);
 
-  // Toast notification
   const showToast = (type: Toast["type"], message: string) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, type, message }]);
@@ -48,7 +48,6 @@ const OrderHistoryTabContent = () => {
     }, 4000);
   };
 
-  // Filter orders
   const filteredOrders = orders.filter((order) => {
     if (statusFilter === "all") return true;
     return order.status === statusFilter;
@@ -59,7 +58,6 @@ const OrderHistoryTabContent = () => {
     try {
       await orderService.cancelOrder(orderId);
       showToast("success", "Đã hủy đơn hàng thành công");
-      // Refresh list
       const res = await orderService.getMyOrders();
       setOrders(res.data);
     } catch (err) {
@@ -105,7 +103,6 @@ const OrderHistoryTabContent = () => {
 
   return (
     <>
-      {/* Toast Notifications */}
       <div className="fixed top-24 right-6 z-50 flex flex-col gap-3">
         {toasts.map((toast) => (
           <div
@@ -145,7 +142,6 @@ const OrderHistoryTabContent = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white dark:bg-white/5 rounded-xl shadow-sm border border-gray-100 dark:border-white/10 p-2 mb-8 overflow-x-auto">
         <div className="flex gap-2 min-w-max">
           {(
@@ -180,7 +176,6 @@ const OrderHistoryTabContent = () => {
         </div>
       </div>
 
-      {/* Orders List */}
       <div className="space-y-6">
         {filteredOrders.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/10">
@@ -198,13 +193,15 @@ const OrderHistoryTabContent = () => {
           filteredOrders.map((order) => {
             const statusBadge = getStatusBadge(order.status);
             const firstItem = order.items[0];
+            const variantChips = buildVariantChips(
+              (firstItem as any)?.variations,
+            );
 
             return (
               <div
                 key={order._id}
                 className="flex flex-col md:flex-row items-stretch rounded-xl bg-white dark:bg-white/5 shadow-sm hover:shadow-md border border-gray-100 dark:border-white/10 transition-all overflow-hidden"
               >
-                {/* Order Image */}
                 <div
                   className="w-full md:w-48 bg-center bg-no-repeat aspect-video md:aspect-square bg-cover shrink-0 bg-gray-100"
                   style={{
@@ -212,16 +209,16 @@ const OrderHistoryTabContent = () => {
                   }}
                 />
 
-                {/* Order Details */}
                 <div className="flex flex-1 flex-col justify-between p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0">
                       <h3 className="text-xl font-bold text-text-main dark:text-white mb-1">
                         {(firstItem as any).product_id?.name || "Sản phẩm"}
                         {order.items.length > 1 &&
                           ` + ${order.items.length - 1} món khác`}
                       </h3>
-                      <div className="flex items-center gap-4 text-[#9a734c] text-sm mb-3">
+
+                      <div className="flex items-center gap-4 text-[#9a734c] text-sm mb-3 flex-wrap">
                         <span className="font-mono font-bold bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-primary">
                           #{order.code}
                         </span>
@@ -231,9 +228,39 @@ const OrderHistoryTabContent = () => {
                           )}
                         </span>
                       </div>
+
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className="text-xs font-bold text-gray-500 bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-md">
+                          Số lượng: {firstItem.quantity}
+                        </span>
+                      </div>
+
+                      {variantChips.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {variantChips.map((c) => (
+                            <span
+                              key={c.key}
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-1 bg-gray-100 dark:bg-white/10 text-text-main dark:text-white text-xs font-semibold"
+                              title={
+                                c.extra > 0
+                                  ? `+${c.extra.toLocaleString("vi-VN")}đ`
+                                  : undefined
+                              }
+                            >
+                              {c.text}
+                              {c.extra > 0 && (
+                                <span className="text-[#9a734c] font-bold">
+                                  +{c.extra.toLocaleString("vi-VN")}đx
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusBadge.className}`}
+                      className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold uppercase ${statusBadge.className}`}
                     >
                       {statusBadge.label}
                     </span>
@@ -241,6 +268,10 @@ const OrderHistoryTabContent = () => {
 
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 flex flex-wrap items-center justify-between gap-4">
                     <div>
+                      <p className="text-sm text-gray-500 mb-1">
+                        Món đầu tiên:{" "}
+                        {firstItem.sub_total.toLocaleString("vi-VN")}đ
+                      </p>
                       <p className="text-primary text-xl font-black">
                         {order.total_price.toLocaleString("vi-VN")}đ
                       </p>

@@ -16,6 +16,8 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[];
+  orderNote: string;
+
   // Computed
   totalItems: number;
   totalPrice: number;
@@ -23,6 +25,9 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
+  setOrderNote: (note: string) => void;
+  clearOrderNote: () => void;
+
   clearCart: () => void;
   hydrate: () => void;
 }
@@ -30,6 +35,7 @@ interface CartState {
 // ---- Storage ----
 
 const CART_KEY = "foodie_cart";
+const NOTE_KEY = "foodie_cart_note";
 
 const saveCart = (items: CartItem[]) => {
   localStorage.setItem(CART_KEY, JSON.stringify(items));
@@ -43,6 +49,14 @@ const loadCart = (): CartItem[] => {
   } catch {
     return [];
   }
+};
+
+const saveNote = (note: string) => {
+  localStorage.setItem(NOTE_KEY, note);
+};
+
+const loadNote = () => {
+  return localStorage.getItem(NOTE_KEY) ?? "";
 };
 
 // ---- Helpers ----
@@ -83,11 +97,12 @@ export const itemKey = (i: CartItem) =>
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  orderNote: "",
   totalItems: 0,
   totalPrice: 0,
 
   addItem: (item) => {
-    const { items } = get();
+    const items = get().items;
     const incomingKey = itemKey(item);
     const existingIndex = items.findIndex((i) => itemKey(i) === incomingKey);
 
@@ -123,15 +138,30 @@ export const useCartStore = create<CartState>((set, get) => ({
   );
   saveCart(newItems);
   set({ items: newItems, ...computeTotals(newItems) });
- },
+  },
+
+  // NEW
+  setOrderNote: (note) => {
+    const normalized = (note ?? "").slice(0, 500);
+    saveNote(normalized);
+    set({ orderNote: normalized });
+  },
+
+  // NEW
+  clearOrderNote: () => {
+    localStorage.removeItem(NOTE_KEY);
+    set({ orderNote: "" });
+  },
 
   clearCart: () => {
     localStorage.removeItem(CART_KEY);
-    set({ items: [], totalItems: 0, totalPrice: 0 });
+    localStorage.removeItem(NOTE_KEY);
+    set({ items: [], orderNote: "", totalItems: 0, totalPrice: 0 });
   },
 
   hydrate: () => {
     const items = loadCart();
-    set({ items, ...computeTotals(items) });
+    const orderNote = loadNote();
+    set({ items, orderNote, ...computeTotals(items) });
   },
 }));
