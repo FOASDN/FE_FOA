@@ -4,47 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/authStore";
 import type { AuthAddress } from "@/store/authStore";
 import { userService } from "@/services/profile.service";
-
-// ────────────────────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────────────────────
-
-type AddressLabel = "home" | "work" | "other";
-
-interface AddressForm {
-  label: AddressLabel;
-  receiver_name: string;
-  phone: string;
-  detail: string;
-  ward: string;
-  district: string;
-  city: string;
-  isDefault: boolean;
-}
-
-const EMPTY_FORM: AddressForm = {
-  label: "home",
-  receiver_name: "",
-  phone: "",
-  detail: "",
-  ward: "",
-  district: "",
-  city: "",
-  isDefault: false,
-};
-
-const LABEL_OPTIONS: { value: AddressLabel; text: string; icon: string }[] = [
-  { value: "home", text: "Nhà", icon: "home" },
-  { value: "work", text: "Cơ quan", icon: "work" },
-  { value: "other", text: "Khác", icon: "fitness_center" },
-];
-
-const LABEL_ICON_BG: Record<AddressLabel, string> = {
-  home: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
-  work: "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400",
-  other:
-    "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400",
-};
+import { AddressModal, LABEL_OPTIONS, LABEL_ICON_BG } from "@/components/shared/AddressModal";
+import type { AddressLabel } from "@/components/shared/AddressModal";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Sidebar
@@ -119,7 +80,6 @@ const AddressesPage = () => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null); // null = add mode
-  const [form, setForm] = useState<AddressForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,24 +107,12 @@ const AddressesPage = () => {
 
   // ── Modal helpers ─────────────────────────────────────────────────────────
   const openAddModal = () => {
-    setForm({ ...EMPTY_FORM, isDefault: addresses.length === 0 });
     setEditIndex(null);
     setError(null);
     setModalOpen(true);
   };
 
   const openEditModal = (idx: number) => {
-    const a = addresses[idx];
-    setForm({
-      label: (a.label as AddressLabel) ?? "home",
-      receiver_name: a.receiver_name,
-      phone: a.phone,
-      detail: a.detail,
-      ward: a.ward,
-      district: a.district,
-      city: a.city,
-      isDefault: a.isDefault,
-    });
     setEditIndex(idx);
     setError(null);
     setModalOpen(true);
@@ -176,44 +124,7 @@ const AddressesPage = () => {
     setError(null);
   };
 
-  const handleSave = async () => {
-    // Basic validation
-    if (!form.receiver_name.trim()) {
-      setError("Vui lòng nhập tên người nhận");
-      return;
-    }
-    if (!form.phone.trim()) {
-      setError("Vui lòng nhập số điện thoại");
-      return;
-    }
-    if (!form.detail.trim()) {
-      setError("Vui lòng nhập địa chỉ chi tiết");
-      return;
-    }
-    if (!form.ward.trim()) {
-      setError("Vui lòng nhập phường/xã");
-      return;
-    }
-    if (!form.district.trim()) {
-      setError("Vui lòng nhập quận/huyện");
-      return;
-    }
-    if (!form.city.trim()) {
-      setError("Vui lòng nhập thành phố");
-      return;
-    }
-
-    const newAddr: AuthAddress = {
-      label: form.label,
-      receiver_name: form.receiver_name.trim(),
-      phone: form.phone.trim(),
-      detail: form.detail.trim(),
-      ward: form.ward.trim(),
-      district: form.district.trim(),
-      city: form.city.trim(),
-      isDefault: form.isDefault,
-    };
-
+  const handleSave = async (newAddr: AuthAddress) => {
     let updated: AuthAddress[];
 
     if (editIndex !== null) {
@@ -252,13 +163,6 @@ const AddressesPage = () => {
   const handleSetDefault = async (idx: number) => {
     const updated = addresses.map((a, i) => ({ ...a, isDefault: i === idx }));
     await persistAddresses(updated);
-  };
-
-  const setField = <K extends keyof AddressForm>(
-    key: K,
-    val: AddressForm[K],
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
   };
 
   // ────────────────────────────────────────────────────────────────────────
@@ -391,195 +295,13 @@ const AddressesPage = () => {
       </div>
 
       {/* ── Add / Edit Modal ── */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={closeModal}
-          />
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div className="relative transform overflow-hidden rounded-2xl bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-border animate-in zoom-in-95 fade-in duration-200">
-              <div className="px-6 py-4 border-b border-border flex justify-between items-center">
-                <h3 className="text-lg font-bold text-foreground">
-                  {editIndex !== null
-                    ? "Chỉnh sửa địa chỉ"
-                    : t("customer:addresses.addNewAddress")}
-                </h3>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                {/* Error trong modal */}
-                {error && (
-                  <p className="text-red-500 text-sm flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">
-                      error
-                    </span>
-                    {error}
-                  </p>
-                )}
-
-                {/* Label type */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t("customer:addresses.addressType")}
-                  </label>
-                  <div className="flex gap-2">
-                    {LABEL_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setField("label", opt.value)}
-                        className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                          form.label === opt.value
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-input text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">
-                          {opt.icon}
-                        </span>
-                        {opt.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Receiver name */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      Tên người nhận *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.receiver_name}
-                      onChange={(e) =>
-                        setField("receiver_name", e.target.value)
-                      }
-                      placeholder="Nguyễn Văn A"
-                      className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      Số điện thoại *
-                    </label>
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setField("phone", e.target.value)}
-                      placeholder="0901234567"
-                      className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                {/* Detail */}
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">
-                    Địa chỉ chi tiết (số nhà, tên đường) *
-                  </label>
-                  <input
-                    type="text"
-                    value={form.detail}
-                    onChange={(e) => setField("detail", e.target.value)}
-                    placeholder="123 Đường Lê Lợi"
-                    className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                {/* Ward / District / City */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      Phường/Xã *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.ward}
-                      onChange={(e) => setField("ward", e.target.value)}
-                      placeholder="Phường 1"
-                      className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      Quận/Huyện *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.district}
-                      onChange={(e) => setField("district", e.target.value)}
-                      placeholder="Quận 1"
-                      className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      Thành phố *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => setField("city", e.target.value)}
-                      placeholder="TP.HCM"
-                      className="block w-full rounded-lg border border-input py-2 px-3 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-
-                {/* Set default */}
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={form.isDefault}
-                    onChange={(e) => setField("isDefault", e.target.checked)}
-                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {t("customer:addresses.setDefault")}
-                  </span>
-                </label>
-              </div>
-
-              <div className="bg-muted/50 px-6 py-4 flex flex-row-reverse gap-3">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {saving && (
-                    <span className="material-symbols-outlined animate-spin text-sm">
-                      progress_activity
-                    </span>
-                  )}
-                  {t("customer:addresses.saveAddress")}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={saving}
-                  className="inline-flex justify-center rounded-lg bg-background px-5 py-2.5 text-sm font-semibold text-foreground border border-border hover:bg-accent transition-colors disabled:opacity-60"
-                >
-                  {t("common:actions.cancel")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddressModal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        onSave={handleSave}
+        initialData={editIndex !== null ? addresses[editIndex] : null}
+        isFirstAddress={addresses.length === 0}
+      />
     </div>
   );
 };

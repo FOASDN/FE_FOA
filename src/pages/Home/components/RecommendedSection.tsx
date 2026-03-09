@@ -65,7 +65,7 @@ const RecommendedSection = () => {
             const aiData = res.data.data;
             if (!cancelled && aiData && aiData.length > 0) {
               setItems(
-                aiData.slice(0, 3).map((d) => ({ type: "ai", data: d })),
+                aiData.map((d: any) => ({ type: "ai", data: d })),
               );
               setIsAIMode(true);
               return;
@@ -126,9 +126,9 @@ const RecommendedSection = () => {
           <p className="text-sm text-slate-500 font-medium ml-8">
             {isAIMode
               ? t(
-                  "customer:home.aiSuggestionSub",
-                  "Dựa trên sở thích và lịch sử đặt hàng của bạn",
-                )
+                "customer:home.aiSuggestionSub",
+                "Dựa trên sở thích và lịch sử đặt hàng của bạn",
+              )
               : "Những món được đánh giá cao nhất hôm nay"}
           </p>
         </div>

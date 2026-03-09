@@ -18,6 +18,7 @@ export interface Product {
   health_tags: string[];
   isAvailable: boolean;
   isFavorite?: boolean;
+  aiReason?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -11,6 +11,7 @@ import type {
 import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
+import { calculateShippingFee } from "@/utils/shipping";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -140,8 +141,21 @@ export const useCheckout = () => {
   // ── Pricing ───────────────────────────────────────────────────────────────
   const subtotal = totalPrice;
   const discount = voucherState.discountAmount;
-  // Delivery fee: free if subtotal > 300k
-  const deliveryFee = subtotal > 300_000 ? 0 : 50_000;
+
+  // Dynamic shipping fee based on selected address zone
+  const shippingResult = useMemo(() => {
+    if (!effectiveAddress) {
+      return { fee: 0, blocked: false };
+    }
+    return calculateShippingFee(
+      effectiveAddress.district ?? "",
+      effectiveAddress.city ?? "",
+      subtotal
+    );
+  }, [effectiveAddress, subtotal]);
+
+  const deliveryFee = shippingResult.fee;
+  const isDeliverable = !shippingResult.blocked;
   const total = Math.max(0, subtotal - discount + deliveryFee);
 
   // ── Submission ────────────────────────────────────────────────────────────
@@ -238,6 +252,8 @@ export const useCheckout = () => {
     discount,
     deliveryFee,
     total,
+    isDeliverable,
+    shippingResult,
     // Submit
     isSubmitting,
     handlePlaceOrder,
