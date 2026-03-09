@@ -26,10 +26,10 @@ export interface AuthUser {
   verified_at: string | null;
   collected_points: number;
   addresses: AuthAddress[]; // Delivery addresses — aligned with BE IUser
-  healthProfile?: {
+  preferences?: {
+    dietary: string[];
     allergies: string[];
-    conditions: string[];
-    dietaryGoals: string[];
+    health_goals: string[];
   };
 }
 
