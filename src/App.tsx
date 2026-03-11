@@ -92,7 +92,7 @@ function App() {
             <Route path="/ai-suggestions" element={<SafeAlternativesPage />} />
             <Route path="/wallet" element={<VoucherWalletPage />} />
             <Route path="/membership" element={<MembershipBenefitsPage />} />
-            <Route path="/rating" element={<OrderRatingPage />} />
+            <Route path="/rating/:orderId" element={<OrderRatingPage />} />
             <Route path="/success" element={<OrderSuccessPage />} />
             <Route path="/order-detail/:id" element={<OrderDetailPage />} />
             <Route path="/track-order" element={<TrackOrderPage />} />

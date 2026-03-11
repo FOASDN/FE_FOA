@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./useCart";
 import { useAuth } from "./useAuth";
@@ -78,6 +78,23 @@ export const useCheckout = () => {
     error: null,
   });
 
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // ─── Fetch Active Vouchers ───
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const res = await voucherService.getVouchers({ is_active: true });
+        if (res.success && res.data) {
+          setVouchers(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch vouchers", error);
+      }
+    };
+    fetchVouchers();
+  }, []);
+
   const setVoucherCode = useCallback((code: string) => {
     setVoucherState((prev) => ({
       ...prev,
@@ -89,11 +106,11 @@ export const useCheckout = () => {
     }));
   }, []);
 
-  const applyVoucher = useCallback(async () => {
-    const code = voucherState.code.trim();
+  const applyVoucher = useCallback(async (manualCode?: string) => {
+    const code = (manualCode || voucherState.code).trim();
     if (!code) return;
 
-    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null }));
+    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null, code: code.toUpperCase() }));
 
     try {
       const res = await voucherService.validateVoucher({
@@ -108,6 +125,7 @@ export const useCheckout = () => {
           appliedVoucher: res.data!.voucher,
           discountAmount: res.data!.discountAmount,
           error: null,
+          code: code.toUpperCase(),
         }));
         toast(
           `Áp dụng voucher thành công! Giảm ${res.data.discountAmount.toLocaleString("vi-VN")}đ`,
@@ -253,6 +271,7 @@ export const useCheckout = () => {
     setPaymentMethod,
     // Voucher
     voucherState,
+    vouchers,
     setVoucherCode,
     applyVoucher,
     removeVoucher,
