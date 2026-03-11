@@ -128,10 +128,6 @@ const NAV_ITEMS = [
     label: "Tổng quan",
     href: "/admin/overview",
     icon: "dashboard",
-    subItems: [
-      { label: "Dashboard", href: "/admin" },
-      { label: "Thống kê", href: "/admin/analytics" },
-    ],
   },
   {
     label: "Vận hành",

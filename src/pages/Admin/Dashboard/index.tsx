@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   LineChart,
@@ -8,6 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import OrderService, { type Order } from "@/services/order.service";
+import { apiClient } from "@/lib/api-client";
+
+// ---- Types ----
+interface CustomerAPI {
+  _id: string;
+  createdAt: string;
+}
 
 const REVENUE_DATA = [
   { day: "T2", revenue: 45200000, orders: 65 },
@@ -19,22 +28,76 @@ const REVENUE_DATA = [
   { day: "CN", revenue: 38600000, orders: 30 },
 ];
 
-
-
-const RECENT_ORDERS = [
-  { code: "#ORD-3942", customer: "Nguyễn Văn A", time: "2 phút trước", items: 3, total: "142.500₫", status: "COMPLETED", statusClass: "bg-green-100 text-green-700" },
-  { code: "#ORD-3941", customer: "Trần Thị B", time: "15 phút trước", items: 1, total: "58.200₫", status: "ĐANG CHẾ BIẾN", statusClass: "bg-[#ee8c2b]/20 text-[#ee8c2b]" },
-  { code: "#ORD-3940", customer: "Lê Văn C", time: "24 phút trước", items: 5, total: "396.000₫", status: "CHỜ XỬ LÝ", statusClass: "bg-gray-100 text-gray-500" },
-  { code: "#ORD-3939", customer: "Phạm Thị D", time: "1 giờ trước", items: 2, total: "99.680₫", status: "COMPLETED", statusClass: "bg-green-100 text-green-700" },
-];
-
-const POPULAR_ITEMS = [
-  { name: "Burger Nấm Truffle", orders: 142, price: "592.000₫", trend: "+8%" },
-  { name: "Salad Caesar", orders: 98, price: "384.000₫", trend: "+3%" },
-  { name: "Pizza Margherita", orders: 85, price: "672.000₫", trend: "-2%" },
-];
-
 const AdminDashboard = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<CustomerAPI[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [ordersRes, customersRes] = await Promise.all([
+          OrderService.getAllOrders({ limit: 1000 }), // Get a large enough sample for basic stats
+          apiClient.get("/admin/customers", { params: { limit: 1000 } }),
+        ]);
+
+        if (ordersRes.success) {
+          setOrders(ordersRes.data);
+        }
+
+        const customerData = customersRes.data;
+        let rawCustomers: CustomerAPI[] = [];
+        if (Array.isArray(customerData.data)) {
+          rawCustomers = customerData.data;
+        } else if (customerData.data?.customers) {
+          rawCustomers = customerData.data.customers;
+        } else if (customerData.customers) {
+          rawCustomers = customerData.customers;
+        }
+        setCustomers(rawCustomers);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Calculate Metrics
+  const totalRevenue = orders
+    .filter((o) => o.status === "completed")
+    .reduce((sum, o) => sum + o.total_price, 0);
+
+  const totalOrdersCount = orders.length;
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const newCustomersCount = customers.filter((c) => {
+    const d = new Date(c.createdAt);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).length;
+
+  const recentOrdersForList = orders.slice(0, 5).map(o => ({
+    code: o.code,
+    customer: o.user_id?.username || "Ẩn danh",
+    time: new Date(o.createdAt).toLocaleDateString("vi-VN"),
+    items: o.items.length,
+    total: `${o.total_price.toLocaleString("vi-VN")}₫`,
+    status: o.status.toUpperCase(),
+    statusClass: o.status === 'completed' ? "bg-green-100 text-green-700" : "bg-[#ee8c2b]/20 text-[#ee8c2b]"
+  }));
+
+  const POPULAR_ITEMS = [
+    { name: "Burger Nấm Truffle", orders: 142, price: "592.000₫", trend: "+8%" },
+    { name: "Salad Caesar", orders: 98, price: "384.000₫", trend: "+3%" },
+    { name: "Pizza Margherita", orders: 85, price: "672.000₫", trend: "-2%" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto w-full">
       {/* Page Heading */}
@@ -78,7 +141,9 @@ const AdminDashboard = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-[#9a734c]">Doanh thu tổng</p>
-            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">398.400.000₫</h3>
+            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">
+              {loading ? "..." : `${totalRevenue.toLocaleString("vi-VN")}₫`}
+            </h3>
           </div>
           <div className="h-12 w-full flex items-end gap-1">
             {[40, 60, 55, 70, 85, 75, 100].map((h, i) => (
@@ -101,7 +166,9 @@ const AdminDashboard = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-[#9a734c]">Tổng đơn hàng</p>
-            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">482</h3>
+            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">
+              {loading ? "..." : totalOrdersCount}
+            </h3>
           </div>
           <div className="h-12 w-full flex items-end gap-1">
             {[50, 45, 65, 80, 60, 90, 75].map((h, i) => (
@@ -124,7 +191,9 @@ const AdminDashboard = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-[#9a734c]">Khách hàng mới</p>
-            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">124</h3>
+            <h3 className="text-3xl font-bold mt-1 text-[#1b140d]">
+              {loading ? "..." : newCustomersCount}
+            </h3>
           </div>
           <div className="h-12 w-full flex items-end gap-1">
             {[30, 40, 60, 55, 50, 45, 50].map((h, i) => (
@@ -199,7 +268,7 @@ const AdminDashboard = () => {
           </div>
           <div className="flex-1 overflow-y-auto max-h-[400px]">
             <div className="divide-y divide-[#e7dbcf]">
-              {RECENT_ORDERS.map((order) => (
+              {recentOrdersForList.map((order) => (
                 <div
                   key={order.code}
                   className="p-4 hover:bg-[#f3ede7] transition-colors cursor-pointer"
