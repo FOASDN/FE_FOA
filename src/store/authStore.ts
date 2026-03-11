@@ -87,6 +87,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (user) => {
     setStoredUser(user);
+    // Reset location alert state so it shows after login
+    localStorage.removeItem("location_alert_dismissed");
     set({
       user,
       isAuthenticated: true,
