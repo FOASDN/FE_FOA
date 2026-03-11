@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuthStore } from "@/store/authStore";
+// Removed useAuthStore
 import { useToast } from "@/hooks/useToast";
 import { userService } from "@/services/profile.service";
 import {
@@ -22,7 +22,6 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 const ProfileSettingsPage = () => {
   const { t } = useTranslation(["customer", "common"]);
-  const { user } = useAuthStore();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("profile");

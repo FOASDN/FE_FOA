@@ -98,18 +98,10 @@ const INVENTORY_MOCK: Ingredient[] = [
     },
 ];
 
-const CATEGORY_FILTER = [
-    { id: "all", label: "Tất cả" },
-    { id: "cao-cap", label: "Cao cấp" },
-    { id: "thit", label: "Thịt" },
-    { id: "sua", label: "Sữa" },
-    { id: "rau-cu", label: "Rau củ" },
-    { id: "gia-vi", label: "Gia vị" },
-];
+// CATEGORY_FILTER removed as it's unused
 
 const AdminInventory = () => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeCategory, setActiveCategory] = useState("all");
     const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
     // Calculate stats

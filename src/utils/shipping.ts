@@ -81,19 +81,47 @@ export interface ShippingResult {
   zone?: "inner" | "outer" | "free";
 }
 
+export interface ShippingConfig {
+  /** Base delivery fee in VND (applied to inner zone) */
+  baseDeliveryFee: number;
+  /** Extra fee per km for outer zones (in VND) */
+  feePerKm: number;
+  /** Whether free delivery is enabled */
+  freeDeliveryEnabled: boolean;
+  /** Subtotal threshold for free delivery (VND) */
+  freeDeliveryThreshold: number;
+}
+
+// Default values used as fallback when settings haven't loaded yet
+export const DEFAULT_SHIPPING_CONFIG: ShippingConfig = {
+  baseDeliveryFee: 15_000,
+  feePerKm: 5_000,
+  freeDeliveryEnabled: true,
+  freeDeliveryThreshold: 300_000,
+};
+
 /**
- * Calculate shipping fee based on address.
+ * Calculate shipping fee based on address and dynamic config from Store Settings.
  * @param district - value from `address.district`
  * @param city     - value from `address.city`
  * @param subtotal - cart subtotal in VND
+ * @param config   - fee configuration from Store Settings API (optional, falls back to defaults)
  */
 export function calculateShippingFee(
   district: string,
   city: string,
-  subtotal: number
+  subtotal: number,
+  config: ShippingConfig = DEFAULT_SHIPPING_CONFIG
 ): ShippingResult {
   const normalCity = city.trim();
   const normalDistrict = district.trim();
+
+  const {
+    baseDeliveryFee,
+    feePerKm,
+    freeDeliveryEnabled,
+    freeDeliveryThreshold,
+  } = config;
 
   // 1. Check city
   if (normalCity.toLowerCase() !== DELIVERABLE_CITY.toLowerCase()) {
@@ -120,14 +148,15 @@ export function calculateShippingFee(
     };
   }
 
-  // 3. Free shipping if subtotal >= 300k
-  if (subtotal >= 300_000) {
+  // 3. Free shipping check
+  if (freeDeliveryEnabled && subtotal >= freeDeliveryThreshold) {
     return { fee: 0, blocked: false, zone: "free" };
   }
 
-  // 4. Tiered fee
+  // 4. Tiered fee: inner zone = baseDeliveryFee, outer zone = baseDeliveryFee + feePerKm * 5km
   if (isInner) {
-    return { fee: 15_000, blocked: false, zone: "inner" };
+    return { fee: baseDeliveryFee, blocked: false, zone: "inner" };
   }
-  return { fee: 25_000, blocked: false, zone: "outer" };
+  // Outer zone gets an extra distance surcharge
+  return { fee: baseDeliveryFee + feePerKm * 5, blocked: false, zone: "outer" };
 }

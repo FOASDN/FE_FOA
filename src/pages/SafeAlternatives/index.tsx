@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+// Removed useTranslation
 import { Shield, ShieldCheck, ShieldAlert, Star, Plus, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
@@ -43,7 +43,6 @@ const SafeFoodSkeleton = () => (
 // ── Main Component ───────────────────────────────────────
 const SafeAlternativesPage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation(["customer", "common"]);
 
   const [data, setData] = useState<SafeFoodsData | null>(null);
   const [loading, setLoading] = useState(true);
