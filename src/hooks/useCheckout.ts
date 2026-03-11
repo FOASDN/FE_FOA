@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./useCart";
 import { useAuth } from "./useAuth";
@@ -11,7 +11,8 @@ import type {
 import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
-import { calculateShippingFee } from "@/utils/shipping";
+import { calculateShippingFee, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/utils/shipping";
+import { getStoreSettings } from "@/services/settings.service";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -45,6 +46,22 @@ export const useCheckout = () => {
   const { items: cartItems, totalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // ── Store Settings (for dynamic delivery fees) ─────────────────────────────
+  const [shippingConfig, setShippingConfig] = useState<ShippingConfig>(DEFAULT_SHIPPING_CONFIG);
+
+  useEffect(() => {
+    getStoreSettings().then((res) => {
+      const s = res.data;
+      if (!s) return;
+      setShippingConfig({
+        baseDeliveryFee: parseFloat(s.baseDeliveryFee) || DEFAULT_SHIPPING_CONFIG.baseDeliveryFee,
+        feePerKm: parseFloat(s.feePerKm) || DEFAULT_SHIPPING_CONFIG.feePerKm,
+        freeDeliveryEnabled: s.freeDeliveryEnabled,
+        freeDeliveryThreshold: parseFloat(s.freeDeliveryThreshold) || DEFAULT_SHIPPING_CONFIG.freeDeliveryThreshold,
+      });
+    }).catch(() => { /* use defaults on error */ });
+  }, []);
 
   // ── Address ───────────────────────────────────────────────────────────────
   const addresses = useMemo(
@@ -150,9 +167,10 @@ export const useCheckout = () => {
     return calculateShippingFee(
       effectiveAddress.district ?? "",
       effectiveAddress.city ?? "",
-      subtotal
+      subtotal,
+      shippingConfig
     );
-  }, [effectiveAddress, subtotal]);
+  }, [effectiveAddress, subtotal, shippingConfig]);
 
   const deliveryFee = shippingResult.fee;
   const isDeliverable = !shippingResult.blocked;

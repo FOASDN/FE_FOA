@@ -37,6 +37,8 @@ interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
   role: UserRole | null;
+  /** True once auth state has been hydrated from localStorage */
+  hydrated: boolean;
 
   // Actions
   login: (user: AuthUser) => void;
@@ -74,10 +76,14 @@ function clearStoredUser() {
  * Tokens are managed by httpOnly cookies (set by BE).
  * We only store user info in localStorage for quick hydration.
  */
+// Hydrate synchronously on module load so guards never see stale state
+const _initialUser = getStoredUser();
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  role: null,
+  user: _initialUser,
+  isAuthenticated: !!_initialUser,
+  role: _initialUser?.role ?? null,
+  hydrated: true, // Already hydrated synchronously above
 
   login: (user) => {
     setStoredUser(user);
