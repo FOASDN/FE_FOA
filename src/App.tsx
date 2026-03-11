@@ -41,7 +41,7 @@ import AdminOrders from "./pages/Admin/Orders";
 import AdminVouchers from "./pages/Admin/Vouchers";
 import AdminSettings from "./pages/Admin/Settings";
 import AdminCustomers from "./pages/Admin/Customers";
-import AdminAnalytics from "./pages/Admin/Analytics";
+// import AdminAnalytics from "./pages/Admin/Analytics";
 import AdminInventory from "./pages/Admin/Inventory";
 import AdminStaff from "./pages/Admin/Staff";
 import AdminReviews from "./pages/Admin/Reviews";
@@ -121,11 +121,11 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
+              <Route index element={<Navigate to="/admin/overview" replace />} />
+              <Route path="overview" element={<AdminDashboard />} />
               <Route path="menu" element={<AdminMenuManagement />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="inventory" element={<AdminInventory />} />
               <Route path="staff" element={<AdminStaff />} />
               <Route path="reviews" element={<AdminReviews />} />
