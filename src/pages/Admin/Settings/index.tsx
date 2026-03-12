@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getStoreSettings, updateStoreSettings } from "@/services/settings.service";
+import { useToast, ToastContainer } from "@/hooks/useToast";
 
 const WEEKDAYS = [
   { id: "mon", label: "Thứ Hai", open: true, start: "08:00", end: "22:00" },
@@ -24,6 +26,58 @@ const AdminSettings = () => {
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState("150000");
   const [maxDistance, setMaxDistance] = useState(15);
   const [hours, setHours] = useState(WEEKDAYS);
+  const { toasts, toast, dismiss } = useToast();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getStoreSettings().then(res => {
+      const data = res.data;
+      if (data) {
+        setStoreName(data.storeName);
+        setSupportEmail(data.supportEmail);
+        setAddress(data.address);
+        setAiRecommendations(data.aiRecommendations);
+        setAutoAssignDrivers(data.autoAssignDrivers);
+        setAcceptCod(data.acceptCod);
+        setSystemNotifications(data.systemNotifications);
+        setBaseDeliveryFee(data.baseDeliveryFee);
+        setFeePerKm(data.feePerKm);
+        setFreeDeliveryEnabled(data.freeDeliveryEnabled);
+        setFreeDeliveryThreshold(data.freeDeliveryThreshold);
+        setMaxDistance(data.maxDistance);
+        if (data.hours && data.hours.length > 0) setHours(data.hours);
+      }
+    }).catch(err => {
+      console.error(err);
+      toast("Lỗi tải cấu hình", "error");
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await updateStoreSettings({
+        storeName,
+        supportEmail,
+        address,
+        aiRecommendations,
+        autoAssignDrivers,
+        acceptCod,
+        systemNotifications,
+        baseDeliveryFee,
+        feePerKm,
+        freeDeliveryEnabled,
+        freeDeliveryThreshold,
+        maxDistance,
+        hours
+      });
+      toast("Đã lưu cấu hình cửa hàng", "success");
+    } catch (error) {
+      toast("Lỗi lưu cấu hình", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleDay = (id: string) => {
     setHours((prev) =>
@@ -431,14 +485,19 @@ const AdminSettings = () => {
             </button>
             <button
               type="button"
+              onClick={handleSave}
+              disabled={loading}
               className="px-8 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-sm">save</span>
+              <span className="material-symbols-outlined text-sm">
+                {loading ? "hourglass_empty" : "save"}
+              </span>
               Lưu tất cả
             </button>
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 };

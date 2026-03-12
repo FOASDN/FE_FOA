@@ -1,196 +1,387 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useParams, useNavigate } from "react-router-dom";
+import orderService, { type Order } from "@/services/order.service";
+import reviewService from "@/services/review.service";
+import { apiClient } from "@/lib/api-client";
+import { Loader2, Camera, X, CheckCircle2 } from "lucide-react";
 
-const EXPERIENCE_OPTIONS = [
-    { id: "match_notes", label: "Món đúng với ghi chú / yêu cầu của tôi", icon: "check_circle" },
-    { id: "on_time", label: "Giao đúng giờ", icon: "schedule" },
-    { id: "packaging", label: "Đóng gói cẩn thận, món còn nóng", icon: "inventory_2" },
-    { id: "staff", label: "Nhân viên thân thiện, chuyên nghiệp", icon: "support_agent" },
-] as const;
+interface ProductImage {
+  id: string;
+  url: string;
+}
 
-const HEALTH_FIT_OPTIONS = [
-    { value: "very_good", label: "Rất phù hợp", desc: "Món đúng với dị ứng, ăn kiêng, ghi chú của tôi" },
-    { value: "good", label: "Phù hợp", desc: "Hầu hết đúng yêu cầu" },
-    { value: "partial", label: "Không hoàn toàn", desc: "Một vài điểm chưa đúng" },
-    { value: "not_good", label: "Không phù hợp", desc: "Không đúng với yêu cầu sức khỏe / ghi chú" },
-] as const;
+interface ProductRating {
+  product_id: string;
+  name: string;
+  image: string;
+  stars: number;
+  comment: string;
+  images: ProductImage[];
+  isUploading: boolean;
+  isSubmitted: boolean;
+  isSubmitting: boolean;
+}
 
 const OrderRatingPage = () => {
-    const [stars, setStars] = useState(0);
-    const { t } = useTranslation(['customer', 'common']);
-    const [experience, setExperience] = useState<string[]>([]);
-    const [healthFit, setHealthFit] = useState<string>("");
-    const [comment, setComment] = useState("");
-    const [improvement, setImprovement] = useState("");
+  const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
+  useTranslation(['customer', 'common']);
+  
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [productRatings, setProductRatings] = useState<ProductRating[]>([]);
+  const [applyToAll, setApplyToAll] = useState(false);
+  
+  // For "Rate all" state
+  const [globalStars, setGlobalStars] = useState(5);
+  const [globalComment, setGlobalComment] = useState("");
+  const [globalSubmitting, setGlobalSubmitting] = useState(false);
 
-    const toggleExperience = (id: string) => {
-        setExperience((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-        );
+  useEffect(() => {
+    const fetchOrderAndReviews = async () => {
+      if (!orderId) return;
+      try {
+        setLoading(true);
+        const [orderRes, reviewRes] = await Promise.all([
+          orderService.getOrderById(orderId),
+          reviewService.getOrderReviews(orderId)
+        ]);
+
+        const orderData = orderRes.data;
+        const existingReviews = reviewRes.data || [];
+        setOrder(orderData);
+        
+        // Initialize product ratings
+        const initialRatings: ProductRating[] = orderData.items.map(item => {
+          const existing = existingReviews.find((r: any) => r.product_id === item.product_id._id);
+          
+          return {
+            product_id: item.product_id._id,
+            name: item.product_id.name,
+            image: typeof item.product_id.image === 'string' 
+              ? item.product_id.image 
+              : (item.product_id.image as any)?.secure_url || "",
+            stars: existing ? existing.rating : 5,
+            comment: existing ? existing.comment : "",
+            images: existing ? existing.images.map((img: any) => ({ id: img._id, url: img.secure_url })) : [],
+            isUploading: false,
+            isSubmitted: !!existing,
+            isSubmitting: false
+          };
+        });
+        setProductRatings(initialRatings);
+      } catch (err) {
+        console.error("Failed to fetch order or reviews:", err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchOrderAndReviews();
+  }, [orderId]);
 
-    const handleSubmit = () => {
-        console.log({ stars, experience, healthFit, comment, improvement });
-        // TODO: gửi API
-    };
+  const updateRating = (index: number, updates: Partial<ProductRating>) => {
+    setProductRatings(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...updates };
+      return next;
+    });
+  };
 
+  const handleFileUpload = async (index: number, file: File) => {
+    updateRating(index, { isUploading: true });
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await apiClient.post("/files/upload?ownerType=review", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      const fileData = res.data?.data;
+      if (fileData?._id && fileData?.secure_url) {
+        setProductRatings(prev => {
+          const next = [...prev];
+          next[index] = {
+            ...next[index],
+            images: [...next[index].images, { id: fileData._id, url: fileData.secure_url }]
+          };
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      updateRating(index, { isUploading: false });
+    }
+  };
+
+  const removeImage = (pIndex: number, imgIndex: number) => {
+    setProductRatings(prev => {
+      const next = [...prev];
+      next[pIndex].images = next[pIndex].images.filter((_, i) => i !== imgIndex);
+      return next;
+    });
+  };
+
+  const handleIndividualSubmit = async (index: number) => {
+    if (!orderId) return;
+    const rating = productRatings[index];
+    updateRating(index, { isSubmitting: true });
+    
+    try {
+      await reviewService.createOrderReviews({
+        order_id: orderId,
+        reviews: [{
+          product_id: rating.product_id,
+          rating: rating.stars,
+          comment: rating.comment,
+          images: rating.images.map(img => img.id),
+          isAnonymous: false
+        }]
+      });
+      updateRating(index, { isSubmitted: true });
+    } catch (err) {
+      console.error("Failed to submit review", err);
+    } finally {
+      updateRating(index, { isSubmitting: false });
+    }
+  };
+
+  const handleGlobalSubmit = async () => {
+    if (!orderId) return;
+    setGlobalSubmitting(true);
+    try {
+      const pendingReviews = productRatings.filter(p => !p.isSubmitted);
+      if (pendingReviews.length === 0) return;
+
+      const reviews = pendingReviews.map(p => ({
+        product_id: p.product_id,
+        rating: globalStars,
+        comment: globalComment,
+        images: p.images.map(img => img.id),
+        isAnonymous: false
+      }));
+
+      await reviewService.createOrderReviews({
+        order_id: orderId,
+        reviews
+      });
+      
+      setProductRatings(prev => prev.map(p => ({ ...p, isSubmitted: true })));
+    } catch (err) {
+      console.error("Failed to submit reviews", err);
+    } finally {
+      setGlobalSubmitting(false);
+    }
+  };
+
+  const allSubmitted = productRatings.length > 0 && productRatings.every(p => p.isSubmitted);
+
+  if (loading) {
     return (
-        <div className="bg-background-light dark:bg-background-dark font-display text-[#191710] dark:text-gray-100 transition-colors duration-300 min-h-screen">
-            <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
-                <div className="layout-container flex h-full grow flex-col">
-                    <main className="flex-1 flex flex-col items-center py-10 px-4">
-                        <div className="layout-content-container flex flex-col max-w-[720px] w-full">
-                            <div className="flex flex-wrap gap-2 py-2">
-                                <a className="text-[#8c7f5a] text-sm font-medium hover:underline" href="#">Đơn hàng</a>
-                                <span className="text-[#8c7f5a] text-sm font-medium">/</span>
-                                <span className="text-[#1b140d] dark:text-gray-400 text-sm font-medium">Đánh giá & Nhận xét</span>
-                            </div>
-                            <div className="flex flex-col gap-2 py-6">
-                                <h1 className="text-[#1b140d] dark:text-white text-4xl font-extrabold leading-tight tracking-tight">{t('customer:rating.title')}</h1>
-                                <p className="text-[#8c7f5a] text-lg font-normal">Phản hồi của bạn giúp chúng tôi hoàn thiện trải nghiệm hơn.</p>
-                            </div>
-                            <div className="bg-white dark:bg-[#1f2122] rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-50 dark:border-gray-800 overflow-hidden">
-                                <div className="p-6 border-b border-gray-50 dark:border-gray-800">
-                                    <div className="flex flex-col sm:flex-row gap-6 items-center">
-                                        <div className="w-full sm:w-48 h-32 bg-center bg-no-repeat bg-cover rounded-lg flex-shrink-0" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=500&h=500&fit=crop")' }}></div>
-                                        <div className="flex flex-col grow gap-1 text-center sm:text-left">
-                                            <p className="text-primary text-xs font-bold uppercase tracking-widest">Đã giao</p>
-                                            <h3 className="text-[#1b140d] dark:text-white text-2xl font-bold leading-tight">Phở Bò Đặc Biệt</h3>
-                                            <p className="text-[#8c7f5a] text-sm">Đơn #84920 • Giao ngày 24 Th10, 2023</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-8 flex flex-col gap-10">
-                                    {/* Rating */}
-                                    <div className="flex flex-col items-center gap-4">
-                                        <p className="text-[#1b140d] dark:text-white text-xl font-bold">Bữa ăn của bạn thế nào?</p>
-                                        <div className="flex gap-2">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <button
-                                                    key={star}
-                                                    type="button"
-                                                    onClick={() => setStars(star)}
-                                                    className="group focus:outline-none"
-                                                    aria-label={`${star} sao`}
-                                                >
-                                                    <span
-                                                        className={`material-symbols-outlined text-4xl transform transition-transform group-hover:scale-110 ${stars >= star ? "text-[#c9a94a]" : "text-[#e5e7eb] dark:text-gray-700"}`}
-                                                        style={stars >= star ? { fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24" } : undefined}
-                                                    >
-                                                        star
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="text-[#8c7f5a] text-sm">Chạm để đánh giá</p>
-                                    </div>
-
-                                    {/* Trải nghiệm */}
-                                    <div className="flex flex-col gap-3">
-                                        <label className="text-[#1b140d] dark:text-white text-base font-semibold">Trải nghiệm của bạn (chọn tất cả đúng)</label>
-                                        <p className="text-[#8c7f5a] text-sm">Giúp chúng tôi biết điều gì làm bạn hài lòng.</p>
-                                        <div className="flex flex-col gap-2">
-                                            {EXPERIENCE_OPTIONS.map((opt) => (
-                                                <label
-                                                    key={opt.id}
-                                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${experience.includes(opt.id) ? "border-primary bg-primary/5 dark:bg-primary/10" : "border-gray-200 dark:border-gray-700 hover:border-primary/50"}`}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={experience.includes(opt.id)}
-                                                        onChange={() => toggleExperience(opt.id)}
-                                                        className="rounded border-gray-300 text-primary focus:ring-primary"
-                                                    />
-                                                    <span className="material-symbols-outlined text-[#8c7f5a] text-[20px]">{opt.icon}</span>
-                                                    <span className="text-[#1b140d] dark:text-white text-sm font-medium">{opt.label}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Phù hợp sức khỏe & ghi chú */}
-                                    <div className="flex flex-col gap-3">
-                                        <label className="text-[#1b140d] dark:text-white text-base font-semibold">Món ăn có phù hợp với sức khỏe & yêu cầu của bạn không?</label>
-                                        <p className="text-[#8c7f5a] text-sm">Ví dụ: đúng ghi chú đặt món, dị ứng, ăn kiêng, ít cay, bỏ mỡ...</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {HEALTH_FIT_OPTIONS.map((opt) => (
-                                                <label
-                                                    key={opt.value}
-                                                    className={`flex flex-col gap-1 p-4 rounded-lg border cursor-pointer transition-all ${healthFit === opt.value ? "border-primary bg-primary/5 dark:bg-primary/10 ring-2 ring-primary/30" : "border-gray-200 dark:border-gray-700 hover:border-primary/50"}`}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="radio"
-                                                            name="healthFit"
-                                                            value={opt.value}
-                                                            checked={healthFit === opt.value}
-                                                            onChange={() => setHealthFit(opt.value)}
-                                                            className="text-primary focus:ring-primary"
-                                                        />
-                                                        <span className="text-[#1b140d] dark:text-white font-semibold text-sm">{opt.label}</span>
-                                                    </div>
-                                                    <span className="text-[#8c7f5a] text-xs pl-6">{opt.desc}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Chia sẻ cảm nghĩ */}
-                                    <div className="flex flex-col gap-3">
-                                        <label className="text-[#1b140d] dark:text-white text-base font-semibold">Chia sẻ cảm nghĩ</label>
-                                        <textarea
-                                            value={comment}
-                                            onChange={(e) => setComment(e.target.value)}
-                                            className="w-full min-h-[120px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-primary focus:border-primary text-[#1b140d] dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 text-base leading-relaxed resize-none"
-                                            placeholder="Bạn thích điều gì ở món này? Ví dụ: gia vị vừa miệng, rau tươi, đúng ghi chú không cay..."
-                                        />
-                                    </div>
-
-                                    {/* Điều cần cải thiện */}
-                                    <div className="flex flex-col gap-3">
-                                        <label className="text-[#1b140d] dark:text-white text-base font-semibold">Điều gì chúng tôi nên cải thiện? (tùy chọn)</label>
-                                        <textarea
-                                            value={improvement}
-                                            onChange={(e) => setImprovement(e.target.value)}
-                                            className="w-full min-h-[80px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-900 focus:ring-primary focus:border-primary text-[#1b140d] dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 text-sm leading-relaxed resize-none"
-                                            placeholder="Ví dụ: giao trễ, món không đúng ghi chú, đóng gói chưa kỹ..."
-                                        />
-                                    </div>
-
-                                    {/* Upload Photos */}
-                                    <div className="flex flex-col gap-3">
-                                        <label className="text-[#1b140d] dark:text-white text-base font-semibold">Thêm ảnh vào nhận xét</label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                            <button type="button" className="aspect-square rounded-lg border-2 border-dashed border-primary/40 dark:border-primary/20 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 group">
-                                                <span className="material-symbols-outlined text-primary text-3xl transition-transform group-hover:-translate-y-1">add_a_photo</span>
-                                                <span className="text-xs font-bold text-primary">Tải lên</span>
-                                            </button>
-                                            <div className="hidden sm:flex col-span-3 items-center px-4">
-                                                <p className="text-[#8c7f5a] text-sm italic">Chia sẻ ảnh giúp người khác dễ dàng chọn món ngon hơn.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={handleSubmit}
-                                            className="w-full bg-primary hover:bg-[#b09440] text-white font-bold py-4 px-8 rounded-lg transition-all shadow-lg shadow-primary/20 active:scale-[0.98] flex items-center justify-center gap-2"
-                                        >
-                                            {t('customer:rating.submit')}
-                                            <span className="material-symbols-outlined">send</span>
-                                        </button>
-                                        <p className="text-center text-[#8c7f5a] text-xs mt-4">Bằng việc gửi, bạn đồng ý với Nguyên tắc cộng đồng của chúng tôi.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="h-20"></div>
-                        </div>
-                    </main>
-                </div>
-            </div>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <p className="text-[#8c7f5a] font-medium">Đang tải thông tin đơn hàng...</p>
+      </div>
     );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-[#8c7f5a] font-medium">Không tìm thấy đơn hàng</p>
+        <button onClick={() => navigate("/profile/history")} className="text-primary font-bold">Quay lại</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-background-light dark:bg-background-dark font-display text-[#191710] dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
+      <div className="max-w-[800px] mx-auto px-4 py-10">
+        <div className="flex flex-wrap gap-2 py-2 mb-6">
+          <button onClick={() => navigate("/profile/history")} className="text-[#8c7f5a] text-sm font-medium hover:underline">Đơn hàng</button>
+          <span className="text-[#8c7f5a] text-sm font-medium">/</span>
+          <span className="text-[#1b140d] dark:text-gray-400 text-sm font-medium">Đánh giá & Nhận xét</span>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-8 text-center sm:text-left">
+          <h1 className="text-[#1b140d] dark:text-white text-4xl font-black leading-tight tracking-tight">Đánh giá món ăn</h1>
+          <p className="text-[#8c7f5a] text-lg">Đơn hàng #{order.code} • {new Date(order.createdAt).toLocaleDateString("vi-VN")}</p>
+        </div>
+
+        {/* Global Rating (Apply to all) */}
+        {!allSubmitted && productRatings.length > 1 && (
+          <div className="mb-8 p-6 bg-primary/5 dark:bg-primary/10 rounded-2xl border-2 border-primary/20">
+            <div className="flex items-center justify-between mb-4">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={applyToAll} 
+                  onChange={(e) => setApplyToAll(e.target.checked)}
+                  className="w-5 h-5 rounded border-primary text-primary focus:ring-primary"
+                />
+                <span className="text-[#1b140d] dark:text-white font-bold text-lg group-hover:text-primary transition-colors">
+                  Áp dụng cùng mức đánh giá cho các món chưa gửi
+                </span>
+              </label>
+            </div>
+            
+            {applyToAll && (
+              <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setGlobalStars(star)}
+                        className="transition-transform active:scale-90"
+                      >
+                        <span className={`material-symbols-outlined text-4xl ${globalStars >= star ? "text-[#c9a94a]" : "text-gray-200 dark:text-gray-700"}`} style={{ fontVariationSettings: globalStars >= star ? "'FILL' 1" : "" }}>
+                          star
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <textarea
+                  value={globalComment}
+                  onChange={(e) => setGlobalComment(e.target.value)}
+                  placeholder="Nhận xét chung cho các món còn lại..."
+                  className="w-full p-4 rounded-xl border-0 bg-white dark:bg-[#1a1b1c] shadow-inner focus:ring-2 focus:ring-primary/50 min-h-[100px] resize-none"
+                />
+                <button
+                  onClick={handleGlobalSubmit}
+                  disabled={globalSubmitting}
+                  className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                >
+                  {globalSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  Gửi tất cả nhận xét
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {productRatings.map((rating, idx) => (
+            <div key={idx} className={`bg-white dark:bg-[#1f2122] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all ${applyToAll && !rating.isSubmitted ? "opacity-60 pointer-events-none grayscale-[0.5]" : ""}`}>
+              <div className="p-4 bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <img src={rating.image} alt={rating.name} className="w-16 h-16 object-cover rounded-lg shadow-sm" />
+                  <h3 className="font-bold text-lg text-text-main dark:text-white">{rating.name}</h3>
+                </div>
+                {rating.isSubmitted && (
+                  <div className="flex items-center gap-2 text-green-500 font-bold bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full border border-green-100 dark:border-green-800">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Đã đánh giá
+                  </div>
+                )}
+              </div>
+              
+              {(!applyToAll || rating.isSubmitted) && (
+                <div className="p-6 space-y-8">
+                  <div className="flex flex-col items-center gap-3">
+                    <p className="font-bold text-gray-700 dark:text-gray-300">
+                      {rating.isSubmitted ? "Sửa đánh giá của bạn" : "Bạn thấy món này thế nào?"}
+                    </p>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => updateRating(idx, { stars: star })}
+                          className="transition-transform active:scale-90"
+                        >
+                          <span className={`material-symbols-outlined text-4xl ${rating.stars >= star ? "text-[#c9a94a]" : "text-gray-200 dark:text-gray-700"}`} style={{ fontVariationSettings: rating.stars >= star ? "'FILL' 1" : "" }}>
+                            star
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block font-bold text-gray-700 dark:text-gray-300">Chia sẻ cảm nhận</label>
+                    <textarea
+                      value={rating.comment}
+                      onChange={(e) => updateRating(idx, { comment: e.target.value })}
+                      placeholder="Món ăn có ngon không? Vừa miệng chứ?..."
+                      className="w-full p-4 rounded-xl border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1b1c] focus:ring-2 focus:ring-primary/50 min-h-[120px] resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="block font-bold text-gray-700 dark:text-gray-300 text-sm italic">Thêm hình ảnh thực tế</label>
+                    <div className="flex flex-wrap gap-4">
+                      {rating.images.map((img, i) => (
+                        <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden group shadow-md border animate-in zoom-in-75">
+                          <img src={img.url} alt="Review photo" className="w-full h-full object-cover" />
+                          <button 
+                            onClick={() => removeImage(idx, i)}
+                            className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {rating.images.length < 4 && (
+                        <label className={`w-24 h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${rating.isUploading ? "opacity-50 pointer-events-none" : "hover:border-primary hover:bg-primary/5 border-gray-200 dark:border-gray-800"}`}>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => e.target.files?.[0] && handleFileUpload(idx, e.target.files[0])}
+                          />
+                          {rating.isUploading ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          ) : (
+                            <>
+                              <Camera className="w-6 h-6 text-primary" />
+                              <span className="text-[10px] font-bold text-primary uppercase">Tải lên</span>
+                            </>
+                          )}
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleIndividualSubmit(idx)}
+                    disabled={rating.isSubmitting}
+                    className={`w-full py-4 rounded-xl font-bold shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2 ${
+                      rating.isSubmitted 
+                        ? "bg-primary text-white" 
+                        : "bg-[#1b140d] dark:bg-white text-white dark:text-[#1b140d]"
+                    }`}
+                  >
+                    {rating.isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                    {rating.isSubmitted ? "Cập nhật đánh giá" : "Gửi đánh giá món này"}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {allSubmitted && (
+          <div className="mt-12 text-center animate-in zoom-in duration-500">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-500 mb-6">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            <h2 className="text-3xl font-black text-[#1b140d] dark:text-white mb-2">Đã gửi đánh giá thành công!</h2>
+            <p className="text-[#8c7f5a] mb-8">Cảm ơn bạn đã đóng góp ý kiến để chúng tôi cải thiện dịch vụ.</p>
+            <button
+              onClick={() => navigate("/profile/history")}
+              className="px-10 py-4 rounded-2xl bg-primary text-white font-black text-xl shadow-xl shadow-primary/30 hover:-translate-y-1 transition-all"
+            >
+              Quay lại đơn hàng
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default OrderRatingPage;

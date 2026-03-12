@@ -26,10 +26,10 @@ export interface AuthUser {
   verified_at: string | null;
   collected_points: number;
   addresses: AuthAddress[]; // Delivery addresses — aligned with BE IUser
-  healthProfile?: {
+  preferences?: {
+    dietary: string[];
     allergies: string[];
-    conditions: string[];
-    dietaryGoals: string[];
+    health_goals: string[];
   };
 }
 
@@ -37,6 +37,8 @@ interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
   role: UserRole | null;
+  /** True once auth state has been hydrated from localStorage */
+  hydrated: boolean;
 
   // Actions
   login: (user: AuthUser) => void;
@@ -74,13 +76,19 @@ function clearStoredUser() {
  * Tokens are managed by httpOnly cookies (set by BE).
  * We only store user info in localStorage for quick hydration.
  */
+// Hydrate synchronously on module load so guards never see stale state
+const _initialUser = getStoredUser();
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  role: null,
+  user: _initialUser,
+  isAuthenticated: !!_initialUser,
+  role: _initialUser?.role ?? null,
+  hydrated: true, // Already hydrated synchronously above
 
   login: (user) => {
     setStoredUser(user);
+    // Reset location alert state so it shows after login
+    localStorage.removeItem("location_alert_dismissed");
     set({
       user,
       isAuthenticated: true,

@@ -9,7 +9,6 @@ import LoyaltySection from "./components/LoyaltySection";
 import ReviewSection from "./components/ReviewSection";
 import CulinaryStorySection from "./components/CulinaryStorySection";
 import HistorySection from "./components/HistorySection";
-import HomeFooter from "./components/HomeFooter";
 import { useUserLocation } from "@/hooks/useUserLocation"; 
 import LocationAlert from "@/components/LocationAlert";
 

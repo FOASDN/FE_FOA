@@ -1,9 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/hooks/useToast";
+import { calculateShippingFee } from "@/utils/shipping";
+import { AddressModal } from "@/components/shared/AddressModal";
+import { userService } from "@/services/profile.service";
+import { useAuthStore } from "@/store/authStore";
+import type { AuthAddress } from "@/store/authStore";
+import { TicketVoucher } from "@/components/shared/TicketVoucher";
 import paymentService from "@/services/payment.service";
 
 const CheckoutPage = () => {
@@ -25,12 +31,47 @@ const CheckoutPage = () => {
     discount,
     deliveryFee,
     total,
+    isDeliverable,
+    shippingResult,
     isSubmitting,
     handlePlaceOrder,
+    vouchers,
     orderPlacedRef,
   } = useCheckout();
 
-  const { toasts, dismiss } = useToast();
+  const [isVouchersOpen, setIsVouchersOpen] = useState(false);
+
+  const { toasts, dismiss, toast } = useToast();
+
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  const handleSaveAddress = async (newAddr: AuthAddress) => {
+    if (!user) return;
+    const existing = user.addresses || [];
+    let updated = [...existing, newAddr];
+
+    // Normalize default
+    if (newAddr.isDefault) {
+      updated = updated.map((a, i) => ({
+        ...a,
+        isDefault: i === updated.length - 1,
+      }));
+    } else if (!updated.some((a) => a.isDefault) && updated.length > 0) {
+      updated[0] = { ...updated[0], isDefault: true };
+    }
+
+    const res = await userService.updateMe({ addresses: updated });
+    const updatedUser = res.data?.data;
+    if (updatedUser) {
+      setUser({ ...user, addresses: (updatedUser as any).addresses ?? updated });
+    }
+
+    setIsAddressModalOpen(false);
+    // Auto-select the newly added address
+    setSelectedAddress(newAddr as any);
+  };
 
   // PayOS cancel return: cancel created order (best-effort), then clean the URL
   useEffect(() => {
@@ -117,7 +158,7 @@ const CheckoutPage = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate("/addresses")}
+                    onClick={() => setIsAddressModalOpen(true)}
                     className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all"
                   >
                     <span>{t("customer:checkout.addAddress")}</span>
@@ -134,7 +175,7 @@ const CheckoutPage = () => {
                         Bạn chưa có địa chỉ giao hàng.
                       </p>
                       <button
-                        onClick={() => navigate("/addresses")}
+                        onClick={() => setIsAddressModalOpen(true)}
                         className="inline-flex items-center gap-1 text-sm text-primary font-semibold hover:underline"
                       >
                         <span className="material-symbols-outlined text-base">
@@ -144,6 +185,93 @@ const CheckoutPage = () => {
                       </button>
                     </div>
                   ) : (
+                    <>
+                      {addresses.map((addr: any, idx: number) => {
+                        const isSelected =
+                          effectiveAddress?.detail === addr.detail &&
+                          effectiveAddress?.receiver_name === addr.receiver_name;
+                        // Compute fee badge for this address
+                        const addrFee = calculateShippingFee(addr.district ?? "", addr.city ?? "", subtotal);
+                        const isAddrBlocked = addrFee.blocked;
+                        return (
+                          <label
+                            key={idx}
+                            className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isAddrBlocked
+                                ? "border-red-300 dark:border-red-800 opacity-80"
+                                : isSelected
+                                  ? "border-primary bg-primary/5"
+                                  : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                              }`}
+                            onClick={() => !isAddrBlocked && setSelectedAddress(addr)}
+                          >
+                            <input
+                              readOnly
+                              className="h-5 w-5 mt-0.5 border-2 border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 accent-primary"
+                              name="address"
+                              type="radio"
+                              checked={isSelected && !isAddrBlocked}
+                              disabled={isAddrBlocked}
+                            />
+                            <div className="flex grow flex-col gap-1">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-bold">
+                                    {addr.label || "Địa chỉ"}
+                                  </p>
+                                  {addr.isDefault && (
+                                    <span className="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full uppercase">
+                                      Mặc định
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Fee badge */}
+                                {isAddrBlocked ? (
+                                  <span className="text-[11px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px]">block</span>
+                                    Không giao được
+                                  </span>
+                                ) : addrFee.zone === "free" ? (
+                                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
+                                    🎁 MIỄN PHÍ
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                    Phí: {addrFee.fee.toLocaleString("vi-VN")}đ
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                {addr.receiver_name} • {addr.phone}
+                              </p>
+                              <p className="text-gray-500 dark:text-gray-500 text-xs mt-0.5">
+                                {addr.detail}, {addr.ward}, {addr.district},{" "}
+                                {addr.city}
+                              </p>
+                              {isAddrBlocked && (
+                                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px]">info</span>
+                                  Hiện chỉ giao trong khu vực Đà Nẵng (7 phường nội thành)
+                                </p>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                      {/* Out-of-zone warning banner */}
+                      {effectiveAddress && !isDeliverable && (
+                        <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                          <span className="material-symbols-outlined text-red-500 text-xl shrink-0">location_off</span>
+                          <div>
+                            <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                              Địa chỉ nằm ngoài vùng giao hàng
+                            </p>
+                            <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+                              {shippingResult.reason ?? "Hiện tại chỉ giao hàng trong khu vực Đà Nẵng"}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                     addresses.map((addr: any, idx: number) => {
                       const isSelected =
                         effectiveAddress?.detail === addr.detail &&
@@ -208,6 +336,10 @@ const CheckoutPage = () => {
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
+                          ? "border-2 border-primary bg-primary/5"
+                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
@@ -225,6 +357,10 @@ const CheckoutPage = () => {
                       id="payment-card"
                       onClick={() => setPaymentMethod("credit_card")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
+                          ? "border-2 border-primary bg-primary/5"
+                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
@@ -241,6 +377,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
+                          ? "border-2 border-primary bg-primary/5"
+                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
@@ -377,6 +517,47 @@ const CheckoutPage = () => {
                       {t("customer:cart.voucherCode")}
                     </label>
 
+                    {/* Vouchers Selection Section */}
+                    <div className="mb-4">
+                      <button
+                        onClick={() => setIsVouchersOpen(!isVouchersOpen)}
+                        className="flex items-center gap-2 font-bold text-text-main dark:text-white text-sm hover:text-primary transition-colors mb-2"
+                      >
+                        Chọn khuyến mãi / Voucher
+                        <span className="material-symbols-outlined transition-transform duration-200" style={{ transform: isVouchersOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                          expand_more
+                        </span>
+                      </button>
+
+                      {isVouchersOpen && (
+                        <div className="flex flex-col gap-3 mb-4 pr-1">
+                          {vouchers.length === 0 ? (
+                            <p className="text-xs text-gray-500 italic">Không có voucher khả dụng</p>
+                          ) : (
+                            vouchers.map(v => (
+                              <div key={v._id} onClick={() => {
+                                if (v.min_order_amount && subtotal < v.min_order_amount) {
+                                  toast(`Đơn hàng tối thiểu ${v.min_order_amount.toLocaleString("vi-VN")}đ để dùng voucher này`, "error");
+                                  return;
+                                }
+                                setVoucherCode(v.code);
+                                applyVoucher(v.code);
+                              }} className="cursor-pointer">
+                                <TicketVoucher
+                                  code={v.code}
+                                  title={v.title}
+                                  discountValue={v.discount_type === 'percentage' ? `${v.discount_value}%` : `${v.discount_value.toLocaleString("vi-VN")}đ`}
+                                  minOrder={v.min_order_amount ? `${v.min_order_amount.toLocaleString("vi-VN")}đ` : "0đ"}
+                                  // expiryDate={new Date(v.end_date).toLocaleDateString("vi-VN")}
+                                  className={`${voucherState.appliedVoucher?._id === v._id ? "ring-2 ring-primary scale-[1.02]" : "scale-100 opacity-90 hover:opacity-100"} shadow-sm transition-all origin-left pointer-events-none`}
+                                />
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {voucherState.appliedVoucher ? (
                       /* Applied voucher badge */
                       <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg px-4 py-3">
@@ -414,7 +595,7 @@ const CheckoutPage = () => {
                         />
                         <button
                           id="apply-voucher-btn"
-                          onClick={applyVoucher}
+                          onClick={() => applyVoucher()}
                           disabled={
                             !voucherState.code.trim() ||
                             voucherState.isValidating
@@ -487,7 +668,8 @@ const CheckoutPage = () => {
                     disabled={
                       isSubmitting ||
                       cartItems.length === 0 ||
-                      !effectiveAddress
+                      !effectiveAddress ||
+                      !isDeliverable
                     }
                     className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
@@ -514,6 +696,12 @@ const CheckoutPage = () => {
                         warning
                       </span>
                       Vui lòng thêm địa chỉ giao hàng
+                    </p>
+                  )}
+                  {effectiveAddress && !isDeliverable && (
+                    <p className="text-xs text-center text-red-600 mt-2 flex items-center justify-center gap-1">
+                      <span className="material-symbols-outlined text-sm">block</span>
+                      Địa chỉ đã chọn không nằm trong vùng giao hàng
                     </p>
                   )}
 
@@ -548,6 +736,13 @@ const CheckoutPage = () => {
           </div>
         </main>
       </div>
+
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        onSave={handleSaveAddress}
+        isFirstAddress={addresses.length === 0}
+      />
     </div>
   );
 };

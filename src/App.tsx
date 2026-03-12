@@ -43,7 +43,7 @@ import AdminOrders from "./pages/Admin/Orders";
 import AdminVouchers from "./pages/Admin/Vouchers";
 import AdminSettings from "./pages/Admin/Settings";
 import AdminCustomers from "./pages/Admin/Customers";
-import AdminAnalytics from "./pages/Admin/Analytics";
+// import AdminAnalytics from "./pages/Admin/Analytics";
 import AdminInventory from "./pages/Admin/Inventory";
 import AdminStaff from "./pages/Admin/Staff";
 import AdminReviews from "./pages/Admin/Reviews";
@@ -108,7 +108,7 @@ function App() {
             <Route path="/ai-suggestions" element={<SafeAlternativesPage />} />
             <Route path="/wallet" element={<VoucherWalletPage />} />
             <Route path="/membership" element={<MembershipBenefitsPage />} />
-            <Route path="/rating" element={<OrderRatingPage />} />
+            <Route path="/rating/:orderId" element={<OrderRatingPage />} />
             <Route path="/success" element={<OrderSuccessPage />} />
             <Route path="/failed" element={<OrderFailedPage />} />
             <Route path="/order-detail/:id" element={<OrderDetailPage />} />
@@ -151,7 +151,6 @@ function App() {
               </Route>
               <Route path="menu" element={<AdminMenuManagement />} />
               <Route path="customers" element={<AdminCustomers />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="inventory" element={<AdminInventory />} />
               <Route path="staff" element={<AdminStaff />} />
               <Route path="reviews" element={<AdminReviews />} />

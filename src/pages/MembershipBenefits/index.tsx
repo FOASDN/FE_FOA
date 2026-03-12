@@ -145,7 +145,7 @@ const MembershipBenefitsPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {tiers.map((tier, index) => (
+                        {tiers.map((tier) => (
                             <div
                                 key={tier.name}
                                 className={`relative bg-card rounded-[24px] border-2 ${tier.borderColor} p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${tier.popular ? 'ring-4 ring-primary ring-offset-4 ring-offset-background' : ''

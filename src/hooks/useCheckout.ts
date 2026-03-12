@@ -12,6 +12,8 @@ import type {
 import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
+import { calculateShippingFee, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/utils/shipping";
+import { getStoreSettings } from "@/services/settings.service";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -91,6 +93,23 @@ export const useCheckout = () => {
     error: null,
   });
 
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // ─── Fetch Active Vouchers ───
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const res = await voucherService.getVouchers({ is_active: true });
+        if (res.success && res.data) {
+          setVouchers(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch vouchers", error);
+      }
+    };
+    fetchVouchers();
+  }, []);
+
   const setVoucherCode = useCallback((code: string) => {
     setVoucherState((prev) => ({
       ...prev,
@@ -102,11 +121,11 @@ export const useCheckout = () => {
     }));
   }, []);
 
-  const applyVoucher = useCallback(async () => {
-    const code = voucherState.code.trim();
+  const applyVoucher = useCallback(async (manualCode?: string) => {
+    const code = (manualCode || voucherState.code).trim();
     if (!code) return;
 
-    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null }));
+    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null, code: code.toUpperCase() }));
 
     try {
       const res = await voucherService.validateVoucher({
@@ -121,6 +140,7 @@ export const useCheckout = () => {
           appliedVoucher: res.data!.voucher,
           discountAmount: res.data!.discountAmount,
           error: null,
+          code: code.toUpperCase(),
         }));
         toast(
           `Áp dụng voucher thành công! Giảm ${res.data.discountAmount.toLocaleString("vi-VN")}đ`,
@@ -154,8 +174,22 @@ export const useCheckout = () => {
   // ── Pricing ───────────────────────────────────────────────────────────────
   const subtotal = totalPrice;
   const discount = voucherState.discountAmount;
-  // Delivery fee: free if subtotal > 300k
-  const deliveryFee = subtotal > 300_000 ? 0 : 50_000;
+
+  // Dynamic shipping fee based on selected address zone
+  const shippingResult = useMemo(() => {
+    if (!effectiveAddress) {
+      return { fee: 0, blocked: false };
+    }
+    return calculateShippingFee(
+      effectiveAddress.district ?? "",
+      effectiveAddress.city ?? "",
+      subtotal,
+      shippingConfig
+    );
+  }, [effectiveAddress, subtotal, shippingConfig]);
+
+  const deliveryFee = shippingResult.fee;
+  const isDeliverable = !shippingResult.blocked;
   const total = Math.max(0, subtotal - discount + deliveryFee);
 
   // ── Submission ────────────────────────────────────────────────────────────
@@ -260,6 +294,7 @@ export const useCheckout = () => {
     setPaymentMethod,
     // Voucher
     voucherState,
+    vouchers,
     setVoucherCode,
     applyVoucher,
     removeVoucher,
@@ -268,6 +303,8 @@ export const useCheckout = () => {
     discount,
     deliveryFee,
     total,
+    isDeliverable,
+    shippingResult,
     // Submit
     isSubmitting,
     handlePlaceOrder,
