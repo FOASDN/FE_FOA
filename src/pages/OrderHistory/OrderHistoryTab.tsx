@@ -205,7 +205,7 @@ const OrderHistoryTabContent = () => {
                 <div
                   className="w-full md:w-48 bg-center bg-no-repeat aspect-video md:aspect-square bg-cover shrink-0 bg-gray-100"
                   style={{
-                    backgroundImage: `url("${getImageUrl(firstItem.product_id?.image)}")`,
+                    backgroundImage: `url("${getImageUrl((firstItem.product_id as any)?.image)}")`,
                   }}
                 />
 

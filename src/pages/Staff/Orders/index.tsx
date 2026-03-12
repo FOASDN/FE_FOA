@@ -52,7 +52,7 @@ export default function StaffOrders() {
     const matchesSearch =
       searchQuery === "" ||
       order.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.user_id?.username
+      (order.user_id as any)?.username
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase());
     return matchesSearch;
@@ -171,14 +171,14 @@ export default function StaffOrders() {
 
               <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  {order.user_id?.username?.charAt(0) || "U"}
+                  {(order.user_id as any)?.username?.charAt(0) || "U"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-text-main dark:text-white truncate">
-                    {order.user_id?.username}
+                    {(order.user_id as any)?.username}
                   </div>
                   <div className="text-[11px] text-[#9a734c]">
-                    {order.user_id?.phone || "Không có SĐT"}
+                    {(order.user_id as any)?.phone || "Không có SĐT"}
                   </div>
                 </div>
               </div>
