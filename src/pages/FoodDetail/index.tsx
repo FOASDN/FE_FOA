@@ -8,6 +8,7 @@ import productAPI from "@/services/product.service";
 import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
+import { useAllergyCheck } from "@/hooks/useAllergyCheck";
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -31,6 +32,10 @@ const FoodDetailPage = () => {
   const [suggestedFoods, setSuggestedFoods] = useState<Product[]>([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [openVariantModal, setOpenVariantModal] = useState(false);
+  const [allergyBannerDismissed, setAllergyBannerDismissed] = useState(false);
+
+  // FSS-40: Check allergy status for this product
+  const allergyResult = useAllergyCheck(product);
 
   useEffect(() => {
     const fetchProductAndSuggestions = async () => {
@@ -165,6 +170,47 @@ const FoodDetailPage = () => {
 
               {/* RIGHT COLUMN: Details & Actions */}
               <div className="flex flex-col h-full pt-2">
+
+                {/* FSS-40: Allergy Warning Banner */}
+                {allergyResult.level !== 'safe' && !allergyBannerDismissed && (
+                  <div className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${
+                    allergyResult.level === 'danger'
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-amber-50 border-amber-200'
+                  }`}>
+                    <span className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${
+                      allergyResult.level === 'danger' ? 'text-red-500' : 'text-amber-500'
+                    }`}>warning</span>
+                    <div className="flex-1">
+                      <p className={`font-bold text-sm ${
+                        allergyResult.level === 'danger' ? 'text-red-800' : 'text-amber-800'
+                      }`}>
+                        {allergyResult.level === 'danger' ? '⚠️ Cảnh báo dị ứng!' : '⚡ Lưu ý sức khỏe'}
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        allergyResult.level === 'danger' ? 'text-red-700' : 'text-amber-700'
+                      }`}>{allergyResult.warningMessage}</p>
+                      {allergyResult.conflictIngredients.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {allergyResult.conflictIngredients.map((ing, i) => (
+                            <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              allergyResult.level === 'danger'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>{ing}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setAllergyBannerDismissed(true)}
+                      className="text-gray-400 hover:text-gray-600 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  </div>
+                )}
+
                 <nav className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                   <Link
                     className="text-[#9e6b47] hover:text-primary font-medium transition-colors"
