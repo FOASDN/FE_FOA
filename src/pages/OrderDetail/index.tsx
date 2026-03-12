@@ -191,12 +191,12 @@ const OrderDetailPage = () => {
                       <div
                         className="w-20 h-20 rounded-2xl bg-gray-100 bg-cover bg-center shrink-0 border border-gray-100 dark:border-white/10"
                         style={{
-                          backgroundImage: `url("${getImageUrl(item.product_id?.image)}")`,
+                          backgroundImage: `url("${getImageUrl((item.product_id as any)?.image)}")`,
                         }}
                       />
                       <div>
                         <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                          {item.product_id?.name ||
+                          {(item.product_id as any)?.name ||
                             "Sản phẩm không còn tồn tại"}
                         </h4>
                         <div className="mt-1 flex flex-wrap gap-2">

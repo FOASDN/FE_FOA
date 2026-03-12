@@ -54,14 +54,14 @@ const OrderRatingPage = () => {
         
         // Initialize product ratings
         const initialRatings: ProductRating[] = orderData.items.map(item => {
-          const existing = existingReviews.find((r: any) => r.product_id === item.product_id._id);
+          const existing = existingReviews.find((r: any) => r.product_id === (item.product_id as any)?._id);
           
           return {
-            product_id: item.product_id._id,
-            name: item.product_id.name,
-            image: typeof item.product_id.image === 'string' 
-              ? item.product_id.image 
-              : (item.product_id.image as any)?.secure_url || "",
+            product_id: (item.product_id as any)?._id,
+            name: (item.product_id as any)?.name,
+            image: typeof (item.product_id as any)?.image === 'string' 
+              ? (item.product_id as any)?.image 
+              : ((item.product_id as any)?.image as any)?.secure_url || "",
             stars: existing ? existing.rating : 5,
             comment: existing ? existing.comment : "",
             images: existing ? existing.images.map((img: any) => ({ id: img._id, url: img.secure_url })) : [],
