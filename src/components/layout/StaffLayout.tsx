@@ -8,7 +8,9 @@ import {
     Menu,
     X,
     UtensilsCrossed,
-    Bell
+    Bell,
+    Truck,
+    MessageCircleMore
 } from "lucide-react";
 import { useState } from "react";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
@@ -24,8 +26,10 @@ export default function StaffLayout() {
 
     const navItems = [
         { path: '/staff', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-        { path: '/staff/orders', label: 'Đơn hàng', icon: ShoppingBag },
+        { path: '/staff/orders', label: 'Kanban (Bếp)', icon: ShoppingBag },
+        { path: '/staff/delivery', label: 'Đơn đang giao', icon: Truck },
         { path: '/staff/menu', label: 'Thực đơn', icon: UtensilsCrossed },
+        { path: '/staff/support', label: 'Chat hỗ trợ', icon: MessageCircleMore },
         { path: '/staff/customers', label: 'Khách hàng', icon: Users },
     ];
 

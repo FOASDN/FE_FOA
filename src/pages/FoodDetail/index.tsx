@@ -35,6 +35,7 @@ const FoodDetailPage = () => {
   const [openVariantModal, setOpenVariantModal] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [isBuyNowMode, setIsBuyNowMode] = useState(false);
 
   useEffect(() => {
     const fetchProductAndSuggestions = async () => {
@@ -50,6 +51,7 @@ const FoodDetailPage = () => {
         setReviews(reviewRes.data || []);
         setLoadingReviews(false);
         
+
         // Fetch suggested foods
         setLoadingSuggested(true);
         if (isAuthenticated) {
@@ -91,6 +93,7 @@ const FoodDetailPage = () => {
 
     const hasVariants = (product as any).variants?.length > 0;
     if (hasVariants) {
+      setIsBuyNowMode(false);
       setOpenVariantModal(true);
       return;
     }
@@ -108,14 +111,23 @@ const FoodDetailPage = () => {
 
   const handleBuyNow = () => {
     if (!product) return;
-    addItem({
+
+    const hasVariants = (product as any).variants?.length > 0;
+    if (hasVariants) {
+      setIsBuyNowMode(true);
+      setOpenVariantModal(true);
+      return;
+    }
+
+    const buyNowItem = {
       productId: product._id,
       name: product.name,
       image: getImageUrl(product.image),
       price: product.price,
       quantity,
-    });
-    navigate('/checkout');
+    };
+
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   return (
@@ -407,7 +419,7 @@ const FoodDetailPage = () => {
                       {isAuthenticated ? "Món ăn an toàn cho bạn" : "Có thể bạn sẽ thích"}
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {isAuthenticated 
+                      {isAuthenticated
                         ? "Được AI chọn lọc dựa trên hồ sơ sức khỏe và phân tích thành phần tỉ mỉ."
                         : "Khám phá thêm các hương vị hấp dẫn khác từ thực đơn của chúng tôi."}
                     </p>
@@ -423,8 +435,8 @@ const FoodDetailPage = () => {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {suggestedFoods.map((suggestedItem) => (
-                      <FoodCard 
-                        key={suggestedItem._id} 
+                      <FoodCard
+                        key={suggestedItem._id}
                         id={suggestedItem._id}
                         name={suggestedItem.name}
                         image={getImageUrl(suggestedItem.image)}
@@ -452,7 +464,7 @@ const FoodDetailPage = () => {
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
-          addItem({
+          const itemData = {
             productId: product._id,
             name: product.name,
             image:
@@ -462,12 +474,17 @@ const FoodDetailPage = () => {
             price: unitPrice,
             quantity,
             variations,
-          });
+          };
 
-          toast(
-            t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
-            "success",
-          );
+          if (isBuyNowMode) {
+            navigate('/checkout', { state: { buyNowItem: itemData } });
+          } else {
+            addItem(itemData);
+            toast(
+              t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+              "success",
+            );
+          }
         }}
       />
       <ToastContainer toasts={toasts} dismiss={dismiss} />

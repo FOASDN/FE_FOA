@@ -10,6 +10,7 @@ import { userService } from "@/services/profile.service";
 import { useAuthStore } from "@/store/authStore";
 import type { AuthAddress } from "@/store/authStore";
 import { TicketVoucher } from "@/components/shared/TicketVoucher";
+import paymentService from "@/services/payment.service";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const CheckoutPage = () => {
     isSubmitting,
     handlePlaceOrder,
     vouchers,
+    orderPlacedRef,
   } = useCheckout();
 
   const [isVouchersOpen, setIsVouchersOpen] = useState(false);
@@ -71,12 +73,36 @@ const CheckoutPage = () => {
     setSelectedAddress(newAddr as any);
   };
 
-  // Guard: redirect to menu if cart is empty
+  // PayOS cancel return: cancel created order (best-effort), then clean the URL
   useEffect(() => {
-    if (cartItems.length === 0) {
+    const sp = new URLSearchParams(window.location.search);
+    const payos = sp.get("payos");
+    const orderCodeRaw = sp.get("orderCode");
+
+    if (payos !== "cancel" || !orderCodeRaw) return;
+
+    const orderCode = Number(orderCodeRaw);
+    if (Number.isNaN(orderCode)) return;
+
+    paymentService
+      .cancelPayosOrder(orderCode)
+      .then(() => {
+        // Don't spam toast if user refreshes; clean URL immediately
+        navigate("/checkout", { replace: true });
+      })
+      .catch(() => {
+        navigate("/checkout", { replace: true });
+      });
+  }, [navigate]);
+
+  // Guard: redirect to menu if cart is empty.
+  // Skip if submitting OR if an order has already been placed successfully
+  // (orderPlacedRef stays true through finally-block isSubmitting reset).
+  useEffect(() => {
+    if (cartItems.length === 0 && !isSubmitting && !orderPlacedRef.current) {
       navigate("/menu", { replace: true });
     }
-  }, [cartItems.length, navigate]);
+  }, [cartItems.length, isSubmitting, orderPlacedRef, navigate]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1b140d] dark:text-white min-h-screen font-display">
@@ -171,10 +197,10 @@ const CheckoutPage = () => {
                           <label
                             key={idx}
                             className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isAddrBlocked
-                                ? "border-red-300 dark:border-red-800 opacity-80"
-                                : isSelected
-                                  ? "border-primary bg-primary/5"
-                                  : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                              ? "border-red-300 dark:border-red-800 opacity-80"
+                              : isSelected
+                                ? "border-primary bg-primary/5"
+                                : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
                               }`}
                             onClick={() => !isAddrBlocked && setSelectedAddress(addr)}
                           >
@@ -268,8 +294,8 @@ const CheckoutPage = () => {
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
                     >
                       <span className="material-symbols-outlined">
@@ -285,8 +311,8 @@ const CheckoutPage = () => {
                       id="payment-card"
                       onClick={() => setPaymentMethod("credit_card")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
                     >
                       <span className="material-symbols-outlined">
@@ -302,8 +328,8 @@ const CheckoutPage = () => {
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
                     >
                       <span className="material-symbols-outlined">
