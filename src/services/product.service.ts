@@ -58,6 +58,11 @@ class ProductAPI {
     // BE trả về { success, data: { _id, secure_url, ... } }
     return response.data.data;
   }
+
+  async getIngredients(): Promise<string[]> {
+    const response = await apiClient.get("/products/ingredients");
+    return response.data.data;
+  }
 }
 
 export default new ProductAPI();
