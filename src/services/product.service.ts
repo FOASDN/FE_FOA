@@ -59,10 +59,10 @@ class ProductAPI {
     return response.data.data;
   }
 
-  async getIngredients(): Promise<string[]> {
-    const response = await apiClient.get("/products/ingredients");
-    return response.data.data;
-  }
+
+
+
+
 }
 
 export default new ProductAPI();

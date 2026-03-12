@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import productService from "@/services/product.service";
+
 import {
   DIET_OPTIONS,
+  ALLERGY_OPTIONS,
   HEALTH_GOALS,
   PENDING_PREFS_KEY,
   type PendingPreferences,
-  type AllergyOption,
+
 } from "@/constants/preferences";
 
 const HEALTH_COLOR = "var(--health)";
@@ -27,27 +28,27 @@ const OnboardingPage = () => {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [healthGoals, setHealthGoals] = useState<string[]>([]);
   const [allergySearch, setAllergySearch] = useState("");
-  const [dynamicAllergies, setDynamicAllergies] = useState<AllergyOption[]>([]);
 
-  useEffect(() => {
-    const fetchIngredients = async () => {
-      try {
-        const ingredients = await productService.getIngredients();
-        const formatted: AllergyOption[] = ingredients.map(name => ({
-          id: name.toLowerCase().replace(/\s+/g, '-'),
-          label: name,
-          icon: 'eco', // Default icon for ingredients
-          colorClass: 'bg-stone-50 text-stone-700'
-        }));
 
-        setDynamicAllergies(formatted);
-      } catch (error) {
-        console.error("Failed to fetch ingredients:", error);
-        setDynamicAllergies([]);
-      }
-    };
-    fetchIngredients();
-  }, []);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* ── helpers ── */
   const toggleSet = (
@@ -60,9 +61,9 @@ const OnboardingPage = () => {
 
   const filteredAllergies = useMemo(() => {
     const q = allergySearch.trim().toLowerCase();
-    if (!q) return dynamicAllergies;
-    return dynamicAllergies.filter((a) => a.label.toLowerCase().includes(q));
-  }, [allergySearch, dynamicAllergies]);
+    if (!q) return ALLERGY_OPTIONS;
+    return ALLERGY_OPTIONS.filter((a) => a.label.toLowerCase().includes(q));
+  }, [allergySearch]);
 
   /* ── save & navigate ── */
   const savePrefs = () => {
@@ -250,7 +251,7 @@ const OnboardingPage = () => {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-foreground">
-                      {t("customer:onboarding.allergies")}
+                      Dị ứng & Không dung nạp
                     </h2>
                     <p className="text-muted-foreground text-sm">
                       Chúng tôi sẽ lọc các món chứa thành phần này
@@ -329,7 +330,7 @@ const OnboardingPage = () => {
               {allergies.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {allergies.map((id) => {
-                    const opt = dynamicAllergies.find((o) => o.id === id);
+                    const opt = ALLERGY_OPTIONS.find((o) => o.id === id);
                     return (
                       <span
                         key={id}
