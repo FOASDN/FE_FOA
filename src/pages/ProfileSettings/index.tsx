@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 // Removed useAuthStore
 import { useToast } from "@/hooks/useToast";
 import { userService } from "@/services/profile.service";
+import productService from "@/services/product.service";
 import {
   DIET_OPTIONS,
-  ALLERGY_OPTIONS,
   HEALTH_GOALS,
+  type AllergyOption,
 } from "@/constants/preferences";
 
 type Tab = "profile" | "health" | "password";
@@ -59,6 +60,7 @@ const ProfileSettingsPage = () => {
     health_goals: string[];
   }>({ dietary: [], allergies: [], health_goals: [] });
   const [isHealthEditMode, setIsHealthEditMode] = useState(false);
+  const [dynamicAllergies, setDynamicAllergies] = useState<AllergyOption[]>([]);
 
   /* ── helpers ── */
   const toggleSet = (
@@ -116,6 +118,26 @@ const ProfileSettingsPage = () => {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      try {
+        const ingredients = await productService.getIngredients();
+        const formatted: AllergyOption[] = ingredients.map(name => ({
+          id: name.toLowerCase().replace(/\s+/g, '-'),
+          label: name,
+          icon: 'eco',
+          colorClass: 'bg-stone-50 text-stone-700'
+        }));
+
+        setDynamicAllergies(formatted);
+      } catch (error) {
+        console.error("Failed to fetch ingredients:", error);
+        setDynamicAllergies([]);
+      }
+    };
+    fetchIngredients();
+  }, []);
+
   /* ── save personal info ── */
   const onUpdateProfile = async () => {
     try {
@@ -145,7 +167,7 @@ const ProfileSettingsPage = () => {
         allergies,
         health_goals: healthGoals,
       });
-      setInitialPrefs({ dietary: diet, allergies, health_goals: healthGoals });
+      setInitialPrefs({ dietary: diet, allergies: allergies, health_goals: healthGoals });
       setIsHealthEditMode(false);
       toast("Cài đặt sức khỏe đã được cập nhật", "success");
     } catch (e: any) {
@@ -430,7 +452,7 @@ const ProfileSettingsPage = () => {
               {t("customer:profileSettings.allergies")}
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {ALLERGY_OPTIONS.map((a) => {
+              {dynamicAllergies.map((a) => {
                 const active = allergies.includes(a.id);
                 return (
                   <div
