@@ -17,7 +17,6 @@ export interface Product {
   health_warning?: string;
   health_tags: string[];
   isAvailable: boolean;
-  isFavorite?: boolean;
   aiReason?: string;
   createdAt: string;
   updatedAt: string;

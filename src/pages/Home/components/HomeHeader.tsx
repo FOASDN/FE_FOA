@@ -22,12 +22,12 @@ const HomeHeader = ({
   const navigate = useNavigate();
   const { t } = useTranslation(["common", "customer"]);
   const { user, isAuthenticated, logout } = useAuth();
-  
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchQuery || "");
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -125,18 +125,18 @@ const HomeHeader = ({
   // Active orders count for badge
   useEffect(() => {
     if (!isAuthenticated) {
-        setActiveOrdersCount(0);
-        return;
+      setActiveOrdersCount(0);
+      return;
     }
 
     const fetchActiveOrders = async () => {
-        try {
-            const res = await orderService.getMyOrders(1, 100);
-            const count = res.data.filter(order => order.status !== "completed" && order.status !== "cancelled").length;
-            setActiveOrdersCount(count);
-        } catch (err) {
-            console.error("Failed to fetch active orders count:", err);
-        }
+      try {
+        const res = await orderService.getMyOrders(1, 100);
+        const count = res.data.filter(order => order.status !== "completed" && order.status !== "cancelled").length;
+        setActiveOrdersCount(count);
+      } catch (err) {
+        console.error("Failed to fetch active orders count:", err);
+      }
     };
 
     fetchActiveOrders();

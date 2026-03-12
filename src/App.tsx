@@ -31,7 +31,6 @@ import OrderSuccessPage from "./pages/OrderSuccess";
 import OrderFailedPage from "./pages/OrderFailed";
 import OrderDetailPage from "./pages/OrderDetail";
 import TrackOrderPage from "./pages/TrackOrder";
-import FavoritesPage from "./pages/Favorites";
 import AboutPage from "./pages/About";
 import NotFoundPage from "./pages/NotFound";
 import ForbiddenPage from "./pages/Forbidden";
@@ -98,7 +97,6 @@ function App() {
               <Route index element={<ProfileSettingsPage />} />
               <Route path="history" element={<OrderHistoryTabContent />} />
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
-              <Route path="favorites" element={<FavoritesPage />} />
             </Route>
             <Route
               path="/history"
