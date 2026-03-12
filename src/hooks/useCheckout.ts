@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./useCart";
 import type { CartItem } from "./useCart";
@@ -12,8 +12,7 @@ import type {
 import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
-import { calculateShippingFee, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/utils/shipping";
-import { getStoreSettings } from "@/services/settings.service";
+import { calculateShippingFee } from "@/utils/shipping";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -183,10 +182,9 @@ export const useCheckout = () => {
     return calculateShippingFee(
       effectiveAddress.district ?? "",
       effectiveAddress.city ?? "",
-      subtotal,
-      shippingConfig
+      subtotal
     );
-  }, [effectiveAddress, subtotal, shippingConfig]);
+  }, [effectiveAddress, subtotal]);
 
   const deliveryFee = shippingResult.fee;
   const isDeliverable = !shippingResult.blocked;

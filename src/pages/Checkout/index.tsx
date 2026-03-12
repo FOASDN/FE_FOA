@@ -197,10 +197,10 @@ const CheckoutPage = () => {
                           <label
                             key={idx}
                             className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isAddrBlocked
-                                ? "border-red-300 dark:border-red-800 opacity-80"
-                                : isSelected
-                                  ? "border-primary bg-primary/5"
-                                  : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                              ? "border-red-300 dark:border-red-800 opacity-80"
+                              : isSelected
+                                ? "border-primary bg-primary/5"
+                                : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
                               }`}
                             onClick={() => !isAddrBlocked && setSelectedAddress(addr)}
                           >
@@ -272,48 +272,6 @@ const CheckoutPage = () => {
                         </div>
                       )}
                     </>
-                    addresses.map((addr: any, idx: number) => {
-                      const isSelected =
-                        effectiveAddress?.detail === addr.detail &&
-                        effectiveAddress?.receiver_name === addr.receiver_name;
-                      return (
-                        <label
-                          key={idx}
-                          className={`flex items-center gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isSelected
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                            }`}
-                          onClick={() => setSelectedAddress(addr)}
-                        >
-                          <input
-                            readOnly
-                            className="h-5 w-5 border-2 border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 accent-primary"
-                            name="address"
-                            type="radio"
-                            checked={isSelected}
-                          />
-                          <div className="flex grow flex-col">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold">
-                                {addr.label || "Địa chỉ"}
-                              </p>
-                              {addr.isDefault && (
-                                <span className="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full uppercase">
-                                  Mặc định
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm">
-                              {addr.receiver_name} • {addr.phone}
-                            </p>
-                            <p className="text-gray-500 dark:text-gray-500 text-xs mt-0.5">
-                              {addr.detail}, {addr.ward}, {addr.district},{" "}
-                              {addr.city}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })
                   )}
                 </div>
               </section>
@@ -336,10 +294,6 @@ const CheckoutPage = () => {
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                        }`}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
@@ -357,10 +311,6 @@ const CheckoutPage = () => {
                       id="payment-card"
                       onClick={() => setPaymentMethod("credit_card")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                        }`}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
                         }`}
@@ -377,10 +327,6 @@ const CheckoutPage = () => {
                     <button
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                        }`}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
                         ? "border-2 border-primary bg-primary/5"
                         : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"

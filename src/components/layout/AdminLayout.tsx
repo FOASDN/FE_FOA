@@ -32,10 +32,6 @@ const SidebarItem = ({ icon, label, href, isActive, isCollapsed, currentPath, su
 
   const hasActiveChild = hasSubItems && subItems.some(sub => isPathMatch(currentPath, sub.href));
 
-  useEffect(() => {
-    if (hasActiveChild) setIsOpen(true);
-  }, [hasActiveChild]);
-
   // Reset open state when collapsed
   useEffect(() => {
     if (isCollapsed) setIsOpen(false);
