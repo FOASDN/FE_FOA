@@ -16,8 +16,6 @@ export interface FoodCardProps {
     tags?: string[];
     healthStatus?: HealthStatus;
     allergenInfo?: string;
-    isFavorite?: boolean;
-    onToggleFavorite?: (id: string) => void;
     onAddToCart?: (id: string) => void;
     className?: string;
 }
@@ -40,8 +38,6 @@ export function FoodCard({
     tags,
     healthStatus = 'safe',
     allergenInfo,
-    isFavorite = false,
-    onToggleFavorite,
     onAddToCart,
     className = '',
 }: FoodCardProps) {
@@ -95,20 +91,6 @@ export function FoodCard({
                     </div>
                 )}
 
-                {/* Favorite Button */}
-                {onToggleFavorite && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(id); }}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors"
-                        aria-label={t('common:actions.toggleFavorite', 'Yêu thích')}
-                    >
-                        <span className={`material-symbols-outlined text-[20px] transition-colors ${isFavorite ? 'text-red-500 fill-current' : 'text-slate-400'}`}
-                            style={isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                        >
-                            favorite
-                        </span>
-                    </button>
-                )}
 
                 {/* Time badge */}
                 {time && (
