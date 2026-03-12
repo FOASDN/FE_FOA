@@ -85,7 +85,6 @@
         "title": "Account",
         "personalInfo": "Personal Information",
         "orderHistory": "Order History",
-        "myFavorites": "Favorites",
         "myVouchers": "Voucher Wallet",
         "myAddresses": "Delivery Addresses",
         "healthProfile": "Health Profile",
@@ -156,13 +155,6 @@
         "address": "Address",
         "apartment": "Apartment / Suite",
         "zipCode": "Zip Code"
-    },
-    "favorites": {
-        "title": "Favorites",
-        "subtitle": "Manage and reorder your favorite dishes.",
-        "emptyTitle": "No favorites yet",
-        "emptyDesc": "Tap the heart on dishes you love and they'll appear here!",
-        "exploreMenu": "Explore Menu"
     },
     "voucherDetail": {
         "voucherCode": "Voucher Code",

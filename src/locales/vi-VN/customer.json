@@ -85,7 +85,6 @@
         "title": "Tài khoản",
         "personalInfo": "Thông tin cá nhân",
         "orderHistory": "Lịch sử đơn hàng",
-        "myFavorites": "Yêu thích",
         "myVouchers": "Ví voucher",
         "myAddresses": "Địa chỉ giao hàng",
         "healthProfile": "Hồ sơ sức khoẻ",
@@ -156,13 +155,6 @@
         "address": "Địa chỉ",
         "apartment": "Căn hộ / Suite",
         "zipCode": "Mã bưu điện"
-    },
-    "favorites": {
-        "title": "Món yêu thích",
-        "subtitle": "Quản lý và đặt lại những món bạn yêu thích.",
-        "emptyTitle": "Danh sách yêu thích trống",
-        "emptyDesc": "Hãy thêm tim cho những món bạn thích và chúng sẽ hiển thị tại đây!",
-        "exploreMenu": "Khám phá thực đơn"
     },
     "voucherDetail": {
         "voucherCode": "Mã voucher",

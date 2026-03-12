@@ -295,17 +295,6 @@ const HomeHeader = ({
                 </span>
               </button>
 
-              {/* Favorites */}
-              {isAuthenticated && (
-                <Link
-                  to="/favorites"
-                  className="p-2.5 rounded-xl text-gray-500 hover:bg-pink-50 hover:text-pink-600 transition-all duration-200 hidden sm:block relative"
-                >
-                  <span className="material-symbols-outlined text-[22px]">
-                    favorite
-                  </span>
-                </Link>
-              )}
 
               {isAuthenticated && (
                 <div className="relative" ref={notificationRef}>
@@ -563,25 +552,6 @@ const HomeHeader = ({
                             </p>
                             <p className="text-xs text-gray-500">
                               {t("customer:profile.orderHistory")}
-                            </p>
-                          </div>
-                        </Link>
-                        <Link
-                          to="/favorites"
-                          className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-700 transition-all group"
-                          onClick={() => setShowDropdown(false)}
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center group-hover:bg-pink-100 group-hover:scale-110 transition-all">
-                            <span className="material-symbols-outlined text-[18px] text-pink-600">
-                              favorite
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-semibold">
-                              {t("common:nav.favorites")}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {t("customer:profile.myFavorites")}
                             </p>
                           </div>
                         </Link>
@@ -870,16 +840,6 @@ const HomeHeader = ({
                       {ordersNeedingReview}
                     </span>
                   )}
-                </Link>
-                <Link
-                  to="/favorites"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200"
-                >
-                  <span className="material-symbols-outlined text-[22px] text-orange-500">
-                    favorite
-                  </span>
-                  {t("common:nav.favorites")}
                 </Link>
               </>
             )}
