@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useCart } from "@/hooks/useCart";
 
 interface OrderSuccessState {
   orderCode?: string;
@@ -12,6 +13,7 @@ const OrderSuccessPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation(["customer", "common"]);
+  const { clearCart } = useCart();
 
   // Read the order info passed via navigation state or URL query params
   const state = location.state as OrderSuccessState | null;
@@ -32,6 +34,11 @@ const OrderSuccessPage = () => {
       return () => clearTimeout(timer);
     }
   }, [orderCode, navigate]);
+
+  // Clear cart when we have a valid order code (COD or PayOS returnUrl)
+  useEffect(() => {
+    if (orderCode) clearCart();
+  }, [orderCode, clearCart]);
 
   if (!orderCode) {
     return null; // Will redirect
@@ -117,12 +124,18 @@ const OrderSuccessPage = () => {
           <div className="flex flex-col gap-3 w-full">
             <button
               id="view-order-btn"
-              onClick={() => navigate("/profile/history")}
+              onClick={() => {
+                if (state?.orderId) {
+                  navigate(`/order-detail/${state.orderId}`);
+                } else {
+                  navigate("/profile/history");
+                }
+              }}
               className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
             >
-              <span className="material-symbols-outlined mr-2">history</span>
+              <span className="material-symbols-outlined mr-2">receipt_long</span>
               <span>
-                {t("customer:orderSuccess.trackOrder", "Xem lịch sử đơn hàng")}
+                {t("customer:orderSuccess.trackOrder", "Xem chi tiết đơn hàng")}
               </span>
             </button>
 

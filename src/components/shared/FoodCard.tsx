@@ -129,10 +129,10 @@ export function FoodCard({
                 )}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-orange-600 font-black text-lg">{formatPrice(price)}</span>
+                        <span className="text-orange-600 font-black text-lg">{formatPrice(price || 0)}</span>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <span className="material-symbols-outlined text-orange-400 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            <span className="font-semibold">{rating.toFixed(1)}</span>
+                            <span className="font-semibold">{(rating || 0).toFixed(1)}</span>
                         </div>
                     </div>
 

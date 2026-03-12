@@ -125,58 +125,53 @@ const SidebarItem = ({ icon, label, href, isActive, isCollapsed, currentPath, su
 
 const NAV_ITEMS = [
   {
-    label: "Tổng quan",
-    href: "/admin/overview",
+    label: "Bảng điều khiển",
+    href: "/admin",
     icon: "dashboard",
-    subItems: [
-      { label: "Dashboard", href: "/admin" },
-      { label: "Thống kê", href: "/admin/analytics" },
-    ],
   },
   {
     label: "Vận hành",
-    href: "/admin/operations",
+    href: "/admin/orders", // Defaults to Orders, but will have tabs
     icon: "local_shipping",
     subItems: [
-      { label: "Đơn hàng", href: "/admin/orders" },
+      { label: "Quản lý đơn hàng", href: "/admin/orders" },
+      { label: "Công nợ nhân viên", href: "/admin/cash-control" },
       { label: "Điều phối", href: "/admin/dispatch" },
-      { label: "Giao hàng", href: "/admin/delivery" },
+      { label: "Lịch trình giao", href: "/admin/delivery" },
     ],
   },
   {
-    label: "Menu & AI",
-    href: "/admin/catalog",
+    label: "Danh mục & AI",
+    href: "/admin/menu",
     icon: "restaurant_menu",
     subItems: [
-      { label: "Sản phẩm", href: "/admin/menu" },
-      { label: "Nguyên liệu & Dị ứng", href: "/admin/ingredients" },
-      { label: "Tồn kho", href: "/admin/inventory" },
+      { label: "Thực đơn", href: "/admin/menu" },
+      { label: "Nguyên liệu & AI", href: "/admin/ingredients" },
+      { label: "Kho hàng", href: "/admin/inventory" },
     ],
   },
   {
     label: "Khách hàng",
-    href: "/admin/crm",
+    href: "/admin/customers",
     icon: "group",
     subItems: [
-      { label: "Danh sách KH", href: "/admin/customers" },
+      { label: "Người dùng", href: "/admin/customers" },
       { label: "Đánh giá", href: "/admin/reviews" },
     ],
   },
   {
     label: "Marketing",
-    href: "/admin/marketing",
+    href: "/admin/vouchers",
     icon: "campaign",
-    subItems: [
-      { label: "Voucher", href: "/admin/vouchers" },
-    ],
   },
   {
-    label: "Hệ thống",
-    href: "/admin/system",
+    label: "Cài đặt & Hệ thống",
+    href: "/admin/settings",
     icon: "settings",
     subItems: [
-      { label: "Nhân viên", href: "/admin/staff" },
-      { label: "Cài đặt", href: "/admin/settings" },
+      { label: "Cấu hình chung", href: "/admin/settings" },
+      { label: "Đội ngũ nhân sự", href: "/admin/staff" },
+      { label: "Báo cáo chi tiết", href: "/admin/analytics" },
     ],
   },
 ];

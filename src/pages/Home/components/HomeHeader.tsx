@@ -2,16 +2,16 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../hooks/useAuth";
-import { getOrdersNeedingReviewCount } from "../../../constants/mockOrders";
+import { useCart } from "../../../hooks/useCart";
+import orderService from "@/services/order.service";
 import i18n from "../../../config/i18n";
 
 interface HomeHeaderProps {
     searchQuery?: string;
     onSearchChange?: (query: string) => void;
-    cartCount?: number;
 }
 
-const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderProps) => {
+const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     const navigate = useNavigate();
     const { t } = useTranslation(['common', 'customer']);
     const { user, isAuthenticated, logout } = useAuth();
@@ -23,7 +23,10 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
     const dropdownRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-    const ordersNeedingReview = getOrdersNeedingReviewCount();
+    const { items, totalItems, totalPrice } = useCart();
+    const [showCartPreview, setShowCartPreview] = useState(false);
+    const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
     const handleLogout = () => {
@@ -73,6 +76,33 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
         document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
         return () => { document.body.style.overflow = ""; };
     }, [isMobileMenuOpen]);
+
+    // Reset activeOrdersCount to 0 when logged out (defer to avoid React warning)
+    useEffect(() => {
+        if (!isAuthenticated) {
+            queueMicrotask(() => setActiveOrdersCount(0));
+        }
+    }, [isAuthenticated]);
+
+    // Fetch active orders count when authenticated
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const fetchActiveOrders = async () => {
+            try {
+                const res = await orderService.getMyOrders(1, 100);
+                const count = res.data.filter(order => order.status !== "completed" && order.status !== "cancelled").length;
+                setActiveOrdersCount(count);
+            } catch (err) {
+                console.error("Failed to fetch active orders count:", err);
+            }
+        };
+
+        fetchActiveOrders();
+        // Poll every 30 seconds for updates
+        const interval = setInterval(fetchActiveOrders, 30000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
     return (
         <>
@@ -168,14 +198,78 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                             )}
 
                             {/* Cart */}
-                            <button onClick={() => navigate("/cart")} className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 relative group">
-                                <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">shopping_cart</span>
-                                {cartCount > 0 && (
-                                    <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-black w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-                                        {cartCount > 99 ? '99+' : cartCount}
-                                    </span>
+                            <div
+                                className="relative"
+                                onMouseEnter={() => setShowCartPreview(true)}
+                                onMouseLeave={() => setShowCartPreview(false)}
+                            >
+                                <button onClick={() => navigate("/cart")} className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 relative group">
+                                    <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">shopping_cart</span>
+                                    {totalItems > 0 && (
+                                        <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-black w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                                            {totalItems > 99 ? '99+' : totalItems}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {/* Cart Preview Modal (Dropdown) */}
+                                {showCartPreview && (
+                                    <div className="absolute right-0 mt-1 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[60] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="px-5 py-4 border-b border-gray-50 bg-orange-50/30">
+                                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-[20px] text-orange-500">shopping_bag</span>
+                                                Giỏ hàng của bạn
+                                            </h3>
+                                        </div>
+
+                                        <div className="max-h-[320px] overflow-y-auto py-2 px-3">
+                                            {items.length === 0 ? (
+                                                <div className="py-8 text-center">
+                                                    <div className="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                        <span className="material-symbols-outlined text-gray-400">shopping_cart_off</span>
+                                                    </div>
+                                                    <p className="text-gray-500 text-sm font-medium">Giỏ hàng đang trống</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-1">
+                                                    {items.slice(0, 5).map((item, idx) => (
+                                                        <div key={idx} className="flex gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors group">
+                                                            <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0 py-0.5">
+                                                                <h4 className="text-sm font-bold text-gray-800 truncate mb-0.5 group-hover:text-orange-600 transition-colors">{item.name}</h4>
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-xs font-medium text-gray-500">{item.quantity} x {item.price.toLocaleString('vi-VN')}đ</p>
+                                                                    <p className="text-xs font-bold text-orange-600">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
+                                                                </div>
+                                                                {item.size && <p className="text-[10px] text-gray-400 mt-0.5">Size: {item.size}</p>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {items.length > 5 && (
+                                                        <p className="text-center py-1 text-xs text-orange-500 font-bold italic">...và {items.length - 5} món khác</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="p-4 bg-gray-50/80 border-t border-gray-100">
+                                            <div className="flex items-center justify-between mb-4 px-1">
+                                                <span className="text-sm font-bold text-gray-600">Tổng cộng:</span>
+                                                <span className="text-lg font-black text-orange-600">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                                            </div>
+                                            <button
+                                                onClick={() => { setShowCartPreview(false); navigate("/cart"); }}
+                                                className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all"
+                                            >
+                                                <span>Xem giỏ hàng</span>
+                                                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 )}
-                            </button>
+                            </div>
 
                             <div className="h-7 w-px bg-gray-200 mx-2 hidden sm:block"></div>
 
@@ -205,12 +299,12 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                                     className="w-full h-full object-cover block"
                                                     referrerPolicy="no-referrer"
                                                 />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-sm font-bold text-white">
-                                                        {initial}
-                                                    </div>
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-sm font-bold text-white">
+                                                    {initial}
+                                                </div>
                                             )}
-                                </div>
+                                        </div>
                                         <span className="hidden lg:inline text-sm font-semibold text-gray-700 max-w-[100px] truncate">{displayName.split(' ')[0]}</span>
                                         <span className="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
                                     </button>
@@ -243,7 +337,7 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                                     <div><p className="font-semibold">{t('common:nav.profile')}</p><p className="text-xs text-gray-500">{t('customer:profile.personalInfo')}</p></div>
                                                 </Link>
                                                 <Link to="/profile/history" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all group" onClick={() => setShowDropdown(false)}>
-                                                    <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative"><span className="material-symbols-outlined text-[18px] text-blue-600">receipt_long</span>{ordersNeedingReview > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>}</div>
+                                                    <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative"><span className="material-symbols-outlined text-[18px] text-blue-600">receipt_long</span>{activeOrdersCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>}</div>
                                                     <div><p className="font-semibold">{t('common:nav.orders')}</p><p className="text-xs text-gray-500">{t('customer:profile.orderHistory')}</p></div>
                                                 </Link>
                                                 <Link to="/favorites" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-700 transition-all group" onClick={() => setShowDropdown(false)}>
@@ -288,7 +382,7 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                 {isAuthenticated && (
                                     <Link to="/profile/history" className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200">
                                         {t('common:nav.orders')}
-                                        {ordersNeedingReview > 0 && <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{ordersNeedingReview}</span>}
+                                        {activeOrdersCount > 0 && <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{activeOrdersCount}</span>}
                                     </Link>
                                 )}
                             </nav>
@@ -347,11 +441,11 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
             {/* ═══════ MOBILE SLIDE MENU ═══════ */}
             <div
                 ref={mobileMenuRef}
-                className={`fixed inset - 0 z - [100] lg:hidden transition - opacity duration - 300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} `}
+                className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} `}
                 aria-hidden={!isMobileMenuOpen}
             >
                 <div className="absolute inset-0 bg-black/50" onClick={closeMobileMenu} />
-                <div className={`absolute top - 0 right - 0 h - full w - full max - w - [300px] bg - white shadow - 2xl flex flex - col transition - transform duration - 300 ease - out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"} `} style={{ zIndex: 101 }}>
+                <div className={`absolute top-0 right-0 h-full w-full max-w-[300px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"} `} style={{ zIndex: 101 }}>
                     <div className="flex items-center justify-between p-4 border-b border-orange-100 bg-[#fef7f0]">
                         {isAuthenticated ? (
                             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -393,7 +487,7 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                         <button onClick={() => { closeMobileMenu(); navigate("/cart"); }} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 text-left w-full">
                             <span className="material-symbols-outlined text-[22px] text-orange-500">shopping_cart</span>
                             {t('common:nav.cart')}
-                            {cartCount > 0 && <span className="ml-auto bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">{cartCount}</span>}
+                            {totalItems > 0 && <span className="ml-auto bg-orange-100 text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">{totalItems}</span>}
                         </button>
 
                         {isAuthenticated && (
@@ -406,7 +500,7 @@ const HomeHeader = ({ searchQuery, onSearchChange, cartCount = 3 }: HomeHeaderPr
                                 <Link to="/profile/history" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
                                     <span className="material-symbols-outlined text-[22px] text-orange-500">receipt_long</span>
                                     {t('common:nav.orders')}
-                                    {ordersNeedingReview > 0 && <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{ordersNeedingReview}</span>}
+                                    {activeOrdersCount > 0 && <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{activeOrdersCount}</span>}
                                 </Link>
                                 <Link to="/favorites" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
                                     <span className="material-symbols-outlined text-[22px] text-orange-500">favorite</span>

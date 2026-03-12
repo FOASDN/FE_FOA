@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./useCart";
+import type { CartItem } from "./useCart";
 import { useAuth } from "./useAuth";
 import { useToast } from "./useToast";
 import orderService from "@/services/order.service";
@@ -41,9 +42,22 @@ export interface VoucherState {
  */
 export const useCheckout = () => {
   const navigate = useNavigate();
-  const { items: cartItems, totalPrice, clearCart, orderNote } = useCart();
+  const location = useLocation();
+  const { items: storeCartItems, totalPrice: storeTotalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Ref to signal that order has been placed successfully.
+  // Using a ref (not state) so it survives the finally-block reset of isSubmitting
+  // without triggering additional re-renders that could re-run the cart-empty guard.
+  const orderPlacedRef = useRef(false);
+
+  const buyNowItem = location.state?.buyNowItem as CartItem | undefined;
+
+  const cartItems = buyNowItem ? [buyNowItem] : storeCartItems;
+  const totalPrice = buyNowItem
+    ? ((buyNowItem.price + (buyNowItem.extras?.reduce((s: number, e: { price: number }) => s + e.price, 0) || 0)) * buyNowItem.quantity)
+    : storeTotalPrice;
 
   // ── Address ───────────────────────────────────────────────────────────────
   const addresses = useMemo(
@@ -186,13 +200,19 @@ export const useCheckout = () => {
       const response = await orderService.placeOrder(payload);
       const order = response.data;
 
-      // Clear FE cart after successful order
-      clearCart();
-
       // If there's a checkoutUrl (PayOS), redirect to it
       if (order.checkoutUrl) {
         window.location.href = order.checkoutUrl;
         return;
+      }
+
+      // Mark order as placed BEFORE clearing cart so the Checkout guard
+      // (cartItems.length === 0) knows NOT to redirect to /menu.
+      orderPlacedRef.current = true;
+
+      // Clear FE cart (only for normal cart checkout, not buy-now)
+      if (!buyNowItem) {
+        clearCart();
       }
 
       // Navigate to success page, passing the order code via navigation state
@@ -222,6 +242,7 @@ export const useCheckout = () => {
     clearCart,
     navigate,
     toast,
+    buyNowItem,
   ]);
 
   // ────────────────────────────────────────────────────────────────────────
@@ -250,5 +271,6 @@ export const useCheckout = () => {
     // Submit
     isSubmitting,
     handlePlaceOrder,
+    orderPlacedRef,
   };
 };

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useCheckout } from "@/hooks/useCheckout";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/hooks/useToast";
+import paymentService from "@/services/payment.service";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -26,16 +27,41 @@ const CheckoutPage = () => {
     total,
     isSubmitting,
     handlePlaceOrder,
+    orderPlacedRef,
   } = useCheckout();
 
   const { toasts, dismiss } = useToast();
 
-  // Guard: redirect to menu if cart is empty
+  // PayOS cancel return: cancel created order (best-effort), then clean the URL
   useEffect(() => {
-    if (cartItems.length === 0) {
+    const sp = new URLSearchParams(window.location.search);
+    const payos = sp.get("payos");
+    const orderCodeRaw = sp.get("orderCode");
+
+    if (payos !== "cancel" || !orderCodeRaw) return;
+
+    const orderCode = Number(orderCodeRaw);
+    if (Number.isNaN(orderCode)) return;
+
+    paymentService
+      .cancelPayosOrder(orderCode)
+      .then(() => {
+        // Don't spam toast if user refreshes; clean URL immediately
+        navigate("/checkout", { replace: true });
+      })
+      .catch(() => {
+        navigate("/checkout", { replace: true });
+      });
+  }, [navigate]);
+
+  // Guard: redirect to menu if cart is empty.
+  // Skip if submitting OR if an order has already been placed successfully
+  // (orderPlacedRef stays true through finally-block isSubmitting reset).
+  useEffect(() => {
+    if (cartItems.length === 0 && !isSubmitting && !orderPlacedRef.current) {
       navigate("/menu", { replace: true });
     }
-  }, [cartItems.length, navigate]);
+  }, [cartItems.length, isSubmitting, orderPlacedRef, navigate]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1b140d] dark:text-white min-h-screen font-display">
@@ -125,11 +151,10 @@ const CheckoutPage = () => {
                       return (
                         <label
                           key={idx}
-                          className={`flex items-center gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${
-                            isSelected
-                              ? "border-primary bg-primary/5"
-                              : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                          }`}
+                          className={`flex items-center gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                            }`}
                           onClick={() => setSelectedAddress(addr)}
                         >
                           <input
@@ -182,11 +207,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "cash_on_delivery"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         account_balance_wallet
@@ -200,11 +224,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-card"
                       onClick={() => setPaymentMethod("credit_card")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "credit_card"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         credit_card
@@ -218,11 +241,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "bank_transfer"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         account_balance

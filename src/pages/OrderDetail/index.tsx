@@ -16,6 +16,7 @@ import orderService from "@/services/order.service";
 import type { Order } from "@/services/order.service";
 import { buildVariantChips } from "@/utils/cartVariants";
 import { useAuth } from "@/hooks/useAuth";
+import { OrderSupportChat } from "@/components/shared/OrderSupportChat";
 
 const OrderDetailPage = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isStaff, isAdmin } = useAuth();
+  const { user, isStaff, isAdmin } = useAuth();
   const isStaffView = isStaff || isAdmin;
 
   useEffect(() => {
@@ -128,6 +129,11 @@ const OrderDetailPage = () => {
   }
 
   const statusInfo = getStatusInfo(order.status);
+  const orderOwnerId =
+    typeof (order as any).user_id === "string"
+      ? (order as any).user_id
+      : (order as any).user_id?._id;
+  const canChat = !isStaffView && !!user?._id && !!orderOwnerId && user._id === orderOwnerId;
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1c130d] dark:text-white transition-colors duration-300 min-h-screen font-display pb-20">
@@ -456,6 +462,9 @@ const OrderDetailPage = () => {
                 )}
               </div>
             </div>
+
+            {/* Order Support Chat entry (customer owner only) */}
+            {canChat && <OrderSupportChat orderId={order._id} />}
           </div>
         </div>
       </main>
