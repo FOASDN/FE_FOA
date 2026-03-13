@@ -31,7 +31,7 @@ apiClient.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        await apiClient.get("/auth/refresh");
+        await apiClient.post("/auth/refresh");
         return apiClient(originalRequest);
       } catch {
         // Refresh failed — redirect to login (but don't loop if already there)
