@@ -153,10 +153,6 @@ const ShoppingCartPage = () => {
               <h1 className="text-3xl md:text-4xl font-extrabold text-text-main dark:text-white leading-tight">
                 {t("customer:cart.title")}
               </h1>
-              <p className="text-[#9a734c] text-base font-normal">
-                Bạn có {cartItems.reduce((acc, item) => acc + item.quantity, 0)}{" "}
-                món trong giỏ hàng
-              </p>
             </div>
 
             {/* List Items */}
@@ -228,7 +224,9 @@ const ShoppingCartPage = () => {
                           </p>
 
                           {(() => {
-                            const chips = buildVariantChips((item as any).variations);
+                            const chips = buildVariantChips(
+                              (item as any).variations,
+                            );
                             if (!chips.length) return null;
 
                             return (
@@ -256,7 +254,8 @@ const ShoppingCartPage = () => {
                           })()}
                         </div>
                         <p className="text-lg font-bold text-text-main dark:text-white">
-                          {(item.price * item.quantity).toLocaleString("vi-VN")}đ
+                          {(item.price * item.quantity).toLocaleString("vi-VN")}
+                          đ
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-4 sm:mt-0">
@@ -264,7 +263,9 @@ const ShoppingCartPage = () => {
                           onClick={() => removeItem(itemKey(item))}
                           className="text-red-500 text-sm font-medium flex items-center gap-1 hover:underline"
                         >
-                          <span className="material-symbols-outlined text-lg">delete</span>
+                          <span className="material-symbols-outlined text-lg">
+                            delete
+                          </span>
                           {t("common:actions.delete")}
                         </button>
                         <div className="flex items-center gap-3">
@@ -423,9 +424,6 @@ const ShoppingCartPage = () => {
 
                 {/* Price Breakdown */}
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/10">
-                  <p className="text-text-main dark:text-white text-lg font-bold mb-6">
-                    {t("customer:cart.grandTotal", "Tóm tắt đơn hàng")}
-                  </p>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center text-[#9a734c]">
                       <span className="text-sm">{t("customer:cart.subtotal")}</span>

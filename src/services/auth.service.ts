@@ -112,7 +112,10 @@ class AuthService {
   /**
    * Verify password reset OTP.
    */
-  async verifyPasswordResetOTP(data: { email: string; code: string }): Promise<BEResponse> {
+  async verifyPasswordResetOTP(data: {
+    email: string;
+    code: string;
+  }): Promise<BEResponse> {
     const response = await apiClient.post("/auth/password/verify-otp", data);
     return response.data;
   }
@@ -139,7 +142,7 @@ class AuthService {
    * Uses refreshToken cookie.
    */
   async refreshToken(): Promise<BEResponse> {
-    const response = await apiClient.get("/auth/refresh");
+    const response = await apiClient.post("/auth/refresh");
     return response.data;
   }
 

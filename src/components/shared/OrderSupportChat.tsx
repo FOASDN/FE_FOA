@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOrderSupportChat } from '@/hooks/useOrderSupportChat';
+import { useSupportChatStore } from '@/store/supportChatStore';
 
 interface OrderSupportChatProps {
     orderId?: string;
+    initialOpen?: boolean;
+    showEntryCard?: boolean;
+    onClose?: () => void;
 }
 
-export function OrderSupportChat({ orderId }: OrderSupportChatProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, showEntryCard = true, onClose }: OrderSupportChatProps) {
+    const { isOpen: storeIsOpen, orderId: storeOrderId, minimizeChat, openChat } = useSupportChatStore();
+    
+    // If showEntryCard is true, it's a local instance (like on Product page)
+    // If false, it's the global instance.
+    const [localIsOpen, setLocalIsOpen] = useState(initialOpen);
+    
+    const isOpen = showEntryCard ? localIsOpen : storeIsOpen;
+    const orderId = showEntryCard ? propOrderId : storeOrderId;
+
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -26,8 +38,12 @@ export function OrderSupportChat({ orderId }: OrderSupportChatProps) {
     }, [messages, isOpen]); // Thêm isOpen để cuộn khi vừa mở chat
 
     const handleToggle = () => {
-        if (!orderId) return;
-        setIsOpen((prev) => !prev);
+        if (showEntryCard) {
+            setLocalIsOpen(prev => !prev);
+        } else {
+            if (isOpen) minimizeChat();
+            else openChat(orderId);
+        }
     };
 
     const handleSend = async () => {
@@ -51,44 +67,43 @@ export function OrderSupportChat({ orderId }: OrderSupportChatProps) {
     return (
         <>
             {/* Card khởi động Chat (Entry Card) */}
-            <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <span className="relative flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                            </span>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                Hỗ trợ trực tuyến
+            {showEntryCard && (
+                <div className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                </span>
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    Hỗ trợ trực tuyến
+                                </p>
+                            </div>
+                            <p className="text-sm text-slate-700 dark:text-slate-200">
+                                {orderId 
+                                    ? 'Cần thay đổi món hoặc gặp sự cố? Nhắn ngay cho cửa hàng nhé!' 
+                                    : 'Bạn có thắc mắc về sản phẩm/dịch vụ? Nhắn ngay cho cửa hàng nhé!'}
                             </p>
                         </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-200">
-                            Cần thay đổi món hoặc gặp sự cố? Nhắn ngay cho cửa hàng nhé!
-                        </p>
-                        {!orderId && (
-                            <p className="mt-2 text-xs font-medium text-rose-500 bg-rose-50 dark:bg-rose-500/10 inline-block px-2 py-1 rounded-md">
-                                Không thể mở chat vì thiếu mã đơn hàng.
-                            </p>
-                        )}
-                    </div>
 
-                    <button
-                        type="button"
-                        onClick={handleToggle}
-                        disabled={!orderId}
-                        className="group flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 hover:-translate-y-0.5 transition-all active:scale-95 shrink-0"
-                    >
-                        <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">
-                            forum
-                        </span>
-                    </button>
+                        <button
+                            type="button"
+                            onClick={handleToggle}
+                            disabled={false}
+                            className="group flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 hover:-translate-y-0.5 transition-all active:scale-95 shrink-0"
+                        >
+                            <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">
+                                forum
+                            </span>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Floating Chat Panel (Cửa sổ chat nổi) */}
             {isOpen && (
-                <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300">
+                <div className="fixed bottom-[240px] right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300">
 
                     {/* Header */}
                     <div className="relative flex items-center justify-between px-5 py-4 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 z-10">
@@ -111,7 +126,14 @@ export function OrderSupportChat({ orderId }: OrderSupportChatProps) {
                         </div>
                         <button
                             type="button"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                if (showEntryCard) {
+                                    setLocalIsOpen(false);
+                                } else {
+                                    minimizeChat();
+                                }
+                                onClose?.();
+                            }}
                             className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition-colors"
                         >
                             <span className="material-symbols-outlined text-[20px]">expand_more</span>
@@ -195,6 +217,31 @@ export function OrderSupportChat({ orderId }: OrderSupportChatProps) {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+            {/* Floating Bubble (Bong bóng chat khi thu nhỏ) */}
+            {!isOpen && !showEntryCard && (
+                <div className="fixed bottom-[180px] right-6 z-[60] animate-in zoom-in fade-in duration-300">
+                    <button
+                        type="button"
+                        onClick={handleToggle}
+                        className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-orange-500 text-white shadow-2xl shadow-orange-500/40 hover:bg-orange-600 hover:scale-110 active:scale-95 transition-all pointer-events-auto"
+                    >
+                        <span className="material-symbols-outlined text-[28px] group-hover:rotate-12 transition-transform">
+                            forum
+                        </span>
+                        
+                        {/* Unread Badge for bubble */}
+                        {messages.filter(m => !m.isRead && m.senderType === 'STAFF').length > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-black text-white border-2 border-white shadow-lg animate-bounce">
+                                {messages.filter(m => !m.isRead && m.senderType === 'STAFF').length}
+                            </span>
+                        )}
+
+                        <span className="absolute -left-32 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap">
+                            Hỗ trợ trực tuyến 👋
+                        </span>
+                    </button>
                 </div>
             )}
         </>
