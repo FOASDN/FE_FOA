@@ -73,7 +73,7 @@ function App() {
   useEffect(() => {
     hydrate();
     hydrateCart();
-  }, [hydrate]);
+  }, [hydrate, hydrateCart]);
 
   useEffect(() => {
     // Only sync when FE believes we're logged in (hydrated from storage)

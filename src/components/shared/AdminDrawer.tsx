@@ -24,7 +24,9 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             setMounted(true);
             document.body.style.overflow = 'hidden';
         } else {
-            const timer = setTimeout(() => setMounted(false), 300);
+            const timer = setTimeout(() => {
+                setMounted(false);
+            }, 300);
             document.body.style.overflow = 'unset';
             return () => clearTimeout(timer);
         }

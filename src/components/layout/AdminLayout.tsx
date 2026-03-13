@@ -43,9 +43,12 @@ const SidebarItem = ({
 
   // Reset open state when collapsed
   useEffect(() => {
-    if (isCollapsed) setIsOpen(false);
-    else if (hasActiveChild) setIsOpen(true);
-  }, [isCollapsed, hasActiveChild]);
+    if (isCollapsed) {
+        if (isOpen) setIsOpen(false);
+    } else if (hasActiveChild) {
+        if (!isOpen) setIsOpen(true);
+    }
+  }, [isCollapsed, hasActiveChild, isOpen]);
 
   return (
     <div className="mb-0.5">

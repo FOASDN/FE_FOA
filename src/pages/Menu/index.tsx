@@ -23,7 +23,6 @@ import { checkProductAllergies } from "@/hooks/useAllergyCheck";
 import toast from "react-hot-toast";
 
 import { FoodCard } from "@/components/shared/FoodCard";
-import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/useToast";
 
 const FoodCardSkeleton = () => (

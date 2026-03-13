@@ -77,7 +77,7 @@ export const VariantModal: React.FC<VariantModalProps> = ({
   // re-init khi mở modal với product khác / variants khác
   React.useEffect(() => {
     if (open) setSelected(initSelected(variants));
-  }, [open, productName]);
+  }, [open, productName, variants]);
 
   const extra = useMemo(() => calcExtra(variants, selected), [variants, selected]);
   const unitPrice = basePrice + extra;

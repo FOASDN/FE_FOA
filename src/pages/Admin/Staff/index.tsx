@@ -153,16 +153,31 @@ const AdminStaff = () => {
         return matchesSearch && matchesRole;
     });
 
-    const getRoleBadge = (_role: string) => {
-        return "bg-orange-100 text-orange-700 border-orange-200";
+    const getRoleBadge = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin':
+                return "bg-purple-100 text-purple-700 border-purple-200";
+            case 'staff':
+                return "bg-blue-100 text-blue-700 border-blue-200";
+            default:
+                return "bg-orange-100 text-orange-700 border-orange-200";
+        }
     };
 
-    const getRoleLabel = (_role: string) => {
-        return "Nhân viên";
+    const getRoleLabel = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return "Quản trị viên";
+            case 'staff': return "Nhân viên";
+            default: return "Nhân viên";
+        }
     };
 
-    const getRoleIcon = (_role: string) => {
-        return "person";
+    const getRoleIcon = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return "shield_person";
+            case 'staff': return "person";
+            default: return "person";
+        }
     };
 
     const getStatusBadge = (status: StaffMember["status"]) => {

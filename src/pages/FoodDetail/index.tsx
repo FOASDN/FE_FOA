@@ -16,6 +16,7 @@ import {
   Check, ChevronLeft, ShieldCheck, Flame, ShoppingCart, Zap, SearchX
 } from "lucide-react";
 import { useAllergyCheck } from "@/hooks/useAllergyCheck";
+import { useCart } from "@/hooks/useCart";
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -29,6 +30,7 @@ const FoodDetailPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
   const { safeAddItem } = useSafeCart();
+  const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { openChat } = useSupportChatStore();
 
@@ -153,7 +155,7 @@ const FoodDetailPage = () => {
       return picked.map((choice) => ({ name: g.name, choice }));
     }) : [];
 
-    safeAddItem({
+    addItem({
       productId: product._id,
       name: product.name,
       image: getImageUrl(product.image),

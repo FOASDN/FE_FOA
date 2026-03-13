@@ -7,7 +7,9 @@ import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { getSupportSocket } from "@/lib/support-socket";
+import { apiClient } from "@/lib/api-client";
 import logo from "@/assets/logo.png";
+import { useCart } from "@/hooks/useCart";
 
 interface HomeHeaderProps {
   searchQuery?: string;
@@ -21,14 +23,14 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const { items: cartItems } = useCart();
+  const { items: cartItems, totalItems, totalPrice, clearCart } = useCart();
+
   const cartCount = cartItems.length;
   // Local input state for header search
   const [localSearch, setLocalSearch] = useState(searchQuery || "");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const { items, totalItems, totalPrice, clearCart } = useCart();
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
@@ -117,14 +119,6 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     };
   }, [isMobileMenuOpen]);
 
-  const [showNotificationDropdown, setShowNotificationDropdown] =
-    useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const notificationRef = useRef<HTMLDivElement>(null);
-  const { playNotification } = useNotificationSound();
-  const prevUnreadCountRef = useRef(0);
-  const hasInitializedNotificationRef = useRef(false);
   const fetchNotifications = async () => {
     try {
       const [listRes, countRes] = await Promise.all([
@@ -174,7 +168,6 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
       playNotification();
     }
 
-    fetchActiveOrders();
     const interval = setInterval(fetchActiveOrders, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
@@ -209,36 +202,15 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     };
   }, [isAuthenticated, user?._id, playNotification]);
 
-  // Click outside logic
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setShowDropdown(false);
-      }
-
-      if (notificationRef.current && !notificationRef.current.contains(target)) {
-        setShowNotificationDropdown(false);
-      }
-
-      if (mobileMenuRef.current && isMobileMenuOpen && !mobileMenuRef.current.contains(target)) {
-        const hamburger = document.querySelector("[data-mobile-trigger]");
-        if (hamburger && !hamburger.contains(target)) {
-          setIsMobileMenuOpen(false);
-        }
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMobileMenuOpen]);
-
-  // Body scroll lock
-  useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isMobileMenuOpen]);
+  // Placeholder for fetchActiveOrders if it was missed in previous views
+  const fetchActiveOrders = async () => {
+    try {
+      const res = await apiClient.get("/orders/active-count");
+      setActiveOrdersCount(res.data.data?.count || 0);
+    } catch (error) {
+      console.error("Failed to fetch active orders count", error);
+    }
+  };
 
   return (
     <>
@@ -430,9 +402,8 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                                   );
                                 }
                               }}
-                              className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-orange-50/60 transition-colors ${
-                                !noti.isRead ? "bg-orange-50/40" : "bg-white"
-                              }`}
+                              className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-orange-50/60 transition-colors ${!noti.isRead ? "bg-orange-50/40" : "bg-white"
+                                }`}
                             >
                               <div className="flex items-start gap-3">
                                 <div className="mt-1">
@@ -758,11 +729,10 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
       {/* ═══════ MOBILE SLIDE MENU ═══════ */}
       <div
         ref={mobileMenuRef}
-        className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${
-          isMobileMenuOpen
+        className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${isMobileMenuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
-        }`}
+          }`}
         aria-hidden={!isMobileMenuOpen}
       >
         <div
@@ -770,9 +740,8 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
           onClick={closeMobileMenu}
         />
         <div
-          className={`absolute top-0 right-0 h-full w-full max-w-[300px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute top-0 right-0 h-full w-full max-w-[300px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            }`}
           style={{ zIndex: 101 }}
         >
           <div className="flex items-center justify-between p-4 border-b border-orange-100 bg-[#fef7f0]">

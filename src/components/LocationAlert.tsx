@@ -16,14 +16,8 @@ const LocationAlert = ({ loading, isValid, error }: Props) => {
 
   useEffect(() => {
     // Chỉ hiện nếu user ĐÃ ĐĂNG NHẬP và CHƯA từng bấm "Đã hiểu" trong phiên này/sau khi login
-    if (isAuthenticated) {
-      const alreadyDismissed = localStorage.getItem(DISMISSED_KEY) === "true";
-      if (!alreadyDismissed) {
-        setVisible(true);
-      }
-    } else {
-      setVisible(false);
-    }
+    const alreadyDismissed = localStorage.getItem(DISMISSED_KEY) === "true";
+    setVisible(!!isAuthenticated && !alreadyDismissed);
   }, [isAuthenticated]); // Chạy lại khi trạng thái login thay đổi
 
   const handleDismiss = () => {

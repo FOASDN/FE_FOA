@@ -23,8 +23,8 @@ const RequireAuth = () => {
 
     useEffect(() => {
         if (!isAuthenticated && !hasWarned) {
-            toast('Bạn cần đăng nhập để tiếp tục.', 'warning');
             setHasWarned(true);
+            toast('Bạn cần đăng nhập để tiếp tục.', 'warning');
 
             const timer = setTimeout(() => {
                 setShouldRedirect(true);

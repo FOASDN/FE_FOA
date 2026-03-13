@@ -47,7 +47,6 @@ const RecommendedSection = () => {
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAIMode, setIsAIMode] = useState(false);
-  const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -171,7 +170,7 @@ const RecommendedSection = () => {
                   </p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => navigate("/login")}
                 className="bg-orange-600 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-orange-600/20 hover:bg-orange-700 transition-all whitespace-nowrap"
               >
@@ -207,14 +206,14 @@ const RecommendedSection = () => {
             const product = isAI ? item.data.product : item.data;
             const customBadge = isAI
               ? {
-                  text: `Điểm: ${item.data.healthScore}/10`,
-                  className: 'bg-emerald-100 text-emerald-700',
-                  icon: <Sparkles className="w-3 h-3" />
-                }
+                text: `Điểm: ${item.data.healthScore}/10`,
+                className: 'bg-emerald-100 text-emerald-700',
+                icon: <Sparkles className="w-3 h-3" />
+              }
               : {
-                  text: item.tag,
-                  className: 'bg-orange-100 text-orange-700'
-                };
+                text: item.tag,
+                className: 'bg-orange-100 text-orange-700'
+              };
 
             return (
               <FoodCard
