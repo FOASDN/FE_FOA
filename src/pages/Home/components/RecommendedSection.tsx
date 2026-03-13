@@ -9,6 +9,7 @@ import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
 import { useAuthStore } from "@/store/authStore";
 import { useCart } from "@/hooks/useCart";
+import toast from "react-hot-toast";
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -252,6 +253,7 @@ const RecommendedSection = () => {
                             price: product.price,
                             quantity: 1,
                           });
+                          toast.success("Đã thêm vào giỏ hàng!");
                         }}
                         className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shrink-0"
                       >

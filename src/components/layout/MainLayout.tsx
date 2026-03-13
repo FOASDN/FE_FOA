@@ -2,6 +2,8 @@ import { Outlet } from "react-router-dom";
 import HomeHeader from "@/pages/Home/components/HomeHeader";
 import HomeFooter from "@/pages/Home/components/HomeFooter";
 import { FloatingAIChatbot } from "@/components/shared/FloatingAIChatbot";
+import { OrderSupportChat } from "@/components/shared/OrderSupportChat";
+import { useSupportChatStore } from "@/store/supportChatStore";
 
 const MainLayout = () => {
     return (
@@ -12,8 +14,15 @@ const MainLayout = () => {
             </main>
             <HomeFooter />
             <FloatingAIChatbot />
+            <SupportChatGlobal />
         </div>
     );
+};
+
+const SupportChatGlobal = () => {
+    const { isMounted } = useSupportChatStore();
+    if (!isMounted) return null;
+    return <OrderSupportChat showEntryCard={false} />;
 };
 
 export default MainLayout;

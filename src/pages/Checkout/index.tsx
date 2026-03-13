@@ -64,7 +64,7 @@ const CheckoutPage = () => {
       // CartItems only have basic info. We need full Product data (recipe, health_tags)
       const fullProductsPromises = cartItems.map(item => productAPI.getProductById(item.productId));
       const responses = await Promise.all(fullProductsPromises);
-      
+
       const itemsToScan = responses.map((res, index) => ({
         product: res.data,
         quantity: cartItems[index].quantity

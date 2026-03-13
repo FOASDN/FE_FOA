@@ -165,6 +165,22 @@ const ProfileLayout = () => {
                 )}
               </NavLink>
               <NavLink
+                to="/messages"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${isActive ? "bg-accent text-foreground" : "hover:bg-accent text-muted-foreground hover:text-foreground"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>
+                      chat
+                    </span>
+                    Tin nhắn
+                  </>
+                )}
+              </NavLink>
+              <NavLink
                 to="/profile/wallet"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${isActive ? "bg-accent text-foreground" : "hover:bg-accent text-muted-foreground hover:text-foreground"

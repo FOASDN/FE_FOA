@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart";
 import { Plus, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { checkProductAllergies } from "@/hooks/useAllergyCheck";
+import toast from "react-hot-toast";
 
 // ─── Helpers ───
 
@@ -176,6 +177,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate, userAllergies = [
                 price: price,
                 quantity: 1,
               });
+              toast.success("Đã thêm vào giỏ hàng!");
             }}
             className="h-10 w-10 rounded-xl bg-slate-900 text-white hover:bg-orange-500 hover:text-white transition-colors shadow-sm flex items-center justify-center"
             title="Thêm vào giỏ hàng"

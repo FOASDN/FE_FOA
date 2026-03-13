@@ -9,7 +9,7 @@ interface UseOrderSupportChatOptions {
     enabled?: boolean;
 }
 
-export function useOrderSupportChat(orderId: string | undefined, options: UseOrderSupportChatOptions = {}) {
+export function useOrderSupportChat(orderId?: string, options: UseOrderSupportChatOptions = {}) {
     const { enabled = true } = options;
 
     const [conversation, setConversation] = useState<SupportConversation | null>(null);
@@ -21,14 +21,15 @@ export function useOrderSupportChat(orderId: string | undefined, options: UseOrd
     const conversationId = conversation?.id ?? (conversation as any)?._id ?? null;
 
     useEffect(() => {
-        if (!orderId || !enabled) return;
+        if (!enabled) return;
 
         const init = async () => {
             try {
                 setInitializing(true);
                 setError(null);
 
-                const convRes = await supportChatService.createOrGetConversation({ orderId });
+                const payload = orderId ? { orderId } : {};
+                const convRes = await supportChatService.createOrGetConversation(payload);
                 const conv = convRes.data.conversation;
                 setConversation(conv);
 
