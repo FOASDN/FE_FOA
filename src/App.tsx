@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useCart } from "./hooks/useCart";
 import HomePage from "./pages/Home";
@@ -27,9 +28,9 @@ import VoucherWalletPage from "./pages/VoucherWallet";
 import MembershipBenefitsPage from "./pages/MembershipBenefits";
 import OrderRatingPage from "./pages/OrderRating";
 import OrderSuccessPage from "./pages/OrderSuccess";
+import OrderFailedPage from "./pages/OrderFailed";
 import OrderDetailPage from "./pages/OrderDetail";
 import TrackOrderPage from "./pages/TrackOrder";
-import FavoritesPage from "./pages/Favorites";
 import AboutPage from "./pages/About";
 import NotFoundPage from "./pages/NotFound";
 import ForbiddenPage from "./pages/Forbidden";
@@ -41,21 +42,27 @@ import AdminOrders from "./pages/Admin/Orders";
 import AdminVouchers from "./pages/Admin/Vouchers";
 import AdminSettings from "./pages/Admin/Settings";
 import AdminCustomers from "./pages/Admin/Customers";
-import AdminAnalytics from "./pages/Admin/Analytics";
+// import AdminAnalytics from "./pages/Admin/Analytics";
 import AdminInventory from "./pages/Admin/Inventory";
 import AdminStaff from "./pages/Admin/Staff";
 import AdminReviews from "./pages/Admin/Reviews";
 import AdminDelivery from "./pages/Admin/Delivery";
 import AdminDispatch from "./pages/Admin/Dispatch";
 import AdminIngredients from "./pages/Admin/Ingredients";
+import AdminOperationsLayout from "./pages/Admin/OperationsLayout";
+import AdminCashControl from "./pages/Admin/CashControl";
 import StaffLayout from "./components/layout/StaffLayout";
 import StaffDashboard from "./pages/Staff/Dashboard";
 import StaffOrders from "./pages/Staff/Orders";
+import StaffOrderDetail from "./pages/Staff/Orders/OrderDetail";
 import StaffMenu from "./pages/Staff/Menu";
+import StaffSupportChatPage from "./pages/Staff/SupportChat";
+import StaffSupportSettingsPage from "./pages/Staff/SupportSettings";
+import StaffDeliveryMode from "./pages/Staff/DeliveryMode";
 import StaffCustomerProfile from "./pages/Staff/CustomerProfile";
 
 function App() {
-  const { hydrate } = useAuth();
+  const { hydrate, getUser, isAuthenticated } = useAuth();
   const { hydrate: hydrateCart } = useCart();
 
   useEffect(() => {
@@ -63,8 +70,16 @@ function App() {
     hydrateCart();
   }, [hydrate]);
 
+  useEffect(() => {
+    // Only sync when FE believes we're logged in (hydrated from storage)
+    if (isAuthenticated) {
+      void getUser();
+    }
+  }, [isAuthenticated, getUser]);
+
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -82,7 +97,6 @@ function App() {
               <Route index element={<ProfileSettingsPage />} />
               <Route path="history" element={<OrderHistoryTabContent />} />
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
-              <Route path="favorites" element={<FavoritesPage />} />
             </Route>
             <Route
               path="/history"
@@ -92,8 +106,9 @@ function App() {
             <Route path="/ai-suggestions" element={<SafeAlternativesPage />} />
             <Route path="/wallet" element={<VoucherWalletPage />} />
             <Route path="/membership" element={<MembershipBenefitsPage />} />
-            <Route path="/rating" element={<OrderRatingPage />} />
+            <Route path="/rating/:orderId" element={<OrderRatingPage />} />
             <Route path="/success" element={<OrderSuccessPage />} />
+            <Route path="/failed" element={<OrderFailedPage />} />
             <Route path="/order-detail/:id" element={<OrderDetailPage />} />
             <Route path="/track-order" element={<TrackOrderPage />} />
           </Route>
@@ -110,7 +125,11 @@ function App() {
             <Route path="/staff" element={<StaffLayout />}>
               <Route index element={<StaffDashboard />} />
               <Route path="orders" element={<StaffOrders />} />
+              <Route path="orders/:id" element={<StaffOrderDetail />} />
+              <Route path="delivery" element={<StaffDeliveryMode />} />
               <Route path="menu" element={<StaffMenu />} />
+              <Route path="support" element={<StaffSupportChatPage />} />
+              <Route path="support/settings" element={<StaffSupportSettingsPage />} />
               <Route path="customers" element={<StaffCustomerProfile />} />
               <Route path="customers/:id" element={<StaffCustomerProfile />} />
               <Route path="*" element={<Navigate to="/staff" replace />} />
@@ -122,17 +141,19 @@ function App() {
           <Route element={<RequireRole allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route element={<AdminOperationsLayout />}>
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="cash-control" element={<AdminCashControl />} />
+                <Route path="dispatch" element={<AdminDispatch />} />
+                <Route path="delivery" element={<AdminDelivery />} />
+              </Route>
               <Route path="menu" element={<AdminMenuManagement />} />
-              <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="inventory" element={<AdminInventory />} />
               <Route path="staff" element={<AdminStaff />} />
               <Route path="reviews" element={<AdminReviews />} />
-              <Route path="delivery" element={<AdminDelivery />} />
               <Route path="vouchers" element={<AdminVouchers />} />
               <Route path="settings" element={<AdminSettings />} />
-              <Route path="dispatch" element={<AdminDispatch />} />
               <Route path="ingredients" element={<AdminIngredients />} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Route>

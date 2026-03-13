@@ -1,31 +1,54 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
 import {
   DIET_OPTIONS,
   ALLERGY_OPTIONS,
   HEALTH_GOALS,
   PENDING_PREFS_KEY,
   type PendingPreferences,
+
 } from "@/constants/preferences";
 
 const HEALTH_COLOR = "var(--health)";
 
 const STEPS = [
   { id: 1, label: "Chế độ ăn", icon: "restaurant_menu" },
-  { id: 2, label: "Dị ứng",    icon: "warning"         },
-  { id: 3, label: "Mục tiêu",  icon: "flag"            },
+  { id: 2, label: "Dị ứng", icon: "warning" },
+  { id: 3, label: "Mục tiêu", icon: "flag" },
 ];
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
 
-  const [step, setStep]               = useState(1);
-  const [diet, setDiet]               = useState<string[]>([]);
-  const [allergies, setAllergies]     = useState<string[]>([]);
+  const [step, setStep] = useState(1);
+  const [diet, setDiet] = useState<string[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
   const [healthGoals, setHealthGoals] = useState<string[]>([]);
   const [allergySearch, setAllergySearch] = useState("");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* ── helpers ── */
   const toggleSet = (
@@ -86,13 +109,12 @@ const OnboardingPage = () => {
                 <button
                   type="button"
                   onClick={() => setStep(s.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    step === s.id
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === s.id
                       ? "text-white"
                       : step > s.id
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-600"
-                      : "bg-muted text-muted-foreground"
-                  }`}
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-600"
+                        : "bg-muted text-muted-foreground"
+                    }`}
                   style={step === s.id ? { backgroundColor: HEALTH_COLOR } : undefined}
                 >
                   {step > s.id ? (
@@ -193,11 +215,10 @@ const OnboardingPage = () => {
                       key={opt.id}
                       type="button"
                       onClick={() => toggleSet(setDiet, opt.id)}
-                      className={`flex items-center gap-2 h-11 px-5 rounded-xl font-medium border transition-all hover:brightness-105 active:scale-95 ${
-                        active
+                      className={`flex items-center gap-2 h-11 px-5 rounded-xl font-medium border transition-all hover:brightness-105 active:scale-95 ${active
                           ? "text-white border-transparent shadow-md"
                           : "bg-muted/50 text-foreground border-border hover:border-[var(--health)]/50"
-                      }`}
+                        }`}
                       style={active ? { backgroundColor: HEALTH_COLOR } : undefined}
                     >
                       <span className="material-symbols-outlined text-[18px]">
@@ -275,11 +296,10 @@ const OnboardingPage = () => {
                     return (
                       <label
                         key={a.id}
-                        className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
-                          active
+                        className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${active
                             ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10"
                             : "border-border bg-muted/30 hover:bg-muted/60"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div
@@ -356,21 +376,18 @@ const OnboardingPage = () => {
                       key={g.id}
                       type="button"
                       onClick={() => toggleSet(setHealthGoals, g.id)}
-                      className={`flex items-center gap-4 p-5 rounded-2xl border text-left transition-all group ${
-                        active
+                      className={`flex items-center gap-4 p-5 rounded-2xl border text-left transition-all group ${active
                           ? "border-2 border-primary bg-primary/5"
                           : "border border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`size-12 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110 ${
-                          active ? "bg-primary" : "bg-card"
-                        }`}
+                        className={`size-12 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110 ${active ? "bg-primary" : "bg-card"
+                          }`}
                       >
                         <span
-                          className={`material-symbols-outlined ${
-                            active ? "text-primary-foreground" : "text-primary"
-                          }`}
+                          className={`material-symbols-outlined ${active ? "text-primary-foreground" : "text-primary"
+                            }`}
                         >
                           {g.icon}
                         </span>

@@ -25,7 +25,6 @@ const HomePage = () => {
        <div className="min-h-screen">
 
             {/* --- HEADER --- */}
-            {/* --- HEADER --- */}
 
 
             {/* --- MAIN CONTENT --- */}
@@ -62,7 +61,6 @@ const HomePage = () => {
                 </div>
             </main>
 
-            {/* --- FOOTER --- */}
             {/* --- FOOTER --- */}
 
         </div>

@@ -15,6 +15,7 @@ const ResetPasswordPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
+    const isInvite = searchParams.get("type") === "invite";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +54,9 @@ const ResetPasswordPage = () => {
                 <div className="relative z-10 flex flex-col justify-end p-16 w-full h-full">
                     <div className="max-w-xl">
                         <h1 className="text-white text-5xl font-black leading-tight tracking-tight mb-6">
-                            {t('auth:resetPassword.heroTitle', 'Tạo mật khẩu mới, thật an toàn.')}
+                            {isInvite
+                                ? "Chào mừng thành viên mới!"
+                                : t('auth:resetPassword.heroTitle', 'Tạo mật khẩu mới, thật an toàn.')}
                         </h1>
                         <div className="h-1 w-20 bg-orange-500 rounded-full" />
                     </div>
@@ -76,7 +79,7 @@ const ResetPasswordPage = () => {
                         </Link>
                         <div className="flex flex-col gap-1">
                             <h2 className="text-foreground text-3xl font-black tracking-tight">
-                                {t('auth:resetPassword.title')}
+                                {isInvite ? "Thiết lập mật khẩu" : t('auth:resetPassword.title')}
                             </h2>
                         </div>
                     </div>
@@ -88,7 +91,7 @@ const ResetPasswordPage = () => {
                                 <span className="material-symbols-outlined text-emerald-600 text-4xl">check_circle</span>
                             </div>
                             <p className="text-foreground text-lg font-semibold">
-                                {t('auth:resetPassword.success')}
+                                {isInvite ? "Tài khoản của bạn đã sẵn sàng!" : t('auth:resetPassword.success')}
                             </p>
                             <p className="text-muted-foreground text-sm">
                                 {t('auth:resetPassword.redirecting', 'Đang chuyển hướng đến trang đăng nhập...')}
@@ -175,7 +178,7 @@ const ResetPasswordPage = () => {
                                 {loading ? (
                                     <span className="material-symbols-outlined animate-spin">progress_activity</span>
                                 ) : (
-                                    t('auth:resetPassword.submit')
+                                    isInvite ? "Kích hoạt tài khoản" : t('auth:resetPassword.submit')
                                 )}
                             </button>
 

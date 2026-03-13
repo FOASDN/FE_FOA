@@ -11,6 +11,8 @@ import { useAuthStore } from "@/store/authStore";
 import type { AuthAddress } from "@/store/authStore";
 import { AllergyWarningDialog, scanCartForAllergies } from "@/components/shared/AllergyWarningDialog";
 import productAPI from "@/services/product.service";
+import { TicketVoucher } from "@/components/shared/TicketVoucher";
+import paymentService from "@/services/payment.service";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -35,10 +37,14 @@ const CheckoutPage = () => {
     shippingResult,
     isSubmitting,
     handlePlaceOrder,
+    vouchers,
+    orderPlacedRef,
   } = useCheckout();
 
-  const { toasts, dismiss } = useToast();
-  
+  const [isVouchersOpen, setIsVouchersOpen] = useState(false);
+
+  const { toasts, dismiss, toast } = useToast();
+
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const userAllergies = user?.preferences?.allergies ?? [];
@@ -103,18 +109,42 @@ const CheckoutPage = () => {
     if (updatedUser) {
       setUser({ ...user, addresses: (updatedUser as any).addresses ?? updated });
     }
-    
+
     setIsAddressModalOpen(false);
     // Auto-select the newly added address
     setSelectedAddress(newAddr as any);
   };
 
-  // Guard: redirect to menu if cart is empty
+  // PayOS cancel return: cancel created order (best-effort), then clean the URL
   useEffect(() => {
-    if (cartItems.length === 0) {
+    const sp = new URLSearchParams(window.location.search);
+    const payos = sp.get("payos");
+    const orderCodeRaw = sp.get("orderCode");
+
+    if (payos !== "cancel" || !orderCodeRaw) return;
+
+    const orderCode = Number(orderCodeRaw);
+    if (Number.isNaN(orderCode)) return;
+
+    paymentService
+      .cancelPayosOrder(orderCode)
+      .then(() => {
+        // Don't spam toast if user refreshes; clean URL immediately
+        navigate("/checkout", { replace: true });
+      })
+      .catch(() => {
+        navigate("/checkout", { replace: true });
+      });
+  }, [navigate]);
+
+  // Guard: redirect to menu if cart is empty.
+  // Skip if submitting OR if an order has already been placed successfully
+  // (orderPlacedRef stays true through finally-block isSubmitting reset).
+  useEffect(() => {
+    if (cartItems.length === 0 && !isSubmitting && !orderPlacedRef.current) {
       navigate("/menu", { replace: true });
     }
-  }, [cartItems.length, navigate]);
+  }, [cartItems.length, isSubmitting, orderPlacedRef, navigate]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1b140d] dark:text-white min-h-screen font-display">
@@ -208,13 +238,12 @@ const CheckoutPage = () => {
                         return (
                           <label
                             key={idx}
-                            className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${
-                              isAddrBlocked
-                                ? "border-red-300 dark:border-red-800 opacity-80"
-                                : isSelected
+                            className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isAddrBlocked
+                              ? "border-red-300 dark:border-red-800 opacity-80"
+                              : isSelected
                                 ? "border-primary bg-primary/5"
                                 : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                            }`}
+                              }`}
                             onClick={() => !isAddrBlocked && setSelectedAddress(addr)}
                           >
                             <input
@@ -306,11 +335,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "cash_on_delivery"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         account_balance_wallet
@@ -324,11 +352,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-card"
                       onClick={() => setPaymentMethod("credit_card")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "credit_card"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         credit_card
@@ -342,11 +369,10 @@ const CheckoutPage = () => {
                     <button
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${
-                        paymentMethod === "bank_transfer"
-                          ? "border-2 border-primary bg-primary/5"
-                          : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
+                        ? "border-2 border-primary bg-primary/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        }`}
                     >
                       <span className="material-symbols-outlined">
                         account_balance
@@ -479,6 +505,47 @@ const CheckoutPage = () => {
                       {t("customer:cart.voucherCode")}
                     </label>
 
+                    {/* Vouchers Selection Section */}
+                    <div className="mb-4">
+                      <button
+                        onClick={() => setIsVouchersOpen(!isVouchersOpen)}
+                        className="flex items-center gap-2 font-bold text-text-main dark:text-white text-sm hover:text-primary transition-colors mb-2"
+                      >
+                        Chọn khuyến mãi / Voucher
+                        <span className="material-symbols-outlined transition-transform duration-200" style={{ transform: isVouchersOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                          expand_more
+                        </span>
+                      </button>
+
+                      {isVouchersOpen && (
+                        <div className="flex flex-col gap-3 mb-4 pr-1">
+                          {vouchers.length === 0 ? (
+                            <p className="text-xs text-gray-500 italic">Không có voucher khả dụng</p>
+                          ) : (
+                            vouchers.map(v => (
+                              <div key={v._id} onClick={() => {
+                                if (v.min_order_amount && subtotal < v.min_order_amount) {
+                                  toast(`Đơn hàng tối thiểu ${v.min_order_amount.toLocaleString("vi-VN")}đ để dùng voucher này`, "error");
+                                  return;
+                                }
+                                setVoucherCode(v.code);
+                                applyVoucher(v.code);
+                              }} className="cursor-pointer">
+                                <TicketVoucher
+                                  code={v.code}
+                                  title={v.title}
+                                  discountValue={v.discount_type === 'percentage' ? `${v.discount_value}%` : `${v.discount_value.toLocaleString("vi-VN")}đ`}
+                                  minOrder={v.min_order_amount ? `${v.min_order_amount.toLocaleString("vi-VN")}đ` : "0đ"}
+                                  // expiryDate={new Date(v.end_date).toLocaleDateString("vi-VN")}
+                                  className={`${voucherState.appliedVoucher?._id === v._id ? "ring-2 ring-primary scale-[1.02]" : "scale-100 opacity-90 hover:opacity-100"} shadow-sm transition-all origin-left pointer-events-none`}
+                                />
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {voucherState.appliedVoucher ? (
                       /* Applied voucher badge */
                       <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg px-4 py-3">
@@ -516,7 +583,7 @@ const CheckoutPage = () => {
                         />
                         <button
                           id="apply-voucher-btn"
-                          onClick={applyVoucher}
+                          onClick={() => applyVoucher()}
                           disabled={
                             !voucherState.code.trim() ||
                             voucherState.isValidating

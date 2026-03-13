@@ -4,10 +4,12 @@ import { useTranslation } from "react-i18next";
 // Removed useAuthStore
 import { useToast } from "@/hooks/useToast";
 import { userService } from "@/services/profile.service";
+
 import {
   DIET_OPTIONS,
   ALLERGY_OPTIONS,
   HEALTH_GOALS,
+
 } from "@/constants/preferences";
 
 type Tab = "profile" | "health" | "password";
@@ -59,6 +61,7 @@ const ProfileSettingsPage = () => {
     health_goals: string[];
   }>({ dietary: [], allergies: [], health_goals: [] });
   const [isHealthEditMode, setIsHealthEditMode] = useState(false);
+
 
   /* ── helpers ── */
   const toggleSet = (
@@ -115,6 +118,26 @@ const ProfileSettingsPage = () => {
     run();
     return () => { mounted = false; };
   }, []);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* ── save personal info ── */
   const onUpdateProfile = async () => {

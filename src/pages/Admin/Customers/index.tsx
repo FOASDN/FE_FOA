@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import apiClient from "@/lib/api-client";
+import { AdminDrawer } from "@/components/shared/AdminDrawer";
+import { AlertTriangle } from "lucide-react";
 
 // ============================================================
 // TYPES – map the shape returned by GET /api/admin/customers
@@ -11,7 +13,6 @@ interface CustomerAPI {
     name?: string;
     email: string;
     phone?: string;
-    phoneNumber?: string;
     avatar?: string;
     createdAt?: string;
     joinDate?: string;
@@ -22,6 +23,7 @@ interface CustomerAPI {
     isActive?: boolean;
     lastOrderDate?: string;
     role?: string;
+    cancellation_rate?: number;
 }
 
 interface Customer {
@@ -37,6 +39,7 @@ interface Customer {
     status: "active" | "inactive" | "vip";
     lastOrderDate: string;
     role?: string;
+    cancellationRate: number;
 }
 
 interface ApiResponse {
@@ -62,7 +65,7 @@ const normalizeCustomer = (c: CustomerAPI): Customer => ({
     id: c._id,
     name: c.fullName ?? c.name ?? "—",
     email: c.email ?? "—",
-    phone: c.phone ?? c.phoneNumber ?? "—",
+    phone: c.phone ?? "—",
     avatar: c.avatar,
     joinDate: c.createdAt ?? c.joinDate ?? new Date().toISOString(),
     totalOrders: c.totalOrders ?? 0,
@@ -71,6 +74,7 @@ const normalizeCustomer = (c: CustomerAPI): Customer => ({
     status: normalizeStatus(c.status ?? c.isActive),
     lastOrderDate: c.lastOrderDate ?? c.createdAt ?? new Date().toISOString(),
     role: c.role,
+    cancellationRate: c.cancellation_rate ?? 0,
 });
 
 const getStatusBadge = (status: Customer["status"]) => {
@@ -116,6 +120,28 @@ const AdminCustomers = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const LIMIT = 10;
+
+    const [incidents, setIncidents] = useState<any[]>([]);
+    const [loadingIncidents, setLoadingIncidents] = useState(false);
+    const [activeTab, setActiveTab] = useState("overview");
+
+    // Fetch incidents when tab changes or customer changes
+    useEffect(() => {
+        if (selectedCustomer && activeTab === "incidents") {
+            const fetchIncidents = async () => {
+                setLoadingIncidents(true);
+                try {
+                    const res = await apiClient.get(`/admin/customers/${selectedCustomer.id}/incidents`);
+                    setIncidents(res.data.data);
+                } catch (err) {
+                    console.error("Lỗi tải lịch sử sự cố:", err);
+                } finally {
+                    setLoadingIncidents(false);
+                }
+            };
+            fetchIncidents();
+        }
+    }, [selectedCustomer, activeTab]);
 
     // ----------------------------------------------------------
     // Fetch từ API
@@ -366,7 +392,7 @@ const AdminCustomers = () => {
                                             Tổng đơn
                                         </th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase text-[#9a734c] tracking-wider text-right">
-                                            Tổng chi tiêu
+                                            Tỷ lệ hủy
                                         </th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase text-[#9a734c] tracking-wider text-right">
                                             Điểm
@@ -431,8 +457,11 @@ const AdminCustomers = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className="text-sm font-bold text-[#1b140d]">
-                                                    {customer.totalSpent.toLocaleString("vi-VN")}₫
+                                                <span className={clsx(
+                                                    "text-sm font-bold",
+                                                    customer.cancellationRate > 20 ? "text-red-600" : "text-[#1b140d]"
+                                                )}>
+                                                    {customer.cancellationRate.toFixed(1)}%
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
@@ -533,143 +562,155 @@ const AdminCustomers = () => {
                 )}
             </div>
 
-            {/* Customer Detail Modal */}
-            {selectedCustomer && (
-                <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-                    onClick={() => setSelectedCustomer(null)}
-                >
-                    <div
-                        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Modal Header */}
-                        <div className="sticky top-0 bg-white border-b border-[#e7dbcf] px-8 py-6 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                {selectedCustomer.avatar ? (
-                                    <img
-                                        src={selectedCustomer.avatar}
-                                        alt={selectedCustomer.name}
-                                        className="w-16 h-16 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full bg-[#ee8c2b]/20 flex items-center justify-center text-[#ee8c2b] font-bold text-2xl">
-                                        {selectedCustomer.name.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                                <div>
-                                    <h3 className="text-2xl font-bold text-[#1b140d]">
-                                        {selectedCustomer.name}
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <p className="text-sm text-[#9a734c] font-mono">
-                                            #{selectedCustomer.id.slice(-8).toUpperCase()}
-                                        </p>
-                                        <span
-                                            className={clsx(
-                                                "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border",
-                                                getStatusBadge(selectedCustomer.status)
-                                            )}
-                                        >
-                                            {getStatusLabel(selectedCustomer.status)}
-                                        </span>
-                                    </div>
+            {/* Customer Detail Drawer */}
+            <AdminDrawer
+                isOpen={!!selectedCustomer}
+                onClose={() => setSelectedCustomer(null)}
+                title="Hồ sơ khách hàng"
+            >
+                {selectedCustomer && (
+                    <div className="space-y-8">
+                        {/* Profile Header */}
+                        <div className="flex items-center gap-6">
+                            {selectedCustomer.avatar ? (
+                                <img
+                                    src={selectedCustomer.avatar}
+                                    alt={selectedCustomer.name}
+                                    className="w-20 h-20 rounded-2xl object-cover border border-[#e7dbcf]"
+                                />
+                            ) : (
+                                <div className="w-20 h-20 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 font-black text-3xl">
+                                    {selectedCustomer.name.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <div>
+                                <h3 className="text-2xl font-black text-[#1b140d] tracking-tight">
+                                    {selectedCustomer.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-sm text-[#9a734c] font-mono font-bold">
+                                        ID: {selectedCustomer.id.slice(-8).toUpperCase()}
+                                    </p>
+                                    <span
+                                        className={clsx(
+                                            "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
+                                            getStatusBadge(selectedCustomer.status)
+                                        )}
+                                    >
+                                        {getStatusLabel(selectedCustomer.status)}
+                                    </span>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedCustomer(null)}
-                                className="p-2 hover:bg-[#f3ede7] rounded-lg transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[#1b140d]">close</span>
-                            </button>
                         </div>
 
-                        {/* Modal Content */}
-                        <div className="p-8 space-y-6">
-                            {/* Contact Info */}
-                            <div>
-                                <h4 className="text-lg font-bold text-[#1b140d] mb-4">Thông tin liên hệ</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs font-medium text-[#9a734c] mb-1">Email</p>
-                                        <p className="text-sm text-[#1b140d]">{selectedCustomer.email}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-[#9a734c] mb-1">Số điện thoại</p>
-                                        <p className="text-sm text-[#1b140d]">{selectedCustomer.phone}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-[#9a734c] mb-1">Ngày tham gia</p>
-                                        <p className="text-sm text-[#1b140d]">
-                                            {new Date(selectedCustomer.joinDate).toLocaleDateString("vi-VN")}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-medium text-[#9a734c] mb-1">Đơn hàng gần nhất</p>
-                                        <p className="text-sm text-[#1b140d]">
-                                            {new Date(selectedCustomer.lastOrderDate).toLocaleDateString("vi-VN")}
-                                        </p>
-                                    </div>
-                                    {selectedCustomer.role && (
-                                        <div>
-                                            <p className="text-xs font-medium text-[#9a734c] mb-1">Vai trò</p>
-                                            <p className="text-sm text-[#1b140d] capitalize">{selectedCustomer.role}</p>
-                                        </div>
-                                    )}
+                        {/* Customer Health Check / Risk Level */}
+                        {selectedCustomer.cancellationRate > 15 && (
+                            <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-4">
+                                <AlertTriangle className="text-red-600 shrink-0 mt-0.5" size={20} />
+                                <div>
+                                    <p className="text-red-900 font-bold text-sm">Cảnh báo: Tỷ lệ hủy đơn cao ({selectedCustomer.cancellationRate.toFixed(1)}%)</p>
+                                    <p className="text-red-700 text-xs">Khách hàng này có dấu hiệu đặt đơn không nhận hoặc thường xuyên thay đổi ý định.</p>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Stats */}
-                            <div>
-                                <h4 className="text-lg font-bold text-[#1b140d] mb-4">Thống kê</h4>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-[#f3ede7] rounded-lg p-4 text-center">
-                                        <p className="text-2xl font-bold text-[#1b140d]">
-                                            {selectedCustomer.totalOrders}
-                                        </p>
-                                        <p className="text-xs text-[#9a734c] mt-1">Tổng đơn hàng</p>
-                                    </div>
-                                    <div className="bg-[#f3ede7] rounded-lg p-4 text-center">
-                                        <p className="text-xl font-bold text-[#1b140d]">
-                                            {selectedCustomer.totalSpent.toLocaleString("vi-VN")}₫
-                                        </p>
-                                        <p className="text-xs text-[#9a734c] mt-1">Tổng chi tiêu</p>
-                                    </div>
-                                    <div className="bg-[#ee8c2b]/10 rounded-lg p-4 text-center border border-[#ee8c2b]/20">
-                                        <p className="text-2xl font-bold text-[#ee8c2b]">
-                                            {selectedCustomer.loyaltyPoints}
-                                        </p>
-                                        <p className="text-xs text-[#9a734c] mt-1">Điểm thưởng</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Full Customer ID */}
-                            <div className="bg-[#f3ede7] rounded-lg p-3">
-                                <p className="text-xs font-medium text-[#9a734c] mb-1">Customer ID</p>
-                                <p className="text-xs text-[#1b140d] font-mono break-all">{selectedCustomer.id}</p>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-4 border-t border-[#e7dbcf]">
+                        {/* Tabs */}
+                        <div className="space-y-6">
+                            <div className="flex border-b border-[#e7dbcf]">
                                 <button
-                                    type="button"
-                                    className="flex-1 px-4 py-3 bg-[#ee8c2b] text-white rounded-lg font-bold hover:bg-[#d87c24] transition-colors"
+                                    onClick={() => setActiveTab("overview")}
+                                    className={clsx(
+                                        "px-4 py-3 text-sm font-bold transition-all relative",
+                                        activeTab === "overview" ? "text-orange-600" : "text-[#9a734c]"
+                                    )}
                                 >
-                                    Xem lịch sử đơn hàng
+                                    Tổng quan
+                                    {activeTab === "overview" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600" />}
                                 </button>
                                 <button
-                                    type="button"
-                                    className="px-4 py-3 border border-[#e7dbcf] rounded-lg font-bold text-[#1b140d] hover:bg-[#f3ede7] transition-colors"
+                                    onClick={() => setActiveTab("incidents")}
+                                    className={clsx(
+                                        "px-4 py-3 text-sm font-bold transition-all relative flex items-center gap-2",
+                                        activeTab === "incidents" ? "text-orange-600" : "text-[#9a734c]"
+                                    )}
                                 >
-                                    Gửi thông báo
+                                    Lịch sử sự cố
+                                    {selectedCustomer.cancellationRate > 0 && (
+                                        <span className="w-5 h-5 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-[10px]">
+                                            !
+                                        </span>
+                                    )}
+                                    {activeTab === "incidents" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600" />}
+                                </button>
+                            </div>
+
+                            {activeTab === "overview" ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="p-4 bg-[#fcfaf8] rounded-2xl border border-[#e7dbcf]/50">
+                                            <p className="text-[10px] font-black text-[#9a734c] uppercase tracking-widest mb-1">Email</p>
+                                            <p className="text-sm text-[#1b140d] font-bold">{selectedCustomer.email}</p>
+                                        </div>
+                                        <div className="p-4 bg-[#fcfaf8] rounded-2xl border border-[#e7dbcf]/50">
+                                            <p className="text-[10px] font-black text-[#9a734c] uppercase tracking-widest mb-1">Số điện thoại</p>
+                                            <p className="text-sm text-[#1b140d] font-bold">{selectedCustomer.phone}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="p-4 bg-white border border-[#e7dbcf] rounded-2xl text-center">
+                                            <p className="text-2xl font-black text-[#1b140d]">{selectedCustomer.totalOrders}</p>
+                                            <p className="text-[10px] font-bold text-[#9a734c] uppercase tracking-wider">Đơn hàng</p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-[#e7dbcf] rounded-2xl text-center">
+                                            <p className="text-xl font-black text-orange-600">{selectedCustomer.loyaltyPoints}</p>
+                                            <p className="text-[10px] font-bold text-[#9a734c] uppercase tracking-wider">Điểm tích lũy</p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-[#e7dbcf] rounded-2xl text-center">
+                                            <p className="text-2xl font-black text-[#1b140d]">{selectedCustomer.cancellationRate.toFixed(0)}%</p>
+                                            <p className="text-[10px] font-bold text-[#9a734c] uppercase tracking-wider">Tỷ lệ hủy</p>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="space-y-4">
+                                    {loadingIncidents ? (
+                                        <div className="py-10 flex justify-center">
+                                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    ) : incidents.length === 0 ? (
+                                        <div className="py-10 text-center text-gray-500 text-sm italic">
+                                            Không có sự cố nào được ghi nhận.
+                                        </div>
+                                    ) : (
+                                        incidents.map((incident: any) => (
+                                            <div key={incident._id} className="p-4 bg-red-50/50 border border-red-100 rounded-2xl">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="text-xs font-black text-red-600 uppercase tracking-tighter">Đơn hàng #{incident.code}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold">{new Date(incident.createdAt).toLocaleDateString("vi-VN")}</span>
+                                                </div>
+                                                <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                                                    {incident.cancellation_reason || "Đơn hàng bị khách hủy hoặc từ chối nhận."}
+                                                </p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            <div className="pt-6 flex gap-3">
+                                <button className="flex-1 bg-orange-600 text-white font-black py-3 rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-500 transition-all active:scale-95">
+                                    Xem lịch sử mua hàng
+                                </button>
+                                <button className="px-4 py-3 border-2 border-[#e7dbcf] text-[#1b140d] font-black rounded-xl hover:bg-[#fcfaf8] transition-all">
+                                    Chặn khách hàng
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </AdminDrawer>
         </div>
     );
 };
