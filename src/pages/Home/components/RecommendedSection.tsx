@@ -8,6 +8,7 @@ import type { AIRecommendation } from "@/services/recommendation.service";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
 import { useAuthStore } from "@/store/authStore";
+import { useCart } from "@/hooks/useCart";
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ const RecommendedSection = () => {
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAIMode, setIsAIMode] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +66,7 @@ const RecommendedSection = () => {
             const res = await recommendationService.getAIRecommendations();
             const aiData = res.data.data;
             if (!cancelled && aiData && aiData.length > 0) {
-              setItems(
-                aiData.map((d: any) => ({ type: "ai", data: d })),
-              );
+              setItems(aiData.map((d: any) => ({ type: "ai", data: d })));
               setIsAIMode(true);
               return;
             }
@@ -126,9 +126,9 @@ const RecommendedSection = () => {
           <p className="text-sm text-slate-500 font-medium ml-8">
             {isAIMode
               ? t(
-                "customer:home.aiSuggestionSub",
-                "Dựa trên sở thích và lịch sử đặt hàng của bạn",
-              )
+                  "customer:home.aiSuggestionSub",
+                  "Dựa trên sở thích và lịch sử đặt hàng của bạn",
+                )
               : "Những món được đánh giá cao nhất hôm nay"}
           </p>
         </div>
@@ -241,15 +241,22 @@ const RecommendedSection = () => {
                         </span>
                         {product.time}
                       </div>
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/food/${product._id}`);
+
+                          addItem({
+                            productId: product._id,
+                            name: product.name,
+                            image: imageUrl,
+                            price: product.price,
+                            quantity: 1,
+                          });
                         }}
                         className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shrink-0"
                       >
-                        <Plus className="w-5 h-5" />
-                      </button>
+                        <Plus className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

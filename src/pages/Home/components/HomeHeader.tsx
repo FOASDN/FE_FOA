@@ -8,17 +8,14 @@ import i18n from "../../../config/i18n";
 import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useCart } from "@/hooks/useCart";
 
 interface HomeHeaderProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
-  cartCount?: number;
 }
 
-const HomeHeader = ({
-  searchQuery,
-  onSearchChange,
-}: HomeHeaderProps) => {
+const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation(["common", "customer"]);
   const { user, isAuthenticated, logout } = useAuth();
@@ -26,6 +23,8 @@ const HomeHeader = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const { items: cartItems } = useCart();
+  const cartCount = cartItems.length;
   const [localSearch, setLocalSearch] = useState(searchQuery || "");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,7 +41,6 @@ const HomeHeader = ({
   const { playNotification } = useNotificationSound();
   const prevUnreadCountRef = useRef(0);
   const hasInitializedNotificationRef = useRef(false);
-
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = () => {
@@ -268,12 +266,6 @@ const HomeHeader = ({
               </button>
 
               {isAuthenticated && (
-                <Link to="/favorites" className="p-2.5 rounded-xl text-gray-500 hover:bg-pink-50 hover:text-pink-600 transition-all duration-200 hidden sm:block relative">
-                  <span className="material-symbols-outlined text-[22px]">favorite</span>
-                </Link>
-              )}
-
-              {isAuthenticated && (
                 <div className="relative" ref={notificationRef}>
                   <button
                     onClick={() => setShowNotificationDropdown((prev) => !prev)}
@@ -467,8 +459,9 @@ const HomeHeader = ({
                         </Link>
                         <Link to="/profile/history" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all group" onClick={() => setShowDropdown(false)}>
                           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative">
-                            <span className="material-symbols-outlined text-[18px] text-blue-600">receipt_long</span>
-                            {activeOrdersCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>}
+                            <span className="material-symbols-outlined text-[18px] text-blue-600">
+                              receipt_long
+                            </span>
                           </div>
                           <div><p className="font-semibold">{t("common:nav.orders")}</p><p className="text-xs text-gray-500">{t("customer:profile.orderHistory")}</p></div>
                         </Link>
@@ -512,7 +505,6 @@ const HomeHeader = ({
                 {isAuthenticated && (
                   <Link to="/profile/history" className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200">
                     {t("common:nav.orders")}
-                    {activeOrdersCount > 0 && <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{activeOrdersCount}</span>}
                   </Link>
                 )}
               </nav>
@@ -604,12 +596,15 @@ const HomeHeader = ({
                 <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
                   <span className="material-symbols-outlined text-[22px] text-orange-500">person</span>{t("common:nav.profile")}
                 </Link>
-                <Link to="/profile/history" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
-                  <span className="material-symbols-outlined text-[22px] text-orange-500">receipt_long</span>{t("common:nav.orders")}
-                  {activeOrdersCount > 0 && <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">{activeOrdersCount}</span>}
-                </Link>
-                <Link to="/favorites" onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200">
-                  <span className="material-symbols-outlined text-[22px] text-orange-500">favorite</span>{t("common:nav.favorites")}
+                <Link
+                  to="/profile/history"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200"
+                >
+                  <span className="material-symbols-outlined text-[22px] text-orange-500">
+                    receipt_long
+                  </span>
+                  {t("common:nav.orders")}
                 </Link>
               </>
             )}

@@ -60,6 +60,7 @@ import StaffSupportChatPage from "./pages/Staff/SupportChat";
 import StaffSupportSettingsPage from "./pages/Staff/SupportSettings";
 import StaffDeliveryMode from "./pages/Staff/DeliveryMode";
 import StaffCustomerProfile from "./pages/Staff/CustomerProfile";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 function App() {
   const { hydrate, getUser, isAuthenticated } = useAuth();
@@ -79,6 +80,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Toaster position="top-right" />
       <Routes>
         <Route element={<MainLayout />}>
