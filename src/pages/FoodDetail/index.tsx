@@ -9,6 +9,7 @@ import reviewService from "@/services/review.service";
 import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
+import { useAllergyCheck } from "@/hooks/useAllergyCheck";
 import { User, ThumbsUp, MessageSquare, Star, Loader2 } from "lucide-react";
 
 const getImageUrl = (image: any): string => {
@@ -33,8 +34,13 @@ const FoodDetailPage = () => {
   const [suggestedFoods, setSuggestedFoods] = useState<Product[]>([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [openVariantModal, setOpenVariantModal] = useState(false);
+  const [allergyBannerDismissed, setAllergyBannerDismissed] = useState(false);
+
+  // FSS-40: Check allergy status for this product
+  const allergyResult = useAllergyCheck(product);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [isBuyNowMode, setIsBuyNowMode] = useState(false);
 
   useEffect(() => {
     const fetchProductAndSuggestions = async () => {
@@ -50,6 +56,7 @@ const FoodDetailPage = () => {
         setReviews(reviewRes.data || []);
         setLoadingReviews(false);
         
+
         // Fetch suggested foods
         setLoadingSuggested(true);
         if (isAuthenticated) {
@@ -91,6 +98,7 @@ const FoodDetailPage = () => {
 
     const hasVariants = (product as any).variants?.length > 0;
     if (hasVariants) {
+      setIsBuyNowMode(false);
       setOpenVariantModal(true);
       return;
     }
@@ -108,14 +116,23 @@ const FoodDetailPage = () => {
 
   const handleBuyNow = () => {
     if (!product) return;
-    addItem({
+
+    const hasVariants = (product as any).variants?.length > 0;
+    if (hasVariants) {
+      setIsBuyNowMode(true);
+      setOpenVariantModal(true);
+      return;
+    }
+
+    const buyNowItem = {
       productId: product._id,
       name: product.name,
       image: getImageUrl(product.image),
       price: product.price,
       quantity,
-    });
-    navigate('/checkout');
+    };
+
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   return (
@@ -175,6 +192,47 @@ const FoodDetailPage = () => {
 
               {/* RIGHT COLUMN: Details & Actions */}
               <div className="flex flex-col h-full pt-2">
+
+                {/* FSS-40: Allergy Warning Banner */}
+                {allergyResult.level !== 'safe' && !allergyBannerDismissed && (
+                  <div className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${
+                    allergyResult.level === 'danger'
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-amber-50 border-amber-200'
+                  }`}>
+                    <span className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${
+                      allergyResult.level === 'danger' ? 'text-red-500' : 'text-amber-500'
+                    }`}>warning</span>
+                    <div className="flex-1">
+                      <p className={`font-bold text-sm ${
+                        allergyResult.level === 'danger' ? 'text-red-800' : 'text-amber-800'
+                      }`}>
+                        {allergyResult.level === 'danger' ? '⚠️ Cảnh báo dị ứng!' : '⚡ Lưu ý sức khỏe'}
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        allergyResult.level === 'danger' ? 'text-red-700' : 'text-amber-700'
+                      }`}>{allergyResult.warningMessage}</p>
+                      {allergyResult.conflictIngredients.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {allergyResult.conflictIngredients.map((ing, i) => (
+                            <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              allergyResult.level === 'danger'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>{ing}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setAllergyBannerDismissed(true)}
+                      className="text-gray-400 hover:text-gray-600 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  </div>
+                )}
+
                 <nav className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                   <Link
                     className="text-[#9e6b47] hover:text-primary font-medium transition-colors"
@@ -407,7 +465,7 @@ const FoodDetailPage = () => {
                       {isAuthenticated ? "Món ăn an toàn cho bạn" : "Có thể bạn sẽ thích"}
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {isAuthenticated 
+                      {isAuthenticated
                         ? "Được AI chọn lọc dựa trên hồ sơ sức khỏe và phân tích thành phần tỉ mỉ."
                         : "Khám phá thêm các hương vị hấp dẫn khác từ thực đơn của chúng tôi."}
                     </p>
@@ -423,8 +481,8 @@ const FoodDetailPage = () => {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {suggestedFoods.map((suggestedItem) => (
-                      <FoodCard 
-                        key={suggestedItem._id} 
+                      <FoodCard
+                        key={suggestedItem._id}
                         id={suggestedItem._id}
                         name={suggestedItem.name}
                         image={getImageUrl(suggestedItem.image)}
@@ -452,7 +510,7 @@ const FoodDetailPage = () => {
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
-          addItem({
+          const itemData = {
             productId: product._id,
             name: product.name,
             image:
@@ -462,12 +520,17 @@ const FoodDetailPage = () => {
             price: unitPrice,
             quantity,
             variations,
-          });
+          };
 
-          toast(
-            t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
-            "success",
-          );
+          if (isBuyNowMode) {
+            navigate('/checkout', { state: { buyNowItem: itemData } });
+          } else {
+            addItem(itemData);
+            toast(
+              t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+              "success",
+            );
+          }
         }}
       />
       <ToastContainer toasts={toasts} dismiss={dismiss} />

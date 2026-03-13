@@ -66,29 +66,36 @@ export interface Order {
   _id: string;
   code: string;
   user_id?:
-    | string
-    | {
-        _id: string;
-        username: string;
-        email: string;
-        phone: string;
-      };
+  | string
+  | {
+    _id: string;
+    username: string;
+    email: string;
+    phone: string;
+  };
   items: Array<{
     product_id:
-      | string
-      | {
-          _id: string;
-          name: string;
-          image: string | { secure_url: string };
-          price: number;
-        };
+    | string
+    | {
+      _id: string;
+      name: string;
+      image: string | { secure_url: string };
+      price: number;
+    };
     quantity: number;
     variations: Array<{ name: string; choice: string; extra_price?: number }>;
     sub_total: number;
   }>;
   note?: string;
   staff_note_items?: string[];
-  status: string;
+  status:
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "ready_for_delivery"
+  | "shipping"
+  | "completed"
+  | "cancelled";
   sub_total: number;
   shipping_fee: number;
   total_price: number;
@@ -97,6 +104,11 @@ export interface Order {
     paid_at: string | null;
   };
   delivery_address: PlaceOrderAddress;
+  delivery_info?: {
+    shipped_at?: string;
+    delivered_at?: string;
+    driver_id?: string | null;
+  };
   voucher?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -143,6 +155,7 @@ class OrderService {
 
   async getAllOrders(params?: {
     status?: string;
+    driver_id?: string;
     page?: number;
     limit?: number;
     sort?: string;
@@ -155,6 +168,41 @@ class OrderService {
     id: string,
   ): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.patch(`/orders/${id}/cancel`);
+    return response.data;
+  }
+
+  // ── Staff actions ────────────────────────────────────────────────────────
+
+  /** Staff: Nhận đơn (PENDING → CONFIRMED) */
+  async confirmOrder(id: string): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/confirm`);
+    return response.data;
+  }
+
+  /** Staff: Từ chối đơn (PENDING → CANCELLED) */
+  async rejectOrder(
+    id: string,
+    reason: string,
+  ): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/reject`, { reason });
+    return response.data;
+  }
+
+  /** Staff: Đánh dấu nấu xong (CONFIRMED/PROCESSING → READY_FOR_DELIVERY) */
+  async markOrderReady(id: string): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/ready`);
+    return response.data;
+  }
+
+  /** Staff: Đi giao đơn hàng (READY_FOR_DELIVERY → SHIPPING) */
+  async assignDelivery(id: string): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/deliver`);
+    return response.data;
+  }
+
+  /** Staff: Giao thành công (SHIPPING → COMPLETED) */
+  async completeDelivery(id: string): Promise<{ success: boolean; data: Order }> {
+    const response = await apiClient.patch(`/orders/${id}/complete`);
     return response.data;
   }
 }

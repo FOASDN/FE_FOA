@@ -153,15 +153,15 @@ const AdminStaff = () => {
         return matchesSearch && matchesRole;
     });
 
-    const getRoleBadge = () => {
+    const getRoleBadge = (_role: string) => {
         return "bg-orange-100 text-orange-700 border-orange-200";
     };
 
-    const getRoleLabel = () => {
+    const getRoleLabel = (_role: string) => {
         return "Nhân viên";
     };
 
-    const getRoleIcon = () => {
+    const getRoleIcon = (_role: string) => {
         return "person";
     };
 
