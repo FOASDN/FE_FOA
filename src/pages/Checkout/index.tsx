@@ -9,6 +9,8 @@ import { AddressModal } from "@/components/shared/AddressModal";
 import { userService } from "@/services/profile.service";
 import { useAuthStore } from "@/store/authStore";
 import type { AuthAddress } from "@/store/authStore";
+import { AllergyWarningDialog, scanCartForAllergies } from "@/components/shared/AllergyWarningDialog";
+import productAPI from "@/services/product.service";
 import { TicketVoucher } from "@/components/shared/TicketVoucher";
 import paymentService from "@/services/payment.service";
 
@@ -45,7 +47,47 @@ const CheckoutPage = () => {
 
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const userAllergies = user?.preferences?.allergies ?? [];
+  const userDietary = user?.preferences?.dietary ?? [];
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [allergyConflicts, setAllergyConflicts] = useState<any[]>([]);
+  const [showAllergyWarning, setShowAllergyWarning] = useState(false);
+
+  // FSS-40: Intercept order placement to check for allergies first
+  const handleCheckoutSubmit = async () => {
+    if (userAllergies.length === 0 && userDietary.length === 0) {
+      handlePlaceOrder();
+      return;
+    }
+
+    try {
+      // CartItems only have basic info. We need full Product data (recipe, health_tags)
+      const fullProductsPromises = cartItems.map(item => productAPI.getProductById(item.productId));
+      const responses = await Promise.all(fullProductsPromises);
+      
+      const itemsToScan = responses.map((res, index) => ({
+        product: res.data,
+        quantity: cartItems[index].quantity
+      }));
+
+      const conflicts = scanCartForAllergies(itemsToScan, userAllergies, userDietary);
+      if (conflicts.length > 0) {
+        setAllergyConflicts(conflicts);
+        setShowAllergyWarning(true);
+      } else {
+        handlePlaceOrder();
+      }
+    } catch (error) {
+      console.error("Failed to check allergies", error);
+      // Fallback: proceed with order if allergy check fails
+      handlePlaceOrder();
+    }
+  };
+
+  const handleConfirmAllergyWarning = () => {
+    setShowAllergyWarning(false);
+    handlePlaceOrder();
+  };
 
   const handleSaveAddress = async (newAddr: AuthAddress) => {
     if (!user) return;
@@ -610,7 +652,7 @@ const CheckoutPage = () => {
                 <div className="p-6">
                   <button
                     id="place-order-btn"
-                    onClick={handlePlaceOrder}
+                    onClick={handleCheckoutSubmit}
                     disabled={
                       isSubmitting ||
                       cartItems.length === 0 ||
@@ -689,6 +731,15 @@ const CheckoutPage = () => {
         onSave={handleSaveAddress}
         isFirstAddress={addresses.length === 0}
       />
+
+      {/* FSS-40: Allergy Warning Modal */}
+      {showAllergyWarning && (
+        <AllergyWarningDialog
+          conflicts={allergyConflicts}
+          onConfirm={handleConfirmAllergyWarning}
+          onCancel={() => setShowAllergyWarning(false)}
+        />
+      )}
     </div>
   );
 };

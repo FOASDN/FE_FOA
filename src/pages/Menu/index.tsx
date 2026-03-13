@@ -6,6 +6,8 @@ import useDebounce from "@/hooks/useDebounce";
 import type { Product } from "@/types/product";
 import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/authStore";
+import { checkProductAllergies } from "@/hooks/useAllergyCheck";
 
 // ─── Helpers ───
 
@@ -33,13 +35,18 @@ const FoodCardSkeleton = () => (
 interface FoodCardProps {
   item: Product;
   onNavigate: (id: string) => void;
+  userAllergies?: string[];
+  userDietary?: string[];
 }
 
-const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
+const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate, userAllergies = [], userDietary = [] }) => {
   const imageUrl = getImageUrl(item.image);
   const rating = Number(item?.rating ?? 0);
   const reviewCount = Number(item?.review_count ?? 0);
   const price = Number(item?.price ?? 0);
+  const allergyResult = checkProductAllergies(item, userAllergies, userDietary);
+  const isDanger = allergyResult.level === 'danger';
+  const isWarning = allergyResult.level === 'warning';
   return (
     <div
       onClick={() => onNavigate(item._id)}
@@ -59,6 +66,25 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
             <span className="material-symbols-outlined text-orange-300 text-5xl">
               restaurant
             </span>
+          </div>
+        )}
+
+        {/* Allergy Danger Overlay */}
+        {isDanger && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/50 backdrop-blur-[1px] z-10">
+            <span className="material-symbols-outlined text-red-300 text-3xl mb-1">warning</span>
+            <span className="text-white text-[10px] font-bold bg-red-600 px-2 py-1 rounded-full text-center max-w-[90%]">
+              ⚠️ Chứa chất gây dị ứng
+            </span>
+          </div>
+        )}
+
+        {/* Allergy Warning Badge */}
+        {isWarning && !isDanger && (
+          <div className="absolute top-3 right-3 z-10">
+            <div className="bg-amber-400 rounded-full w-7 h-7 flex items-center justify-center shadow-md" title={allergyResult.warningMessage}>
+              <span className="material-symbols-outlined text-white text-[14px]">warning</span>
+            </div>
           </div>
         )}
 
@@ -160,6 +186,9 @@ const MenuPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
+  const user = useAuthStore((s) => s.user);
+  const userAllergies: string[] = user?.preferences?.allergies ?? [];
+  const userDietary: string[] = user?.preferences?.dietary ?? [];
 
   // ── State ──
   const categoryParam = searchParams.get("category") || "all";
@@ -453,6 +482,8 @@ const MenuPage = () => {
                   <FoodCard
                     key={item._id}
                     item={item}
+                    userAllergies={userAllergies}
+                    userDietary={userDietary}
                     onNavigate={(id) => navigate(`/food/${id}`)}
                   />
                 ))}
