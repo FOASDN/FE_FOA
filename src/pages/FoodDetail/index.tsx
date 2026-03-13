@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCart } from "@/hooks/useCart";
+import { useSafeCart } from "@/hooks/useSafeCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast, ToastContainer } from "@/hooks/useToast";
 import productAPI from "@/services/product.service";
@@ -22,7 +22,7 @@ const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
-  const { addItem } = useCart();
+  const { safeAddItem } = useSafeCart();
   const { isAuthenticated } = useAuth();
   const { toasts, toast, dismiss } = useToast();
 
@@ -90,27 +90,36 @@ const FoodDetailPage = () => {
       return;
     }
 
-    addItem({
-      productId: product._id,
-      name: product.name,
-      image: getImageUrl(product.image),
-      price: product.price,
-      quantity,
-    });
-
-    toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+    safeAddItem(
+      product,
+      {
+        productId: product._id,
+        name: product.name,
+        image: getImageUrl(product.image),
+        price: product.price,
+        quantity,
+      },
+      () => {
+        toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+      }
+    );
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    addItem({
-      productId: product._id,
-      name: product.name,
-      image: getImageUrl(product.image),
-      price: product.price,
-      quantity,
-    });
-    navigate('/checkout');
+    safeAddItem(
+      product,
+      {
+        productId: product._id,
+        name: product.name,
+        image: getImageUrl(product.image),
+        price: product.price,
+        quantity,
+      },
+      () => {
+        navigate('/checkout');
+      }
+    );
   };
 
   return (
@@ -430,21 +439,25 @@ const FoodDetailPage = () => {
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
-          addItem({
-            productId: product._id,
-            name: product.name,
-            image:
-              typeof product.image === "object"
-                ? product.image.secure_url
-                : product.image,
-            price: unitPrice,
-            quantity,
-            variations,
-          });
-
-          toast(
-            t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
-            "success",
+          safeAddItem(
+            product,
+            {
+              productId: product._id,
+              name: product.name,
+              image:
+                typeof product.image === "object"
+                  ? product.image.secure_url
+                  : product.image,
+              price: unitPrice,
+              quantity,
+              variations,
+            },
+            () => {
+              toast(
+                t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+                "success",
+              );
+            }
           );
         }}
       />

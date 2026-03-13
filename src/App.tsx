@@ -53,6 +53,7 @@ import StaffDashboard from "./pages/Staff/Dashboard";
 import StaffOrders from "./pages/Staff/Orders";
 import StaffMenu from "./pages/Staff/Menu";
 import StaffCustomerProfile from "./pages/Staff/CustomerProfile";
+import { AddToCartWarningModal } from "./components/shared/AddToCartWarningModal";
 
 function App() {
   const { hydrate } = useAuth();
@@ -143,6 +144,7 @@ function App() {
         {/* Catch-all 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <AddToCartWarningModal />
     </BrowserRouter>
   );
 }
