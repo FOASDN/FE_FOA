@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
 import { useCart } from "@/hooks/useCart";
+import toast from "react-hot-toast";
 
 // ── Helper ──────────────────────────────────────────────
 const getImageUrl = (image: Product["image"]): string => {
@@ -156,6 +157,7 @@ const BestSellerSection = () => {
                           price: dish.price,
                           quantity: 1,
                         });
+                        toast.success("Đã thêm vào giỏ hàng!");
                       }}
                       className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-slate-100 text-slate-900 hover:bg-slate-900 hover:text-white"
                     >

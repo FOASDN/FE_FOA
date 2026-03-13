@@ -521,11 +521,26 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                           </div>
                           <div>
                             <p className="font-semibold">
-                              {t("common:nav.profile")}
-                            </p>
-                            <p className="text-xs text-gray-500">
                               {t("customer:profile.personalInfo")}
                             </p>
+                            <p className="text-xs text-gray-500">
+                              Chỉnh sửa hồ sơ của bạn
+                            </p>
+                          </div>
+                        </Link>
+                        <Link
+                          to="/messages"
+                          className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-all group"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 group-hover:scale-110 transition-all relative">
+                            <span className="material-symbols-outlined text-[18px] text-emerald-600">
+                              chat
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Tin nhắn</p>
+                            <p className="text-xs text-gray-500">Xem lại cuộc hội thoại</p>
                           </div>
                         </Link>
                         <Link

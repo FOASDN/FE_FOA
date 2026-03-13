@@ -42,10 +42,10 @@ export function FloatingAIChatbot() {
         setIsOpen(true);
         if (messages.length === 0) {
             const userName = user?.username || '';
-            const greeting = userName 
+            const greeting = userName
                 ? `Xin chào ${userName}! 👋 Tôi là trợ lý AI của FoodieDash. Tôi đã nắm rõ hồ sơ sức khỏe của bạn và sẵn sàng gợi ý những món ăn an toàn nhất cho bạn hôm nay. Bạn cần tôi tư vấn gì nào?`
                 : t('customer:chatbot.greeting');
-            
+
             setMessages([{
                 id: '1',
                 role: 'assistant',

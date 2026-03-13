@@ -34,9 +34,8 @@ const ShoppingCartPage = () => {
   }, [cartItems, removeItem]);
 
   const subtotal = totalPrice;
-  const deliveryFee = subtotal > 300000 || subtotal === 0 ? 0 : 50000;
 
-  const total = Math.max(0, subtotal + deliveryFee);
+  const total = subtotal;
 
   // Mock upsell items (vẫn giữ để UI đẹp)
   const upsellItems = MOCK_UPSELL_ITEMS;
@@ -221,29 +220,7 @@ const ShoppingCartPage = () => {
               <div className="sticky top-24 flex flex-col gap-6">
                 {/* Price Breakdown */}
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/10">
-                  <p className="text-text-main dark:text-white text-lg font-bold mb-6">
-                    {t("customer:cart.grandTotal", "Tóm tắt đơn hàng")}
-                  </p>
                   <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">
-                        {t("customer:cart.subtotal")}
-                      </span>
-                      <span className="text-sm font-medium">
-                        {subtotal.toLocaleString("vi-VN")}đ
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">
-                        {t("customer:cart.deliveryFee")}
-                      </span>
-                      <span className="text-sm font-medium text-green-600">
-                        {deliveryFee === 0
-                          ? t("common:status.free", "Miễn phí")
-                          : `${deliveryFee.toLocaleString("vi-VN")}đ`}
-                      </span>
-                    </div>
-                    <hr className="border-gray-100 dark:border-white/10 my-2" />
                     <div className="flex justify-between items-center text-text-main dark:text-white">
                       <span className="text-lg font-bold">
                         {t("customer:cart.grandTotal")}

@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast, ToastContainer } from "@/hooks/useToast";
+import { useSupportChatStore } from "@/store/supportChatStore";
+import toast from "react-hot-toast";
 import productAPI from "@/services/product.service";
 import reviewService from "@/services/review.service";
 import recommendationService from "@/services/recommendation.service";
@@ -11,6 +12,8 @@ import type { Product } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useAllergyCheck } from "@/hooks/useAllergyCheck";
 import { User, ThumbsUp, MessageSquare, Star, Loader2 } from "lucide-react";
+import VariantModal from "@/components/model/VariantModel";
+
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -18,7 +21,7 @@ const getImageUrl = (image: any): string => {
   if (typeof image === "string") return image;
   return "";
 };
-import VariantModal from "@/components/model/VariantModel";
+
 
 const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +29,7 @@ const FoodDetailPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
-  const { toasts, toast, dismiss } = useToast();
+  const { openChat } = useSupportChatStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,7 @@ const FoodDetailPage = () => {
         }
       } catch (err) {
         console.error("Failed to fetch product or suggestions:", err);
-        toast("Không tìm thấy sản phẩm", "error");
+        toast.error("Không tìm thấy sản phẩm");
       } finally {
         setLoading(false);
         setLoadingSuggested(false);
@@ -111,7 +114,7 @@ const FoodDetailPage = () => {
       quantity,
     });
 
-    toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+    toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
   };
 
   const handleBuyNow = () => {
@@ -214,7 +217,7 @@ const FoodDetailPage = () => {
                       }`}>{allergyResult.warningMessage}</p>
                       {allergyResult.conflictIngredients.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {allergyResult.conflictIngredients.map((ing, i) => (
+                          {allergyResult.conflictIngredients.map((ing: string, i: number) => (
                             <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               allergyResult.level === 'danger'
                                 ? 'bg-red-100 text-red-700'
@@ -350,6 +353,15 @@ const FoodDetailPage = () => {
                         flash_on
                       </span>
                       <span>Mua ngay</span>
+                    </button>
+                  </div>
+                  <div className="mt-4 max-w-sm ml-auto">
+                    <button
+                      onClick={() => openChat()}
+                      className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors w-full justify-center"
+                    >
+                      <MessageSquare className="size-5" />
+                      Nhắn tin
                     </button>
                   </div>
                 </div>
@@ -506,7 +518,7 @@ const FoodDetailPage = () => {
         basePrice={Number(product?.price ?? 0)}
         variants={(product as any)?.variants ?? []}
         quantity={quantity}
-        toastError={(msg) => toast(msg, "error")}
+        toastError={(msg) => toast.error(msg)}
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
@@ -526,14 +538,12 @@ const FoodDetailPage = () => {
             navigate('/checkout', { state: { buyNowItem: itemData } });
           } else {
             addItem(itemData);
-            toast(
-              t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
-              "success",
+            toast.success(
+              t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!")
             );
           }
         }}
       />
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 };

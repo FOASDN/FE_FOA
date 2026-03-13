@@ -32,6 +32,7 @@ import OrderFailedPage from "./pages/OrderFailed";
 import OrderDetailPage from "./pages/OrderDetail";
 import TrackOrderPage from "./pages/TrackOrder";
 import AboutPage from "./pages/About";
+import CustomerMessagesPage from "./pages/Profile/Messages";
 import NotFoundPage from "./pages/NotFound";
 import ForbiddenPage from "./pages/Forbidden";
 import MainLayout from "./components/layout/MainLayout";
@@ -100,6 +101,7 @@ function App() {
               <Route path="history" element={<OrderHistoryTabContent />} />
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
             </Route>
+            <Route path="/messages" element={<CustomerMessagesPage />} />
             <Route
               path="/history"
               element={<Navigate to="/profile/history" replace />}
