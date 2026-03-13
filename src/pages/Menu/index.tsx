@@ -6,6 +6,8 @@ import useDebounce from "@/hooks/useDebounce";
 import type { Product } from "@/types/product";
 import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/hooks/useCart";
+import { Plus, ArrowRight } from "lucide-react";
 
 // ─── Helpers ───
 
@@ -40,6 +42,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
   const rating = Number(item?.rating ?? 0);
   const reviewCount = Number(item?.review_count ?? 0);
   const price = Number(item?.price ?? 0);
+  const { addItem } = useCart();
   return (
     <div
       onClick={() => onNavigate(item._id)}
@@ -136,6 +139,23 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
               {price.toLocaleString("vi-VN")}đ
             </span>
           </div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addItem({
+                productId: item._id,
+                name: item.name,
+                image: imageUrl || "",
+                price: price,
+                quantity: 1,
+              });
+            }}
+            className="h-10 w-10 rounded-xl bg-slate-900 text-white hover:bg-orange-500 hover:text-white transition-colors shadow-sm flex items-center justify-center"
+            title="Thêm vào giỏ hàng"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -143,10 +163,7 @@ const FoodCard: React.FC<FoodCardProps> = ({ item, onNavigate }) => {
             }}
             className="h-10 px-5 rounded-xl bg-slate-900 text-white hover:bg-orange-600 font-bold transition-colors shadow-lg shadow-slate-200 hover:shadow-orange-200 flex items-center gap-1.5 text-sm"
           >
-            Chi tiết
-            <span className="material-symbols-outlined text-[16px]">
-              arrow_forward
-            </span>
+            <ArrowRight />
           </button>
         </div>
       </div>

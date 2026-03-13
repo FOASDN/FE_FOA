@@ -52,6 +52,7 @@ import StaffDashboard from "./pages/Staff/Dashboard";
 import StaffOrders from "./pages/Staff/Orders";
 import StaffMenu from "./pages/Staff/Menu";
 import StaffCustomerProfile from "./pages/Staff/CustomerProfile";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 function App() {
   const { hydrate } = useAuth();
@@ -64,6 +65,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -119,7 +121,10 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allowedRoles={["ADMIN"]} />}>
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="/admin/overview" replace />} />
+              <Route
+                index
+                element={<Navigate to="/admin/overview" replace />}
+              />
               <Route path="overview" element={<AdminDashboard />} />
               <Route path="menu" element={<AdminMenuManagement />} />
               <Route path="orders" element={<AdminOrders />} />

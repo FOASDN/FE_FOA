@@ -2,35 +2,31 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../hooks/useAuth";
-import { getOrdersNeedingReviewCount } from "../../../constants/mockOrders";
 import i18n from "../../../config/i18n";
 import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { useCart } from "@/hooks/useCart";
 
 interface HomeHeaderProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
-  cartCount?: number;
 }
 
-const HomeHeader = ({
-  searchQuery,
-  onSearchChange,
-  cartCount = 3,
-}: HomeHeaderProps) => {
+const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation(["common", "customer"]);
   const { user, isAuthenticated, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const { items: cartItems } = useCart();
+  const cartCount = cartItems.length;
   // Local input state for header search
   const [localSearch, setLocalSearch] = useState(searchQuery || "");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const ordersNeedingReview = getOrdersNeedingReviewCount();
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = () => {
@@ -295,7 +291,6 @@ const HomeHeader = ({
                 </span>
               </button>
 
-
               {isAuthenticated && (
                 <div className="relative" ref={notificationRef}>
                   <button
@@ -542,9 +537,6 @@ const HomeHeader = ({
                             <span className="material-symbols-outlined text-[18px] text-blue-600">
                               receipt_long
                             </span>
-                            {ordersNeedingReview > 0 && (
-                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>
-                            )}
                           </div>
                           <div>
                             <p className="font-semibold">
@@ -621,11 +613,6 @@ const HomeHeader = ({
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[#6b4c2a] hover:bg-orange-100 hover:text-orange-600 transition-all duration-200"
                   >
                     {t("common:nav.orders")}
-                    {ordersNeedingReview > 0 && (
-                      <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                        {ordersNeedingReview}
-                      </span>
-                    )}
                   </Link>
                 )}
               </nav>
@@ -835,11 +822,6 @@ const HomeHeader = ({
                     receipt_long
                   </span>
                   {t("common:nav.orders")}
-                  {ordersNeedingReview > 0 && (
-                    <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">
-                      {ordersNeedingReview}
-                    </span>
-                  )}
                 </Link>
               </>
             )}
