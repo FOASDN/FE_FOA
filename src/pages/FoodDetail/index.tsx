@@ -14,14 +14,12 @@ import { useAllergyCheck } from "@/hooks/useAllergyCheck";
 import { User, ThumbsUp, MessageSquare, Star, Loader2 } from "lucide-react";
 import VariantModal from "@/components/model/VariantModel";
 
-
 const getImageUrl = (image: any): string => {
   if (!image) return "";
   if (typeof image === "object" && image.secure_url) return image.secure_url;
   if (typeof image === "string") return image;
   return "";
 };
-
 
 const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,13 +50,12 @@ const FoodDetailPage = () => {
         setLoading(true);
         const res = await productAPI.getProductById(id);
         setProduct(res.data);
-        
+
         // Fetch reviews
         setLoadingReviews(true);
         const reviewRes = await reviewService.getProductReviews(id);
         setReviews(reviewRes.data || []);
         setLoadingReviews(false);
-        
 
         // Fetch suggested foods
         setLoadingSuggested(true);
@@ -116,8 +113,11 @@ const FoodDetailPage = () => {
         quantity,
       },
       () => {
-        toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
-      }
+        toast(
+          t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+          "success",
+        );
+      },
     );
   };
 
@@ -133,8 +133,8 @@ const FoodDetailPage = () => {
         quantity,
       },
       () => {
-        navigate('/checkout');
-      }
+        navigate("/checkout");
+      },
     );
   };
 
@@ -195,35 +195,61 @@ const FoodDetailPage = () => {
 
               {/* RIGHT COLUMN: Details & Actions */}
               <div className="flex flex-col h-full pt-2">
-
                 {/* FSS-40: Allergy Warning Banner */}
-                {allergyResult.level !== 'safe' && !allergyBannerDismissed && (
-                  <div className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${
-                    allergyResult.level === 'danger'
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-amber-50 border-amber-200'
-                  }`}>
-                    <span className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${
-                      allergyResult.level === 'danger' ? 'text-red-500' : 'text-amber-500'
-                    }`}>warning</span>
+                {allergyResult.level !== "safe" && !allergyBannerDismissed && (
+                  <div
+                    className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${
+                      allergyResult.level === "danger"
+                        ? "bg-red-50 border-red-200"
+                        : "bg-amber-50 border-amber-200"
+                    }`}
+                  >
+                    <span
+                      className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${
+                        allergyResult.level === "danger"
+                          ? "text-red-500"
+                          : "text-amber-500"
+                      }`}
+                    >
+                      warning
+                    </span>
                     <div className="flex-1">
-                      <p className={`font-bold text-sm ${
-                        allergyResult.level === 'danger' ? 'text-red-800' : 'text-amber-800'
-                      }`}>
-                        {allergyResult.level === 'danger' ? '⚠️ Cảnh báo dị ứng!' : '⚡ Lưu ý sức khỏe'}
+                      <p
+                        className={`font-bold text-sm ${
+                          allergyResult.level === "danger"
+                            ? "text-red-800"
+                            : "text-amber-800"
+                        }`}
+                      >
+                        {allergyResult.level === "danger"
+                          ? "⚠️ Cảnh báo dị ứng!"
+                          : "⚡ Lưu ý sức khỏe"}
                       </p>
-                      <p className={`text-xs mt-1 ${
-                        allergyResult.level === 'danger' ? 'text-red-700' : 'text-amber-700'
-                      }`}>{allergyResult.warningMessage}</p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          allergyResult.level === "danger"
+                            ? "text-red-700"
+                            : "text-amber-700"
+                        }`}
+                      >
+                        {allergyResult.warningMessage}
+                      </p>
                       {allergyResult.conflictIngredients.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {allergyResult.conflictIngredients.map((ing: string, i: number) => (
-                            <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              allergyResult.level === 'danger'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-amber-100 text-amber-700'
-                            }`}>{ing}</span>
-                          ))}
+                          {allergyResult.conflictIngredients.map(
+                            (ing: string, i: number) => (
+                              <span
+                                key={i}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  allergyResult.level === "danger"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
+                                {ing}
+                              </span>
+                            ),
+                          )}
                         </div>
                       )}
                     </div>
@@ -231,7 +257,9 @@ const FoodDetailPage = () => {
                       onClick={() => setAllergyBannerDismissed(true)}
                       className="text-gray-400 hover:text-gray-600 shrink-0"
                     >
-                      <span className="material-symbols-outlined text-[18px]">close</span>
+                      <span className="material-symbols-outlined text-[18px]">
+                        close
+                      </span>
                     </button>
                   </div>
                 )}
@@ -301,7 +329,9 @@ const FoodDetailPage = () => {
 
                 <div className="mb-8">
                   <h3 className="text-lg font-bold text-text-main dark:text-white mb-3 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary">description</span>
+                    <span className="material-symbols-outlined text-primary">
+                      description
+                    </span>
                     {t("customer:foodDetail.description")}
                   </h3>
                   <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 relative">
@@ -374,7 +404,7 @@ const FoodDetailPage = () => {
                 <MessageSquare className="w-8 h-8 text-primary" />
                 Đánh giá từ khách hàng
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 {/* Summary Card */}
                 <div className="md:col-span-1 bg-white dark:bg-white/5 rounded-3xl p-8 border border-gray-100 dark:border-white/10 h-fit text-center shadow-sm">
@@ -383,7 +413,10 @@ const FoodDetailPage = () => {
                   </div>
                   <div className="flex justify-center gap-1 text-yellow-400 mb-4 scale-125">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className={`w-4 h-4 ${Number(product?.rating ?? 0) >= s ? "fill-current" : "text-gray-200 dark:text-gray-700"}`} />
+                      <Star
+                        key={s}
+                        className={`w-4 h-4 ${Number(product?.rating ?? 0) >= s ? "fill-current" : "text-gray-200 dark:text-gray-700"}`}
+                      />
                     ))}
                   </div>
                   <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
@@ -396,38 +429,55 @@ const FoodDetailPage = () => {
                   {loadingReviews ? (
                     <div className="flex flex-col items-center py-10 gap-3">
                       <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                      <p className="text-gray-500 font-medium italic text-sm">Đang tải nhận xét...</p>
+                      <p className="text-gray-500 font-medium italic text-sm">
+                        Đang tải nhận xét...
+                      </p>
                     </div>
                   ) : reviews.length === 0 ? (
                     <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-10 text-center border border-dashed border-gray-200 dark:border-white/10">
                       <p className="text-gray-500 font-medium">
-                        Món này chưa có nhận xét chi tiết. Hãy là người đầu tiên đánh giá!
+                        Món này chưa có nhận xét chi tiết. Hãy là người đầu tiên
+                        đánh giá!
                       </p>
                     </div>
                   ) : (
                     reviews.map((rev) => (
-                      <div key={rev._id} className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 shadow-sm transition-all hover:border-primary/20">
+                      <div
+                        key={rev._id}
+                        className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 shadow-sm transition-all hover:border-primary/20"
+                      >
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 overflow-hidden">
                               {rev.user_id?.avatar ? (
-                                <img src={rev.user_id.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                <img
+                                  src={rev.user_id.avatar}
+                                  alt="Avatar"
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 <User className="w-6 h-6" />
                               )}
                             </div>
                             <div>
                               <p className="font-bold text-text-main dark:text-white leading-tight">
-                                {rev.isAnonymous ? "Người dùng ẩn danh" : rev.user_id?.username || "Khách hàng"}
+                                {rev.isAnonymous
+                                  ? "Người dùng ẩn danh"
+                                  : rev.user_id?.username || "Khách hàng"}
                               </p>
                               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                {new Date(rev.createdAt).toLocaleDateString("vi-VN")}
+                                {new Date(rev.createdAt).toLocaleDateString(
+                                  "vi-VN",
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="flex gap-0.5 mt-1">
                             {[1, 2, 3, 4, 5].map((s) => (
-                              <Star key={s} className={`w-3 h-3 ${rev.rating >= s ? "text-yellow-400 fill-current" : "text-gray-200 dark:text-gray-700"}`} />
+                              <Star
+                                key={s}
+                                className={`w-3 h-3 ${rev.rating >= s ? "text-yellow-400 fill-current" : "text-gray-200 dark:text-gray-700"}`}
+                              />
                             ))}
                           </div>
                         </div>
@@ -439,17 +489,24 @@ const FoodDetailPage = () => {
                         {rev.images && rev.images.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
                             {rev.images.map((img: any, i: number) => (
-                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm">
-                                <img 
-                                  src={typeof img === 'string' ? `${import.meta.env.VITE_API_URL}/files/${img}` : img.url || img.secure_url} 
-                                  alt="Review content" 
+                              <div
+                                key={i}
+                                className="w-20 h-20 rounded-xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm"
+                              >
+                                <img
+                                  src={
+                                    typeof img === "string"
+                                      ? `${import.meta.env.VITE_BASE_API}/files/${img}`
+                                      : img.url || img.secure_url
+                                  }
+                                  alt="Review content"
                                   className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-zoom-in"
                                 />
                               </div>
                             ))}
                           </div>
                         )}
-                        
+
                         <div className="pt-3 border-t border-gray-50 dark:border-white/5 flex items-center gap-4">
                           <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-400 hover:text-primary transition-colors">
                             <ThumbsUp className="w-3.5 h-3.5" />
@@ -474,7 +531,9 @@ const FoodDetailPage = () => {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-text-main dark:text-white">
-                      {isAuthenticated ? "Món ăn an toàn cho bạn" : "Có thể bạn sẽ thích"}
+                      {isAuthenticated
+                        ? "Món ăn an toàn cho bạn"
+                        : "Có thể bạn sẽ thích"}
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       {isAuthenticated
@@ -487,7 +546,10 @@ const FoodDetailPage = () => {
                 {loadingSuggested ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 animate-pulse">
                     {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"></div>
+                      <div
+                        key={i}
+                        className="h-64 bg-gray-200 dark:bg-gray-800 rounded-2xl"
+                      ></div>
                     ))}
                   </div>
                 ) : (
@@ -540,7 +602,7 @@ const FoodDetailPage = () => {
                 t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
                 "success",
               );
-            }
+            },
           );
         }}
       />

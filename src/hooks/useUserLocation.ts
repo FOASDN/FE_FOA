@@ -38,7 +38,7 @@ export function useUserLocation() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
-          const res = await fetch("http://localhost:4004/api/location", {
+          const res = await fetch(`${import.meta.env.VITE_BASE_API}/location`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -88,7 +88,7 @@ export function useUserLocation() {
           isValid: false,
         }));
       },
-      { timeout: 10000, maximumAge: 60000 }
+      { timeout: 10000, maximumAge: 60000 },
     );
   }, []);
 
