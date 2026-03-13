@@ -47,83 +47,85 @@ export function TicketVoucher({
 
     return (
         <div
-            className={`relative flex overflow-hidden rounded-2xl border ${isDisabled
-                ? 'border-gray-200 bg-gray-50 dark:bg-gray-900/50 opacity-70'
-                    : 'border-primary bg-gradient-to-r from-primary/10 to-primary/20 dark:from-primary/30 dark:to-primary/20 hover:shadow-lg hover:shadow-primary/10'
-                } transition-all duration-300 ${className}`}
+            className={`relative flex min-h-[110px] overflow-hidden rounded-2xl border ${isDisabled
+                ? 'border-gray-200 bg-gray-50 dark:bg-gray-800/50 opacity-70 text-gray-400'
+                : 'border-orange-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-orange-400 dark:hover:border-orange-500/50 hover:shadow-xl hover:shadow-orange-500/5'
+            } transition-all duration-300 ${className}`}
         >
-            {/* Left — Discount Value */}
-            <div className={`flex flex-col items-center justify-center px-2 py-5 w-[135px] shrink-0 ${isDisabled
+            {/* Left — Discount Value Section */}
+            <div className={`flex flex-col items-center justify-center px-4 w-[120px] shrink-0 relative overflow-hidden ${isDisabled
                 ? 'bg-gray-100 dark:bg-gray-800'
-                : 'bg-primary dark:bg-primary-dark'
+                : 'bg-primary'
                 }`}
             >
-                <span className={`text-2xl font-black text-center whitespace-nowrap overflow-hidden text-ellipsis w-full px-1 ${isDisabled ? 'text-gray-400' : 'text-white'}`}>
+                {/* Decorative circles for punch-hole effect */}
+                <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white dark:bg-[#1a1c1e]" />
+                
+                <span className={`text-2xl font-black text-center leading-none ${isDisabled ? 'text-gray-400' : 'text-white'}`}>
                     {discountValue}
                 </span>
                 {minOrder && (
-                    <span className={`text-[10px] font-medium mt-1 text-center whitespace-nowrap overflow-hidden text-ellipsis w-full px-1 ${isDisabled ? 'text-gray-400' : 'text-white/80'}`}>
-                        Min: {minOrder}
+                    <span className={`text-[9px] font-bold mt-1.5 uppercase tracking-tighter text-center ${isDisabled ? 'text-gray-400' : 'text-orange-100'}`}>
+                        {minOrder}
                     </span>
                 )}
             </div>
 
-            {/* Dashed border cutout */}
-            <div className="absolute left-[134px] top-0 bottom-0 flex flex-col justify-between py-0 z-10 pointer-events-none">
-                <div className={`w-5 h-2.5 rounded-b-full ${isDisabled ? 'bg-background' : 'bg-background'} -mt-px`} />
-                <div className="flex-1 border-l-2 border-dashed border-border/60 mx-2.5" />
-                <div className={`w-5 h-2.5 rounded-t-full ${isDisabled ? 'bg-background' : 'bg-background'} -mb-px`} />
-            </div>
+            {/* Right — Content Section */}
+            <div className="flex-1 flex flex-col justify-between p-4 min-w-0">
+                <div className="flex flex-col gap-1">
+                    <h4 className="font-bold text-slate-800 dark:text-white text-sm line-clamp-1 leading-tight">{title}</h4>
+                    {description && <p className="text-slate-400 dark:text-slate-500 text-[10px] line-clamp-1 mb-1">{description}</p>}
+                    
+                    <div className="flex items-center gap-2 mt-1">
+                        {/* Code Display */}
+                        <div className="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 px-2 py-0.5 rounded-md">
+                            <span className="font-mono font-black text-[10px] text-orange-600 tracking-wider uppercase">{code}</span>
+                            <button onClick={handleCopy} className="text-slate-400 hover:text-orange-600 transition-colors flex items-center">
+                                <span className="material-symbols-outlined text-[14px]">
+                                    {copied ? 'check' : 'content_copy'}
+                                </span>
+                            </button>
+                        </div>
 
-            {/* Right — Info */}
-            <div className="flex-1 flex flex-col justify-center px-5 py-4 ml-2">
-                <h4 className="font-bold text-foreground text-sm line-clamp-1 mb-0.5">{title}</h4>
-                {description && <p className="text-muted-foreground text-xs line-clamp-1 mb-2">{description}</p>}
+                        {/* Expiry */}
+                        {expiryDate && (
+                            <div className="text-[9px] text-slate-400 flex items-center gap-0.5 bg-slate-50 dark:bg-white/5 px-2 py-0.5 rounded-md">
+                                <span className="material-symbols-outlined text-[12px]">schedule</span>
+                                <span>{expiryDate}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Code */}
-                    <span className="inline-flex items-center gap-1.5 bg-background border border-border px-2.5 py-1 rounded-lg">
-                        <span className="font-mono font-bold text-xs text-orange-600 tracking-wider">{code}</span>
-                        <button onClick={handleCopy} className="text-muted-foreground hover:text-foreground transition-colors">
-                            <span className="material-symbols-outlined text-[14px]">
-                                {copied ? 'check' : 'content_copy'}
+                {/* Footer Actions / Status */}
+                <div className="flex items-center justify-between mt-3">
+                    <div className="flex flex-col">
+                        {isUsed && (
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                {t('customer:voucherWallet.used')}
                             </span>
-                        </button>
-                    </span>
+                        )}
+                        {isExpired && !isUsed && (
+                            <span className="text-[9px] font-black text-red-400 uppercase tracking-widest">
+                                {t('customer:voucherWallet.expired')}
+                            </span>
+                        )}
+                    </div>
 
-                    {/* Expiry */}
-                    {expiryDate && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <span className="material-symbols-outlined text-[12px]">schedule</span>
-                            {expiryDate}
-                        </span>
+                    {!isDisabled && onUse && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onUse(code); }}
+                            className="bg-primary/10 hover:bg-primary text-primary hover:text-white dark:bg-primary/20 dark:text-orange-400 dark:hover:text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                        >
+                            {t('customer:voucherDetail.useNow')}
+                        </button>
                     )}
                 </div>
-
-                {/* Status badges */}
-                {isUsed && (
-                    <span className="mt-2 inline-flex items-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        {t('customer:voucherWallet.used')}
-                    </span>
-                )}
-                {isExpired && !isUsed && (
-                    <span className="mt-2 inline-flex items-center text-[10px] font-bold text-red-500 uppercase tracking-wider">
-                        {t('customer:voucherWallet.expired')}
-                    </span>
-                )}
             </div>
 
-            {/* Use Button */}
-            {!isDisabled && onUse && (
-                <div className="flex items-center pr-4">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onUse(code); }}
-                            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 active:scale-95 transition-all"
-                    >
-                        {t('customer:voucherDetail.useNow')}
-                    </button>
-                </div>
-            )}
+            {/* Side decorative cutout */}
+            <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-50 dark:bg-[#121417] border border-orange-100 dark:border-white/10" />
         </div>
     );
 }

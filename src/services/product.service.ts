@@ -13,6 +13,11 @@ class ProductAPI {
     return response.data;
   }
 
+  async getCategories(): Promise<{ success: boolean; data: string[] }> {
+    const response = await apiClient.get("/products/categories");
+    return response.data;
+  }
+
   async getProductById(
     id: string,
   ): Promise<{ success: boolean; data: Product }> {

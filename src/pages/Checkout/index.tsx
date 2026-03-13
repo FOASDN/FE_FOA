@@ -33,6 +33,7 @@ const CheckoutPage = () => {
     total,
     isDeliverable,
     shippingResult,
+    settings,
     isSubmitting,
     handlePlaceOrder,
     vouchers,
@@ -135,7 +136,7 @@ const CheckoutPage = () => {
               </div>
               <div className="rounded-full bg-gray-200 dark:bg-gray-700 h-2 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className="h-full rounded-full bg-orange-600"
                   style={{ width: "66%" }}
                 />
               </div>
@@ -150,7 +151,7 @@ const CheckoutPage = () => {
               <section className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 <div className="flex flex-wrap justify-between gap-3 p-6 border-b border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary">
+                    <span className="material-symbols-outlined text-orange-600">
                       location_on
                     </span>
                     <p className="text-xl font-bold">
@@ -159,7 +160,7 @@ const CheckoutPage = () => {
                   </div>
                   <button
                     onClick={() => setIsAddressModalOpen(true)}
-                    className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all"
+                    className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-9 px-4 bg-orange-600/10 text-orange-600 text-sm font-semibold hover:bg-orange-600/20 transition-all"
                   >
                     <span>{t("customer:checkout.addAddress")}</span>
                   </button>
@@ -176,7 +177,7 @@ const CheckoutPage = () => {
                       </p>
                       <button
                         onClick={() => setIsAddressModalOpen(true)}
-                        className="inline-flex items-center gap-1 text-sm text-primary font-semibold hover:underline"
+                        className="inline-flex items-center gap-1 text-sm text-orange-600 font-semibold hover:underline"
                       >
                         <span className="material-symbols-outlined text-base">
                           add
@@ -191,7 +192,13 @@ const CheckoutPage = () => {
                           effectiveAddress?.detail === addr.detail &&
                           effectiveAddress?.receiver_name === addr.receiver_name;
                         // Compute fee badge for this address
-                        const addrFee = calculateShippingFee(addr.district ?? "", addr.city ?? "", subtotal);
+                        const config = settings ? {
+                          baseDeliveryFee: parseFloat(settings.baseDeliveryFee) || 15000,
+                          feePerKm: parseFloat(settings.feePerKm) || 5000,
+                          freeDeliveryEnabled: settings.freeDeliveryEnabled,
+                          freeDeliveryThreshold: parseFloat(settings.freeDeliveryThreshold) || 300000,
+                        } : undefined;
+                        const addrFee = calculateShippingFee(addr.district ?? "", addr.city ?? "", subtotal, config);
                         const isAddrBlocked = addrFee.blocked;
                         return (
                           <label
@@ -199,14 +206,14 @@ const CheckoutPage = () => {
                             className={`flex items-start gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${isAddrBlocked
                               ? "border-red-300 dark:border-red-800 opacity-80"
                               : isSelected
-                                ? "border-primary bg-primary/5"
-                                : "border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                                ? "border-orange-600 bg-orange-600/5"
+                                : "border-gray-200 dark:border-gray-800 hover:border-orange-600/50"
                               }`}
                             onClick={() => !isAddrBlocked && setSelectedAddress(addr)}
                           >
                             <input
                               readOnly
-                              className="h-5 w-5 mt-0.5 border-2 border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 accent-primary"
+                              className="h-5 w-5 mt-0.5 border-2 border-gray-300 text-orange-600 focus:ring-orange-600 focus:ring-offset-0 accent-orange-600"
                               name="address"
                               type="radio"
                               checked={isSelected && !isAddrBlocked}
@@ -219,7 +226,7 @@ const CheckoutPage = () => {
                                     {addr.label || "Địa chỉ"}
                                   </p>
                                   {addr.isDefault && (
-                                    <span className="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full uppercase">
+                                    <span className="text-[10px] bg-orange-600 text-white px-2 py-0.5 rounded-full uppercase">
                                       Mặc định
                                     </span>
                                   )}
@@ -235,7 +242,7 @@ const CheckoutPage = () => {
                                     🎁 MIỄN PHÍ
                                   </span>
                                 ) : (
-                                  <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                  <span className="text-[11px] font-semibold text-orange-600 bg-orange-600/10 px-2 py-0.5 rounded-full">
                                     Phí: {addrFee.fee.toLocaleString("vi-VN")}đ
                                   </span>
                                 )}
@@ -279,7 +286,7 @@ const CheckoutPage = () => {
               {/* Payment Method */}
               <section className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">
+                  <span className="material-symbols-outlined text-orange-600">
                     payments
                   </span>
                   <p className="text-xl font-bold">
@@ -294,8 +301,8 @@ const CheckoutPage = () => {
                       id="payment-cod"
                       onClick={() => setPaymentMethod("cash_on_delivery")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "cash_on_delivery"
-                        ? "border-2 border-primary bg-primary/5"
-                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        ? "border-2 border-orange-600 bg-orange-600/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-orange-600/50"
                         }`}
                     >
                       <span className="material-symbols-outlined">
@@ -307,29 +314,31 @@ const CheckoutPage = () => {
                     </button>
 
                     {/* Credit Card */}
-                    <button
-                      id="payment-card"
-                      onClick={() => setPaymentMethod("credit_card")}
-                      className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "credit_card"
-                        ? "border-2 border-primary bg-primary/5"
-                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
-                        }`}
-                    >
-                      <span className="material-symbols-outlined">
-                        credit_card
-                      </span>
-                      <span className="text-sm font-bold">
-                        {t("customer:checkout.cardPayment", "Thẻ tín dụng")}
-                      </span>
-                    </button>
+                    <div className="flex-1 relative">
+                        <button
+                          id="payment-card"
+                          disabled
+                          className="w-full flex flex-col items-center justify-center p-4 rounded-xl gap-2 border border-gray-100 dark:border-gray-800 opacity-40 cursor-not-allowed grayscale"
+                        >
+                          <span className="material-symbols-outlined">
+                            credit_card
+                          </span>
+                          <span className="text-sm font-bold">
+                            {t("customer:checkout.cardPayment", "Thẻ tín dụng")}
+                          </span>
+                        </button>
+                        <span className="absolute -top-2 -right-2 bg-slate-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm whitespace-nowrap">
+                            Sắp ra mắt
+                        </span>
+                    </div>
 
                     {/* Bank Transfer (PayOS) */}
                     <button
                       id="payment-bank"
                       onClick={() => setPaymentMethod("bank_transfer")}
                       className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl gap-2 transition-all ${paymentMethod === "bank_transfer"
-                        ? "border-2 border-primary bg-primary/5"
-                        : "border border-gray-200 dark:border-gray-800 hover:border-primary/50"
+                        ? "border-2 border-orange-600 bg-orange-600/5"
+                        : "border border-gray-200 dark:border-gray-800 hover:border-orange-600/50"
                         }`}
                     >
                       <span className="material-symbols-outlined">
@@ -467,7 +476,7 @@ const CheckoutPage = () => {
                     <div className="mb-4">
                       <button
                         onClick={() => setIsVouchersOpen(!isVouchersOpen)}
-                        className="flex items-center gap-2 font-bold text-text-main dark:text-white text-sm hover:text-primary transition-colors mb-2"
+                        className="flex items-center gap-2 font-bold text-text-main dark:text-white text-sm hover:text-orange-600 transition-colors mb-2"
                       >
                         Chọn khuyến mãi / Voucher
                         <span className="material-symbols-outlined transition-transform duration-200" style={{ transform: isVouchersOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
@@ -495,7 +504,7 @@ const CheckoutPage = () => {
                                   discountValue={v.discount_type === 'percentage' ? `${v.discount_value}%` : `${v.discount_value.toLocaleString("vi-VN")}đ`}
                                   minOrder={v.min_order_amount ? `${v.min_order_amount.toLocaleString("vi-VN")}đ` : "0đ"}
                                   // expiryDate={new Date(v.end_date).toLocaleDateString("vi-VN")}
-                                  className={`${voucherState.appliedVoucher?._id === v._id ? "ring-2 ring-primary scale-[1.02]" : "scale-100 opacity-90 hover:opacity-100"} shadow-sm transition-all origin-left pointer-events-none`}
+                                  className={`${voucherState.appliedVoucher?._id === v._id ? "ring-2 ring-orange-600 scale-[1.02]" : "scale-100 opacity-90 hover:opacity-100"} shadow-sm transition-all origin-left pointer-events-none`}
                                 />
                               </div>
                             ))
@@ -533,7 +542,7 @@ const CheckoutPage = () => {
                           value={voucherState.code}
                           onChange={(e) => setVoucherCode(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && applyVoucher()}
-                          className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-zinc-800 focus:border-primary focus:ring-primary text-sm uppercase font-bold px-3 py-2 outline-none"
+                          className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-zinc-800 focus:border-orange-600 focus:ring-orange-600 text-sm uppercase font-bold px-3 py-2 outline-none"
                           placeholder={t("customer:cart.voucherCode")}
                           type="text"
                           maxLength={20}
@@ -546,7 +555,7 @@ const CheckoutPage = () => {
                             !voucherState.code.trim() ||
                             voucherState.isValidating
                           }
-                          className="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          className="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                         >
                           {voucherState.isValidating ? (
                             <span className="material-symbols-outlined animate-spin text-sm">
@@ -599,7 +608,7 @@ const CheckoutPage = () => {
                     )}
                     <div className="flex justify-between text-xl font-bold mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
                       <span>{t("customer:cart.grandTotal")}</span>
-                      <span className="text-primary">
+                      <span className="text-orange-600">
                         {total.toLocaleString("vi-VN")}đ
                       </span>
                     </div>
@@ -617,7 +626,7 @@ const CheckoutPage = () => {
                       !effectiveAddress ||
                       !isDeliverable
                     }
-                    className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    className="w-full bg-orange-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-orange-600/30 hover:shadow-orange-600/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     {isSubmitting ? (
                       <>

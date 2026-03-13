@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
+import { Check, Truck, ReceiptText, ArrowRight, Home } from "lucide-react";
 
 interface OrderSuccessState {
   orderCode?: string;
@@ -40,115 +41,120 @@ const OrderSuccessPage = () => {
     if (orderCode) clearCart();
   }, [orderCode, clearCart]);
 
+  // Handle PayOS cancellation redirect
+  useEffect(() => {
+    const isCancelled =
+      searchParams.get("status") === "CANCELLED" ||
+      searchParams.get("cancel") === "true";
+
+    if (isCancelled && orderCode) {
+      navigate(
+        `/failed?reason=cancel&orderCode=${orderCode}${state?.orderId ? `&orderId=${state.orderId}` : ""}`,
+        {
+          replace: true,
+        },
+      );
+    }
+  }, [searchParams, orderCode, navigate]);
+
   if (!orderCode) {
     return null; // Will redirect
   }
 
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display text-[#1b140d] antialiased min-h-screen relative">
-      {/* Background Content (Blurred Skeleton) */}
-      <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-        <div className="layout-container flex h-full grow flex-col">
-          <div className="px-4 md:px-40 flex flex-1 justify-center py-5">
-            <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-              {/* Skeleton background for blurred effect */}
-              <div className="py-10 px-4 md:px-10 opacity-30 grayscale pointer-events-none">
-                <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-xl mb-6" />
-                <div className="h-8 w-1/3 bg-gray-200 dark:bg-gray-800 rounded mb-4" />
-                <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded mb-2" />
-                <div className="h-4 w-5/6 bg-gray-100 dark:bg-gray-800 rounded mb-2" />
-              </div>
-            </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+
+      {/* Background Decorative Elements (Nhuộm Cam) */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-400/20 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-400/20 rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Main Success Card */}
+      <div className="w-full max-w-[480px] bg-white rounded-[2.5rem] p-8 sm:p-10 flex flex-col items-center shadow-2xl shadow-orange-900/5 border border-slate-100 relative z-10 animate-in zoom-in-95 slide-in-from-bottom-10 fade-in duration-500 ease-out">
+
+        {/* Animated Check Icon (Nhuộm Cam) */}
+        <div className="relative mb-8 mt-2">
+          <div className="absolute inset-0 bg-orange-400 rounded-full animate-ping opacity-20" />
+          <div className="absolute inset-0 bg-orange-100 rounded-full scale-150" />
+          <div className="relative w-24 h-24 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white shadow-xl shadow-orange-500/30 ring-8 ring-white">
+            <Check className="w-12 h-12 stroke-[3px]" />
           </div>
         </div>
-      </div>
 
-      {/* Modal Overlay */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-white/60 dark:bg-black/60">
-        {/* Success Modal */}
-        <div className="relative w-full max-w-[440px] bg-white dark:bg-[#181a1b] rounded-2xl p-8 flex flex-col items-center shadow-2xl border border-[#f3ede7] dark:border-gray-700 animate-in zoom-in-95 fade-in duration-300">
-          {/* Success Icon */}
-          <div className="mb-8 relative">
-            <div className="absolute inset-0 bg-green-400/20 rounded-full scale-150 blur-xl" />
-            <div className="relative w-20 h-20 rounded-full bg-green-400 flex items-center justify-center text-white shadow-lg shadow-green-400/30">
-              <span className="material-symbols-outlined text-[48px] font-bold">
-                check
-              </span>
-            </div>
-          </div>
+        {/* Headline */}
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight text-center mb-3">
+          {t("customer:orderSuccess.title", "Đặt hàng thành công!")}
+        </h1>
 
-          {/* Headline */}
-          <h1 className="text-[#1b140d] dark:text-white tracking-tight text-[28px] font-extrabold leading-tight text-center pb-2">
-            {t("customer:orderSuccess.title")}
-          </h1>
+        <p className="text-slate-500 text-center text-sm font-medium mb-8 px-4">
+          Cảm ơn bạn đã lựa chọn FoodieDash. Bếp đang chuẩn bị món ngon cho bạn rồi nhé!
+        </p>
 
-          {/* Order Code */}
-          <p className="text-[#9a734c] dark:text-gray-400 text-base font-normal leading-relaxed text-center px-4 mb-2">
-            Mã đơn hàng của bạn:
-          </p>
-          <div className="bg-primary/10 border border-primary/20 rounded-xl px-6 py-3 mb-6">
-            <span className="font-black text-xl text-primary tracking-widest">
-              #{orderCode}
+        {/* Order Details Ticket */}
+        <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-5 mb-8 relative">
+          {/* Cutouts for ticket effect */}
+          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full border-r-2 border-slate-200" />
+          <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full border-l-2 border-slate-200" />
+
+          <div className="flex flex-col items-center gap-1 border-b border-dashed border-slate-200 pb-4 mb-4">
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+              Mã đơn hàng của bạn
+            </span>
+            <span className="font-mono text-2xl font-bold text-orange-600 tracking-wider">
+              #{orderCode.slice(-6)}
             </span>
           </div>
 
-          <p className="text-[#9a734c] dark:text-gray-400 text-sm text-center mb-6">
-            Chúng tôi đã ghi nhận đơn hàng của bạn và sẽ xử lý ngay.
-            {totalPrice && (
-              <>
-                {" "}
-                Tổng thanh toán:{" "}
-                <strong className="text-[#1b140d] dark:text-white">
-                  {totalPrice.toLocaleString("vi-VN")}đ
-                </strong>
-              </>
-            )}
-          </p>
-
-          {/* Delivery Estimate */}
-          <div className="w-full bg-[#fcfaf8] dark:bg-gray-800 rounded-lg p-4 mb-8 flex items-center gap-4 border border-[#f3ede7] dark:border-gray-700">
-            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">local_shipping</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#9a734c] dark:text-gray-500">
-                Dự kiến giao hàng
-              </p>
-              <p className="text-sm font-bold text-[#1b140d] dark:text-white">
-                Hôm nay, trong vòng 30–45 phút
-              </p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-3 w-full">
-            <button
-              id="view-order-btn"
-              onClick={() => {
-                if (state?.orderId) {
-                  navigate(`/order-detail/${state.orderId}`);
-                } else {
-                  navigate("/profile/history");
-                }
-              }}
-              className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
-            >
-              <span className="material-symbols-outlined mr-2">receipt_long</span>
-              <span>
-                {t("customer:orderSuccess.trackOrder", "Xem chi tiết đơn hàng")}
+          {totalPrice && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-bold text-slate-500">Tổng thanh toán:</span>
+              <span className="text-xl font-black text-orange-600">
+                {totalPrice.toLocaleString("vi-VN")}đ
               </span>
-            </button>
+            </div>
+          )}
+        </div>
 
-            <Link to="/" replace>
-              <button
-                id="back-home-btn"
-                className="flex items-center justify-center rounded-lg h-14 bg-[#f3ede7] dark:bg-gray-700 text-[#1b140d] dark:text-white text-base font-bold leading-normal tracking-[0.015em] w-full hover:bg-[#ebe2d9] dark:hover:bg-gray-600 transition-colors"
-              >
-                <span>{t("customer:orderSuccess.backToHome")}</span>
-              </button>
-            </Link>
+        {/* Delivery Estimate */}
+        <div className="w-full bg-orange-50/50 border border-orange-100 rounded-2xl p-4 mb-8 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+            <Truck className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-orange-600/70 mb-0.5">
+              Dự kiến giao hàng
+            </p>
+            <p className="text-sm font-bold text-slate-800">
+              Hôm nay • 30 - 45 phút tới
+            </p>
           </div>
         </div>
+
+        {/* Action Buttons (Nút chính chuyển sang Cam) */}
+        <div className="flex flex-col gap-3 w-full">
+          <button
+            onClick={() => {
+              const targetId = state?.orderId || orderCode;
+              if (targetId) {
+                navigate(`/orders/${targetId}`);
+              } else {
+                navigate("/profile/history");
+              }
+            }}
+            className="group flex items-center justify-center gap-2 rounded-xl h-14 bg-orange-500 text-white text-base font-bold w-full shadow-lg shadow-orange-500/25 hover:bg-orange-600 transition-all active:scale-[0.98]"
+          >
+            <ReceiptText className="w-5 h-5" />
+            <span>{t("customer:orderSuccess.trackOrder", "Theo dõi đơn hàng")}</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          <Link to="/" replace className="w-full">
+            <button className="flex items-center justify-center gap-2 rounded-xl h-14 bg-white border-2 border-slate-100 text-slate-600 text-base font-bold w-full hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all active:scale-[0.98]">
+              <Home className="w-5 h-5" />
+              <span>{t("customer:orderSuccess.backToHome", "Về trang chủ")}</span>
+            </button>
+          </Link>
+        </div>
+
       </div>
     </div>
   );

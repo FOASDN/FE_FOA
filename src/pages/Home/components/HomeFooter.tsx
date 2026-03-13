@@ -1,5 +1,5 @@
-
-
+import logo from "@/assets/logo.png";
+import { Link } from "react-router-dom";
 
 const HomeFooter = () => {
     return (
@@ -7,12 +7,14 @@ const HomeFooter = () => {
             <div className="max-w-7xl mx-auto px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     <div className="col-span-1 md:col-span-1">
-                        <div className="flex items-center gap-2.5 mb-6 group cursor-pointer hover:scale-105 transition-transform">
-                            <div className="bg-orange-600 text-white p-2 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
-                                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
-                            </div>
-                            <h2 className="text-2xl font-black tracking-tighter text-orange-600">FoodieDash</h2>
-                        </div>
+                        <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+                            <img
+                                src={logo}
+                                alt="FoodieDash"
+                                className="w-30 h-30 -mt-8 -ml-6 -mr-10 object-contain group-hover:rotate-12 transition-transform duration-300"
+                            />
+                            <h1 className="text-2xl font-black tracking-tighter -mt-8">FoodieDash</h1>
+                        </Link>
                         <p className="text-gray-500 text-sm leading-relaxed mb-6">
                             Trải nghiệm dịch vụ giao đồ ăn nhanh nhất với các nhà hàng địa phương tốt nhất.
                         </p>

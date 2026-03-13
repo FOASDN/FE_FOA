@@ -292,7 +292,7 @@ const ProfileSettingsPage = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading || saving}
-                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
                     placeholder="Nhập username"
                   />
                 </div>
@@ -325,7 +325,7 @@ const ProfileSettingsPage = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     disabled={loading || saving}
-                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
+                    className="w-full pl-12 pr-4 py-3.5 bg-background border border-input rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent transition-shadow text-foreground placeholder:text-muted-foreground disabled:opacity-70"
                     placeholder="Nhập số điện thoại"
                   />
                 </div>
@@ -347,7 +347,7 @@ const ProfileSettingsPage = () => {
                 type="button"
                 onClick={onUpdateProfile}
                 disabled={loading || saving || username.trim().length === 0}
-                className="bg-primary disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2"
+                className="bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-orange-600/90 text-orange-600-foreground px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-orange-600/30 transition-all flex items-center justify-center gap-2"
               >
                 <span>{saving ? "Đang lưu..." : t("customer:profileSettings.updateProfile")}</span>
                 <span className="material-symbols-outlined">check_circle</span>

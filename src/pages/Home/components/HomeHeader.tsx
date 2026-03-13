@@ -8,6 +8,8 @@ import i18n from "../../../config/i18n";
 import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { getSupportSocket } from "@/lib/support-socket";
+import logo from "@/assets/logo.png";
 
 interface HomeHeaderProps {
   searchQuery?: string;
@@ -31,7 +33,7 @@ const HomeHeader = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  const { items, totalItems, totalPrice } = useCart();
+  const { items, totalItems, totalPrice, clearCart } = useCart();
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
@@ -46,7 +48,10 @@ const HomeHeader = ({
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = () => {
+    // Đầu tiên logout để auth chuyển sang guest (giữ lại cart của user trong localStorage)
     logout();
+    // Sau đó clear cart theo key guest để UI trống cho khách
+    clearCart();
     setShowDropdown(false);
     navigate("/");
   };
@@ -144,6 +149,36 @@ const HomeHeader = ({
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  // Real-time socket listener for notifications
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const socket = getSupportSocket();
+
+    socket.on("order:status_updated", (data: any) => {
+      console.log("Header received real-time notification:", data);
+
+      // Create a local notification object to append to the list
+      const newNoti: Notification = {
+        _id: `temp-${Date.now()}`,
+        title: "Cập nhật đơn hàng",
+        body: data.message,
+        type: "ORDER_STATUS_UPDATED" as any,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setNotifications((prev) => [newNoti, ...prev].slice(0, 50));
+      setUnreadCount((prev) => prev + 1);
+      playNotification();
+    });
+
+    return () => {
+      socket.off("order:status_updated");
+    };
+  }, [isAuthenticated, user?._id, playNotification]);
+
   // Click outside logic
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -220,9 +255,11 @@ const HomeHeader = ({
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 lg:gap-8">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
-              <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
-              </div>
+              <img
+                src={logo}
+                alt="FoodieDash"
+                className="h-18 -mt-2 -mb-2 -ml-10 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+              />
               <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
             </Link>
 
@@ -471,12 +508,6 @@ const HomeHeader = ({
                             {activeOrdersCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>}
                           </div>
                           <div><p className="font-semibold">{t("common:nav.orders")}</p><p className="text-xs text-gray-500">{t("customer:profile.orderHistory")}</p></div>
-                        </Link>
-                        <Link to="/favorites" className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-700 transition-all group" onClick={() => setShowDropdown(false)}>
-                          <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center group-hover:bg-pink-100 group-hover:scale-110 transition-all">
-                            <span className="material-symbols-outlined text-[18px] text-pink-600">favorite</span>
-                          </div>
-                          <div><p className="font-semibold">{t("common:nav.favorites")}</p><p className="text-xs text-gray-500">{t("customer:profile.myFavorites")}</p></div>
                         </Link>
                       </div>
                       <div className="border-t border-gray-100 bg-gray-50/50">

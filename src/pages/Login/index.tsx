@@ -2,18 +2,21 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import authService from "@/services/auth.service";
 import { userService } from "@/services/profile.service";
 import {
   PENDING_PREFS_KEY,
   type PendingPreferences,
 } from "@/constants/preferences";
+import logo from "@/assets/logo.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation(["auth", "common"]);
   const { login } = useAuth();
+  const { mergeGuestCartIntoCurrentUser } = useCart();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,6 +46,9 @@ const LoginPage = () => {
         collected_points: user.collected_points,
         addresses: user.addresses ?? [], // ← include delivery addresses
       });
+
+      // Sau khi login, merge giỏ guest (nếu có) vào giỏ của user hiện tại
+      mergeGuestCartIntoCurrentUser();
 
       // Sync onboarding preferences saved before login
       const pendingRaw = localStorage.getItem(PENDING_PREFS_KEY);
@@ -107,19 +113,14 @@ const LoginPage = () => {
         <div className="w-full max-w-[420px] flex flex-col gap-8">
           {/* Logo & Header */}
           <div className="flex flex-col items-center text-center gap-4">
-            <div
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
-            >
-              <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  restaurant_menu
-                </span>
-              </div>
-              <h2 className="text-2xl font-black tracking-tighter">
-                FoodieDash
-              </h2>
-            </div>
+            <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+              <img
+                src={logo}
+                alt="FoodieDash"
+                className="h-18 -ml-8 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+              />
+              <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
+            </Link>
             <div className="flex flex-col gap-1">
               <h2 className="text-foreground text-3xl font-black tracking-tight">
                 {t("auth:login.subtitle")}

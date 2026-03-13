@@ -73,8 +73,8 @@ const OrderDetailPage = () => {
       case "confirmed":
         return {
           label: "Đã xác nhận",
-          color: "text-primary",
-          bg: "bg-primary/5",
+          color: "text-orange-600",
+          bg: "bg-orange-600/5",
           icon: <ReceiptText className="w-5 h-5" />,
         };
       case "cancelled":
@@ -98,7 +98,7 @@ const OrderDetailPage = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <Loader2 className="w-12 h-12 text-orange-600 animate-spin" />
         <p className="text-gray-500 font-bold">Đang tải chi tiết đơn hàng...</p>
       </div>
     );
@@ -120,7 +120,7 @@ const OrderDetailPage = () => {
         </div>
         <Link
           to="/profile/history"
-          className="px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20"
+          className="px-8 py-3 bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-600/20"
         >
           Quay lại lịch sử đặt hàng
         </Link>
@@ -129,6 +129,21 @@ const OrderDetailPage = () => {
   }
 
   const statusInfo = getStatusInfo(order.status);
+  const getStatusIdx = (status: string) => {
+    switch (status) {
+      case "pending":
+        return 0;
+      case "confirmed":
+        return 1;
+      case "shipping":
+        return 2;
+      case "completed":
+        return 3;
+      default:
+        return 0;
+    }
+  };
+  const statusIdx = getStatusIdx(order.status);
   const orderOwnerId =
     typeof (order as any).user_id === "string"
       ? (order as any).user_id
@@ -150,7 +165,7 @@ const OrderDetailPage = () => {
                 navigate("/profile/history");
               }
             }}
-            className="inline-flex items-center text-sm font-bold text-[#9a734c] hover:text-primary transition-colors mb-6 group"
+            className="inline-flex items-center text-sm font-bold text-[#9a734c] hover:text-orange-600 transition-colors mb-6 group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
             Quay lại
@@ -184,7 +199,7 @@ const OrderDetailPage = () => {
             {/* Order Items */}
             <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-6 py-5 border-b border-gray-100 dark:border-white/10 flex items-center gap-2">
-                <Package className="w-5 h-5 text-primary" />
+                <Package className="w-5 h-5 text-orange-600" />
                 <h3 className="font-bold text-lg">Món ăn đã đặt</h3>
               </div>
               <div className="divide-y divide-gray-50 dark:divide-white/5">
@@ -201,7 +216,7 @@ const OrderDetailPage = () => {
                         }}
                       />
                       <div>
-                        <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                        <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">
                           {(item.product_id as any)?.name ||
                             "Sản phẩm không còn tồn tại"}
                         </h4>
@@ -253,13 +268,13 @@ const OrderDetailPage = () => {
             {/* Delivery Details */}
             <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-6">
-                <MapPin className="w-5 h-5 text-primary" />
+                <MapPin className="w-5 h-5 text-orange-600" />
                 <h3 className="font-bold text-lg">Thông tin giao hàng</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-orange-600/10 flex items-center justify-center text-orange-600 shrink-0">
                       <MapPin className="w-4 h-4" />
                     </div>
                     <div>
@@ -279,7 +294,7 @@ const OrderDetailPage = () => {
                 </div>
                 <div className="space-y-4">
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-orange-600/10 flex items-center justify-center text-orange-600 shrink-0">
                       <User className="w-4 h-4" />
                     </div>
                     <div>
@@ -301,7 +316,7 @@ const OrderDetailPage = () => {
             {(order.note || order.staff_note_items?.length) && (
               <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
-                  <ReceiptText className="w-5 h-5 text-primary" />
+                  <ReceiptText className="w-5 h-5 text-orange-600" />
                   <h3 className="font-bold text-lg">
                     {isStaffView ? "Lưu ý từ khách hàng" : "Ghi chú đơn hàng"}
                   </h3>
@@ -315,7 +330,7 @@ const OrderDetailPage = () => {
                           key={index}
                           className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200"
                         >
-                          <span className="mt-1 text-primary font-bold">•</span>
+                          <span className="mt-1 text-orange-600 font-bold">•</span>
                           <span>{note}</span>
                         </li>
                       ))}
@@ -338,7 +353,7 @@ const OrderDetailPage = () => {
           <div className="flex flex-col gap-6">
             <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 shadow-md">
               <div className="flex items-center gap-2 mb-6">
-                <ReceiptText className="w-5 h-5 text-primary" />
+                <ReceiptText className="w-5 h-5 text-orange-600" />
                 <h3 className="font-bold text-lg">Hóa đơn</h3>
               </div>
               <div className="flex flex-col gap-4">
@@ -376,7 +391,7 @@ const OrderDetailPage = () => {
                     {t("customer:cart.grandTotal")}
                   </span>
                   <div className="text-right">
-                    <p className="text-3xl font-black text-primary">
+                    <p className="text-3xl font-black text-orange-600">
                       {order.total_price.toLocaleString("vi-VN")}đ
                     </p>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-1">
@@ -391,76 +406,222 @@ const OrderDetailPage = () => {
             </div>
 
             {/* Order Timeline (Simple version) */}
-            <div className="bg-[#fcfaf8] dark:bg-white/3 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
-              <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">
-                Trạng thái xử lý
-              </h4>
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start">
-                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-lg shadow-green-500/20">
-                    <CheckCircle2 className="w-4 h-4" />
+            {/* Sidebar Tracker */}
+            <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg">{t("customer:tracking.title")}</h3>
+                <Link
+                  to={`/track-order?id=${order._id}`}
+                  className="text-orange-600 text-sm font-bold hover:underline"
+                >
+                  Xem chi tiết
+                </Link>
+              </div>
+              <div className="flex flex-col gap-8">
+                {/* Step 1: Đã đặt hàng */}
+                <div
+                  className={`relative flex gap-4 ${
+                    statusIdx >= 0 && order.status !== "cancelled" ? "step-active" : ""
+                  }`}
+                >
+                  <div
+                    className={`z-10 size-6 rounded-full flex items-center justify-center text-white ${
+                      statusIdx > 0
+                        ? "bg-green-500"
+                        : "bg-orange-600 ring-4 ring-orange-600/20"
+                    }`}
+                  >
+                    {statusIdx > 0 ? (
+                      <span className="material-symbols-outlined text-[16px] font-bold">
+                        check
+                      </span>
+                    ) : (
+                      <div className="size-2 bg-white rounded-full"></div>
+                    )}
                   </div>
                   <div>
-                    <p className="text-sm font-bold">Đặt hàng thành công</p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(order.createdAt).toLocaleTimeString("vi-VN")}
+                    <p
+                      className={`text-sm font-bold ${
+                        statusIdx === 0
+                          ? "text-orange-600"
+                          : "text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      Đã đặt hàng
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(order.createdAt).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                 </div>
 
-                {order.status !== "pending" && order.status !== "cancelled" && (
-                  <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white shrink-0 mt-0.5 shadow-lg shadow-primary/20">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">Cửa hàng đã xác nhận</p>
-                      <p className="text-xs text-primary/70">
-                        Đang chuẩn bị món ăn
-                      </p>
-                    </div>
+                {/* Step 2: Đang chuẩn bị */}
+                <div
+                  className={`relative flex gap-4 ${statusIdx >= 1 ? "step-active" : ""}`}
+                >
+                  <div
+                    className={`z-10 size-6 rounded-full flex items-center justify-center ${
+                      statusIdx > 1
+                        ? "bg-green-500 text-white"
+                        : statusIdx === 1
+                          ? "bg-orange-600 text-white ring-4 ring-orange-600/20"
+                          : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                    }`}
+                  >
+                    {statusIdx > 1 ? (
+                      <span className="material-symbols-outlined text-[16px] font-bold">
+                        check
+                      </span>
+                    ) : statusIdx === 1 ? (
+                      <div className="size-2 bg-white rounded-full"></div>
+                    ) : (
+                      <span className="material-symbols-outlined text-[16px]">
+                        restaurant
+                      </span>
+                    )}
                   </div>
-                )}
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${
+                        statusIdx === 1
+                          ? "text-orange-600"
+                          : statusIdx < 1
+                            ? "text-gray-400"
+                            : "text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      Đang chuẩn bị
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        statusIdx === 1 ? "text-orange-600/70" : "text-gray-400"
+                      }`}
+                    >
+                      {statusIdx === 1
+                        ? "Món ăn đang được nấu"
+                        : statusIdx > 1
+                          ? "Đã xong"
+                          : "Chờ xác nhận"}
+                    </p>
+                  </div>
+                </div>
 
-                {order.status === "shipping" && (
-                  <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0 mt-0.5">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">Đang giao hàng</p>
-                      <p className="text-xs text-blue-500">
-                        Tài xế đang trên đường
-                      </p>
-                    </div>
+                {/* Step 3: Đang giao hàng */}
+                <div
+                  className={`relative flex gap-4 ${statusIdx >= 2 ? "step-active" : ""}`}
+                >
+                  <div
+                    className={`z-10 size-6 rounded-full flex items-center justify-center ${
+                      statusIdx > 2
+                        ? "bg-green-500 text-white"
+                        : statusIdx === 2
+                          ? "bg-orange-600 text-white ring-4 ring-orange-600/20"
+                          : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                    }`}
+                  >
+                    {statusIdx > 2 ? (
+                      <span className="material-symbols-outlined text-[16px] font-bold">
+                        check
+                      </span>
+                    ) : (
+                      <span className="material-symbols-outlined text-[16px]">
+                        moped
+                      </span>
+                    )}
                   </div>
-                )}
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${
+                        statusIdx === 2
+                          ? "text-orange-600"
+                          : statusIdx < 2
+                            ? "text-gray-400"
+                            : "text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      Đang giao hàng
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        statusIdx === 2 ? "text-orange-600/70" : "text-gray-400"
+                      }`}
+                    >
+                      {statusIdx === 2
+                        ? "Tài xế đang giao"
+                        : statusIdx > 2
+                          ? "Đã giao đến"
+                          : "Chờ lấy hàng"}
+                    </p>
+                  </div>
+                </div>
 
-                {order.status === "completed" && (
-                  <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-white shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">Đã giao hàng</p>
-                      <p className="text-xs text-gray-400">Đơn hàng hoàn tất</p>
-                    </div>
+                {/* Step 4: Đã giao */}
+                <div className="relative flex gap-4">
+                  <div
+                    className={`z-10 size-6 rounded-full flex items-center justify-center ${
+                      statusIdx === 3
+                        ? "bg-green-500 text-white shadow-lg shadow-green-500/20"
+                        : "bg-gray-100 dark:bg-white/10 text-gray-400"
+                    }`}
+                  >
+                    {statusIdx === 3 ? (
+                      <span className="material-symbols-outlined text-[16px] font-bold">
+                        check
+                      </span>
+                    ) : (
+                      <span className="material-symbols-outlined text-[16px]">
+                        home
+                      </span>
+                    )}
                   </div>
-                )}
-
-                {order.status === "cancelled" && (
-                  <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white shrink-0 mt-0.5">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-red-500">
-                        Đơn hàng đã hủy
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${
+                        statusIdx === 3 ? "text-green-600" : "text-gray-400"
+                      }`}
+                    >
+                      Đã giao
+                    </p>
+                    {statusIdx === 3 && order.updatedAt && (
+                      <p className="text-xs text-green-600/70">
+                        {new Date(order.updatedAt).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
+
+              {/* Special status for Cancelled */}
+              {order.status === "cancelled" && (
+                <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl flex items-center gap-3 text-red-600">
+                  <span className="material-symbols-outlined">cancel</span>
+                  <div className="text-sm font-bold">Đơn hàng đã hủy</div>
+                </div>
+              )}
+
+              <style>{`
+                .step-active::before {
+                    content: '';
+                    position: absolute;
+                    left: 11.5px;
+                    top: 24px;
+                    bottom: -8px;
+                    width: 2px;
+                    background-color: #e5e7eb;
+                }
+                .dark .step-active::before {
+                    background-color: rgba(255,255,255,0.1);
+                }
+                .step-active:last-child::before {
+                    display: none;
+                }
+              `}</style>
             </div>
 
             {/* Order Support Chat entry (customer owner only) */}

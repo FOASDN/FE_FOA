@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuth } from "./hooks/useAuth";
 import { useCart } from "./hooks/useCart";
+import { OrderNotificationListener } from "./components/shared/OrderNotificationListener";
 import HomePage from "./pages/Home";
 import VouchersPage from "./pages/Vouchers";
 import VoucherDetailPage from "./pages/VoucherDetail";
@@ -32,6 +33,7 @@ import OrderFailedPage from "./pages/OrderFailed";
 import OrderDetailPage from "./pages/OrderDetail";
 import TrackOrderPage from "./pages/TrackOrder";
 import AboutPage from "./pages/About";
+import BlogDetailPage from "./pages/BlogDetailPage";
 import NotFoundPage from "./pages/NotFound";
 import ForbiddenPage from "./pages/Forbidden";
 import MainLayout from "./components/layout/MainLayout";
@@ -79,6 +81,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <OrderNotificationListener />
       <Toaster position="top-right" />
       <Routes>
         <Route element={<MainLayout />}>
@@ -87,29 +90,36 @@ function App() {
           <Route path="/vouchers/:id" element={<VoucherDetailPage />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<Navigate to="/" replace />} />
+          <Route path="/blog/:id" element={<BlogDetailPage />} />
           <Route path="/food/:id" element={<FoodDetailPage />} />
+          {/* Cart: cho phép guest xem/thao tác, nhưng checkout vẫn yêu cầu đăng nhập */}
+          <Route path="/cart" element={<ShoppingCartPage />} />
           {/* Protected customer routes */}
           <Route element={<RequireAuth />}>
-            <Route path="/cart" element={<ShoppingCartPage />} />
             {/* /checkout requires auth — unauthenticated users redirect to login */}
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/profile" element={<ProfileLayout />}>
               <Route index element={<ProfileSettingsPage />} />
               <Route path="history" element={<OrderHistoryTabContent />} />
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
+              <Route path="addresses" element={<AddressesPage />} />
             </Route>
             <Route
               path="/history"
               element={<Navigate to="/profile/history" replace />}
             />
-            <Route path="/addresses" element={<AddressesPage />} />
+            <Route
+              path="/addresses"
+              element={<Navigate to="/profile/addresses" replace />}
+            />
             <Route path="/ai-suggestions" element={<SafeAlternativesPage />} />
             <Route path="/wallet" element={<VoucherWalletPage />} />
             <Route path="/membership" element={<MembershipBenefitsPage />} />
             <Route path="/rating/:orderId" element={<OrderRatingPage />} />
             <Route path="/success" element={<OrderSuccessPage />} />
             <Route path="/failed" element={<OrderFailedPage />} />
-            <Route path="/order-detail/:id" element={<OrderDetailPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/track-order" element={<TrackOrderPage />} />
           </Route>
         </Route>

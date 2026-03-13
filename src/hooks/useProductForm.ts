@@ -79,7 +79,7 @@ export const useProductForm = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(
     mode === "edit" && product
-      ? typeof product.image === "object"
+      ? product.image && typeof product.image === "object"
         ? product.image.secure_url
         : ""
       : "",
@@ -94,7 +94,9 @@ export const useProductForm = ({
     if (mode === "edit" && product) {
       setFormData(productToFormData(product));
       setImagePreview(
-        typeof product.image === "object" ? product.image.secure_url : "",
+        product.image && typeof product.image === "object"
+          ? product.image.secure_url
+          : "",
       );
       setImageFile(null);
       setError("");

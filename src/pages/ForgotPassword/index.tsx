@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import authService from "@/services/auth.service";
+import logo from "@/assets/logo.png";
 
 const ForgotPasswordPage = () => {
     const { t } = useTranslation(['auth', 'common']);
@@ -91,14 +92,13 @@ const ForgotPasswordPage = () => {
                 <div className="w-full max-w-[420px] flex flex-col gap-8">
                     {/* Logo */}
                     <div className="flex flex-col items-center text-center gap-4">
-                        <Link
-                            to="/"
-                            className="flex items-center gap-2.5 text-orange-600 group"
-                        >
-                            <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
-                            </div>
-                            <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
+                        <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+                            <img
+                                src={logo}
+                                alt="FoodieDash"
+                                className="h-18 -ml-8 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+                            />
+                            <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
                         </Link>
                         <div className="flex flex-col gap-1">
                             <h2 className="text-foreground text-3xl font-black tracking-tight">

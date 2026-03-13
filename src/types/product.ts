@@ -20,6 +20,20 @@ export interface Product {
   aiReason?: string;
   createdAt: string;
   updatedAt: string;
+  variants?: VariantGroup[];
+}
+
+export interface VariantOption {
+  choice: string;
+  extra_price: number;
+}
+
+export interface VariantGroup {
+  name: string;
+  required?: boolean;
+  multiple?: boolean;
+  max_choices?: number;
+  options: VariantOption[];
 }
 
 export interface ProductListResponse {

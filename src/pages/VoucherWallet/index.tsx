@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import voucherService from "@/services/voucher.service";
+import productAPI from "@/services/product.service";
 import { userService, type MembershipInfo, type PointTransaction } from "@/services/profile.service";
 import type { Voucher } from "@/types/voucher";
+import type { Product } from "@/types/product";
 import { DiscountType } from "@/types/voucher";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -217,44 +219,44 @@ const MembershipPerks = ({ tier }: { tier: string }) => {
 
 const PointsActivity = ({ activities }: { activities: PointTransaction[] }) => {
     return (
-        <div className="bg-card border border-border rounded-[24px] overflow-hidden flex flex-col h-[400px]">
-            <div className="p-6 border-b border-border flex justify-between items-center">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">history</span>
                     <h4 className="text-lg font-bold">Lịch sử điểm</h4>
                 </div>
-                <button className="text-xs font-bold text-muted-foreground hover:text-primary">Xem thêm</button>
+                <button className="text-[10px] font-black text-muted-foreground hover:text-primary uppercase tracking-widest">Xem thêm</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
-                {activities.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center space-y-2">
-                        <span className="material-symbols-outlined text-4xl opacity-20">history</span>
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-40">Chưa có hoạt động</p>
-                    </div>
-                ) : (
-                    activities.map((a, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/50 rounded-xl transition-colors">
-                            <div className="flex gap-3">
-                                <div className={`size-10 rounded-full flex items-center justify-center ${a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "bg-green-50 dark:bg-green-950/40 text-green-600" : "bg-orange-50 dark:bg-orange-950/40 text-orange-600"}`}>
-                                    <span className="material-symbols-outlined text-base">
-                                        {a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "add_circle" : "remove_circle"}
+            {activities.length === 0 ? (
+                <div className="bg-card border border-border rounded-[24px] p-8 flex flex-col items-center justify-center text-center space-y-2">
+                    <span className="material-symbols-outlined text-4xl opacity-20">history</span>
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-40">Chưa có hoạt động</p>
+                </div>
+            ) : (
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-1 px-1">
+                    {activities.map((a, i) => (
+                        <div key={i} className="min-w-[260px] bg-card border border-border rounded-2xl p-4 flex gap-4 items-center shrink-0 hover:border-primary/30 transition-all group">
+                            <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "bg-green-50 dark:bg-green-950/40 text-green-600" : "bg-orange-50 dark:bg-orange-950/40 text-orange-600"}`}>
+                                <span className="material-symbols-outlined text-lg">
+                                    {a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "add_circle" : "remove_circle"}
+                                </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start gap-2">
+                                    <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{a.description}</p>
+                                    <span className={`text-sm font-black shrink-0 ${a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "text-green-600" : "text-orange-600"}`}>
+                                        {a.amount > 0 ? "+" : ""}{a.amount}
                                     </span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold truncate">{a.description}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase">{a.type}</p>
+                                <div className="flex justify-between items-center mt-1">
+                                    <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">{a.type}</p>
+                                    <p className="text-[9px] text-muted-foreground whitespace-nowrap opacity-60 font-bold">{formatDate(a.createdAt)}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className={`text-sm font-black ${a.type === "earn" || a.type === "referral" || a.type === "bonus" ? "text-green-600" : "text-orange-600"}`}>
-                                    {a.amount > 0 ? "+" : ""}{a.amount}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground whitespace-nowrap">{formatDate(a.createdAt)}</p>
-                            </div>
                         </div>
-                    ))
-                )}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -379,6 +381,8 @@ export const VoucherWalletContent = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [membership, setMembership] = useState<MembershipInfo | null>(null);
     const [activities, setActivities] = useState<PointTransaction[]>([]);
+    const [rewardProducts, setRewardProducts] = useState<Product[]>([]);
+    const [rewardLoading, setRewardLoading] = useState(true);
 
     const fetchVouchers = useCallback(async () => {
         try {
@@ -393,6 +397,18 @@ export const VoucherWalletContent = () => {
             setLoading(false);
         }
     }, [setVouchers, setLoading, setError]);
+
+    const fetchRewards = useCallback(async () => {
+        try {
+            setRewardLoading(true);
+            const res = await productAPI.getProducts({ limit: 10, sort: "-rating" });
+            setRewardProducts(res.data ?? []);
+        } catch (err) {
+            console.error("Failed to fetch reward products:", err);
+        } finally {
+            setRewardLoading(false);
+        }
+    }, []);
 
     const fetchMembershipData = useCallback(async () => {
         try {
@@ -410,7 +426,8 @@ export const VoucherWalletContent = () => {
     useEffect(() => {
         fetchVouchers();
         fetchMembershipData();
-    }, [fetchVouchers, fetchMembershipData]);
+        fetchRewards();
+    }, [fetchVouchers, fetchMembershipData, fetchRewards]);
 
     const handleCopy = (code: string) => {
         navigator.clipboard.writeText(code).then(() => {
@@ -537,18 +554,89 @@ export const VoucherWalletContent = () => {
                 code={membership?.referral_code || "FOODIE"}
             />
 
+            {/* Rewards Shop */}
+            <section className="space-y-6">
+                <div className="flex items-end justify-between">
+                    <div>
+                        <h3 className="text-2xl font-bold">Cửa hàng thưởng</h3>
+                        <p className="text-muted-foreground text-sm">Đổi điểm lấy phần thưởng</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button className="size-10 border border-border rounded-full flex items-center justify-center hover:bg-card transition-all">
+                            <span className="material-symbols-outlined text-sm">arrow_back</span>
+                        </button>
+                        <button className="size-10 border border-border rounded-full flex items-center justify-center hover:bg-card transition-all">
+                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex gap-6 overflow-x-auto no-scrollbar pb-6 -mx-1 px-1">
+                    {rewardLoading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="w-60 h-[300px] bg-card rounded-[24px] border border-border animate-pulse shrink-0 flex-none" />
+                        ))
+                    ) : rewardProducts.length > 0 ? (
+                        rewardProducts.map((product) => {
+                            const pts = Math.ceil(product.price / 100);
+                            const imgUrl = typeof product.image === "string" ? product.image : product.image.secure_url;
+                            return (
+                                <div key={product._id} className="w-60 bg-card p-3 rounded-[24px] border border-border hover:shadow-lg transition-all group shrink-0 flex-none">
+                                    <div className="relative aspect-[4/3] bg-muted rounded-2xl mb-3 overflow-hidden">
+                                        <img
+                                            alt={product.name}
+                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            src={imgUrl}
+                                        />
+                                        {product.rating >= 4.5 && (
+                                            <div className="absolute top-2 right-2 px-2.5 py-0.5 bg-card/90 backdrop-blur rounded-full text-[9px] font-black uppercase text-primary z-10">
+                                                Phổ biến
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h4 className="font-bold text-base mb-1 truncate">{product.name}</h4>
+                                    <p className="text-[11px] text-muted-foreground mb-3 line-clamp-1">{product.description || "Thưởng thức món ăn tuyệt vời"}</p>
+                                    <button className="w-full py-2 bg-background border border-primary/20 text-primary font-bold rounded-xl hover:bg-primary hover:text-white transition-all text-xs flex items-center justify-center gap-2">
+                                        {pts.toLocaleString()} <span className="text-[9px] opacity-80">ĐIỂM</span>
+                                    </button>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div className="w-full py-12 bg-muted/20 rounded-3xl flex flex-col items-center justify-center text-center">
+                            <span className="material-symbols-outlined text-4xl text-muted-foreground opacity-30 mb-2">inventory_2</span>
+                            <p className="text-sm font-bold text-muted-foreground">Hiện chưa có vật phẩm đổi thưởng</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
             {/* Membership Details Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-12">
                     <TierRoadmap
                         points={membership?.collected_points || 0}
                         tier={membership?.tier || "Bronze"}
                     />
                     <MembershipPerks tier={membership?.tier || "Bronze"} />
-                </div>
-                <div className="space-y-8 h-full">
                     <PointsActivity activities={activities} />
+                </div>
+                <div className="space-y-8">
                     <Missions />
+                    <div className="bg-gradient-to-br from-primary/10 to-orange-500/5 p-6 rounded-3xl border border-primary/10">
+                        <h4 className="text-sm font-bold mb-4">Mẹo tích điểm</h4>
+                        <ul className="space-y-3">
+                            {[
+                                "Đặt hàng vào khung giờ vàng",
+                                "Đánh giá món ăn sau khi nhận",
+                                "Sử dụng ưu đãi từ đối tác"
+                            ].map((tip, i) => (
+                                <li key={i} className="flex gap-2 text-xs font-medium text-muted-foreground">
+                                    <span className="text-primary">•</span> {tip}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
             </div>
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import authService from "@/services/auth.service";
+import logo from "@/assets/logo.png";
 
 const HEALTH_COLOR = "var(--health)";
 
@@ -53,19 +54,14 @@ const RegisterPage = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 z-10" />
         <div className="relative z-20 flex flex-col justify-between h-full p-16">
           <div className="flex items-center gap-3 text-white">
-            <div
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
-            >
-              <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  restaurant_menu
-                </span>
-              </div>
-              <h2 className="text-2xl font-black tracking-tighter">
-                FoodieDash
-              </h2>
-            </div>
+            <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+              <img
+                src={logo}
+                alt="FoodieDash"
+                className="h-18 -ml-8 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+              />
+              <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
+            </Link>
           </div>
           <div className="max-w-md">
             <h1 className="text-5xl font-extrabold text-white leading-tight mb-6">
@@ -88,17 +84,14 @@ const RegisterPage = () => {
       <div className="flex w-full lg:w-2/5 flex-col bg-card px-8 py-12 md:px-16 lg:px-20 justify-center overflow-y-auto">
         {/* Branding for Mobile */}
         <div className="flex items-center gap-2 mb-10 lg:hidden">
-          <div
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2.5 text-orange-600 cursor-pointer group"
-          >
-            <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">
-                restaurant_menu
-              </span>
-            </div>
-            <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
-          </div>
+          <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+            <img
+              src={logo}
+              alt="FoodieDash"
+              className="h-18 -ml-8 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+            />
+            <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
+          </Link>
         </div>
 
         {/* Page Heading */}
