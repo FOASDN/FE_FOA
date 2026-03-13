@@ -41,8 +41,6 @@ export function FoodCard({
     tags,
     healthStatus = 'safe',
     allergenInfo,
-    isFavorite = false,
-    onToggleFavorite,
     onAddToCart,
     rawItem,
     className = '',
@@ -97,20 +95,6 @@ export function FoodCard({
                     </div>
                 )}
 
-                {/* Favorite Button */}
-                {onToggleFavorite && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onToggleFavorite(id); }}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors"
-                        aria-label={t('common:actions.toggleFavorite', 'Yêu thích')}
-                    >
-                        <span className={`material-symbols-outlined text-[20px] transition-colors ${isFavorite ? 'text-red-500 fill-current' : 'text-slate-400'}`}
-                            style={isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                        >
-                            favorite
-                        </span>
-                    </button>
-                )}
 
                 {/* Time badge */}
                 {time && (
@@ -131,10 +115,10 @@ export function FoodCard({
                 )}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-orange-600 font-black text-lg">{formatPrice(price)}</span>
+                        <span className="text-orange-600 font-black text-lg">{formatPrice(price || 0)}</span>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <span className="material-symbols-outlined text-orange-400 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            <span className="font-semibold">{rating.toFixed(1)}</span>
+                            <span className="font-semibold">{(rating || 0).toFixed(1)}</span>
                         </div>
                     </div>
 

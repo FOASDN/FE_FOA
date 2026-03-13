@@ -1,5 +1,3 @@
-
-
 import HeroCarousel from "./components/HeroCarousel";
 import CategorySection from "./components/CategorySection";
 import RecommendedSection from "./components/RecommendedSection";
@@ -9,65 +7,52 @@ import LoyaltySection from "./components/LoyaltySection";
 import ReviewSection from "./components/ReviewSection";
 import CulinaryStorySection from "./components/CulinaryStorySection";
 import HistorySection from "./components/HistorySection";
-import { useUserLocation } from "@/hooks/useUserLocation"; 
+import { useUserLocation } from "@/hooks/useUserLocation";
 import LocationAlert from "@/components/LocationAlert";
 
-
 const HomePage = () => {
-      const { loading, error, isValid } = useUserLocation();
-    return (
-        <>
-          <LocationAlert
-           loading={loading}
-            error={error}
-            isValid={isValid}
-  />
-       <div className="min-h-screen">
+  const { loading, error, isValid } = useUserLocation();
+  return (
+    <>
+      <LocationAlert loading={loading} error={error} isValid={isValid} />
+      <div className="min-h-screen">
+        {/* --- MAIN CONTENT --- */}
+        <main className="flex-1 flex flex-col items-center pb-20">
+          <div className="w-full max-w-7xl px-4 md:px-8 py-8 flex flex-col gap-12">
+            {/* 1. HERO BANNER CAROUSEL */}
+            <HeroCarousel />
 
-            {/* --- HEADER --- */}
-            {/* --- HEADER --- */}
+            {/* 2. CATEGORIES */}
+            <CategorySection />
 
+            {/* 3. RECOMMENDED - AI PICKS */}
+            <RecommendedSection />
 
-            {/* --- MAIN CONTENT --- */}
-            <main className="flex-1 flex flex-col items-center pb-20">
-                <div className="w-full max-w-7xl px-4 md:px-8 py-8 flex flex-col gap-12">
+            {/* 4. BEST SELLERS */}
+            <BestSellerSection />
 
-                    {/* 1. HERO BANNER CAROUSEL */}
-                    <HeroCarousel />
+            {/* 5. VOUCHER WALLET */}
+            <VoucherSection />
 
-                    {/* 2. CATEGORIES */}
-                    <CategorySection />
+            {/* 6. LOYALTY PROGRAM */}
+            <LoyaltySection />
 
-                    {/* 3. RECOMMENDED - AI PICKS */}
-                    <RecommendedSection />
+            {/* 7. REVIEWS */}
+            <ReviewSection />
 
-                    {/* 4. BEST SELLERS */}
-                    <BestSellerSection />
+            {/* 8. CULINARY STORIES */}
+            <CulinaryStorySection />
 
-                    {/* 5. VOUCHER WALLET */}
-                    <VoucherSection />
+            {/* 9. HISTORY SECTION */}
+            <HistorySection />
+          </div>
+        </main>
 
-                    {/* 6. LOYALTY PROGRAM */}
-                    <LoyaltySection />
-
-                    {/* 7. REVIEWS */}
-                    <ReviewSection />
-
-                    {/* 8. CULINARY STORIES */}
-                    <CulinaryStorySection />
-
-                    {/* 9. HISTORY SECTION */}
-                    <HistorySection />
-
-                </div>
-            </main>
-
-            {/* --- FOOTER --- */}
-            {/* --- FOOTER --- */}
-
-        </div>
-        </>
-    );
+        {/* --- FOOTER --- */}
+        {/* --- FOOTER --- */}
+      </div>
+    </>
+  );
 };
 
 export default HomePage;

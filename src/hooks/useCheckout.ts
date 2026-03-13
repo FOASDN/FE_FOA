@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./useCart";
+import type { CartItem } from "./useCart";
 import { useAuth } from "./useAuth";
 import { useToast } from "./useToast";
 import orderService from "@/services/order.service";
@@ -11,8 +12,7 @@ import type {
 import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
-import { calculateShippingFee, DEFAULT_SHIPPING_CONFIG, type ShippingConfig } from "@/utils/shipping";
-import { getStoreSettings } from "@/services/settings.service";
+import { calculateShippingFee } from "@/utils/shipping";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -43,25 +43,22 @@ export interface VoucherState {
  */
 export const useCheckout = () => {
   const navigate = useNavigate();
-  const { items: cartItems, totalPrice, clearCart, orderNote } = useCart();
+  const location = useLocation();
+  const { items: storeCartItems, totalPrice: storeTotalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // ── Store Settings (for dynamic delivery fees) ─────────────────────────────
-  const [shippingConfig, setShippingConfig] = useState<ShippingConfig>(DEFAULT_SHIPPING_CONFIG);
+  // Ref to signal that order has been placed successfully.
+  // Using a ref (not state) so it survives the finally-block reset of isSubmitting
+  // without triggering additional re-renders that could re-run the cart-empty guard.
+  const orderPlacedRef = useRef(false);
 
-  useEffect(() => {
-    getStoreSettings().then((res) => {
-      const s = res.data;
-      if (!s) return;
-      setShippingConfig({
-        baseDeliveryFee: parseFloat(s.baseDeliveryFee) || DEFAULT_SHIPPING_CONFIG.baseDeliveryFee,
-        feePerKm: parseFloat(s.feePerKm) || DEFAULT_SHIPPING_CONFIG.feePerKm,
-        freeDeliveryEnabled: s.freeDeliveryEnabled,
-        freeDeliveryThreshold: parseFloat(s.freeDeliveryThreshold) || DEFAULT_SHIPPING_CONFIG.freeDeliveryThreshold,
-      });
-    }).catch(() => { /* use defaults on error */ });
-  }, []);
+  const buyNowItem = location.state?.buyNowItem as CartItem | undefined;
+
+  const cartItems = buyNowItem ? [buyNowItem] : storeCartItems;
+  const totalPrice = buyNowItem
+    ? ((buyNowItem.price + (buyNowItem.extras?.reduce((s: number, e: { price: number }) => s + e.price, 0) || 0)) * buyNowItem.quantity)
+    : storeTotalPrice;
 
   // ── Address ───────────────────────────────────────────────────────────────
   const addresses = useMemo(
@@ -95,6 +92,23 @@ export const useCheckout = () => {
     error: null,
   });
 
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // ─── Fetch Active Vouchers ───
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const res = await voucherService.getVouchers({ is_active: true });
+        if (res.success && res.data) {
+          setVouchers(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch vouchers", error);
+      }
+    };
+    fetchVouchers();
+  }, []);
+
   const setVoucherCode = useCallback((code: string) => {
     setVoucherState((prev) => ({
       ...prev,
@@ -106,11 +120,11 @@ export const useCheckout = () => {
     }));
   }, []);
 
-  const applyVoucher = useCallback(async () => {
-    const code = voucherState.code.trim();
+  const applyVoucher = useCallback(async (manualCode?: string) => {
+    const code = (manualCode || voucherState.code).trim();
     if (!code) return;
 
-    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null }));
+    setVoucherState((prev) => ({ ...prev, isValidating: true, error: null, code: code.toUpperCase() }));
 
     try {
       const res = await voucherService.validateVoucher({
@@ -125,6 +139,7 @@ export const useCheckout = () => {
           appliedVoucher: res.data!.voucher,
           discountAmount: res.data!.discountAmount,
           error: null,
+          code: code.toUpperCase(),
         }));
         toast(
           `Áp dụng voucher thành công! Giảm ${res.data.discountAmount.toLocaleString("vi-VN")}đ`,
@@ -167,10 +182,9 @@ export const useCheckout = () => {
     return calculateShippingFee(
       effectiveAddress.district ?? "",
       effectiveAddress.city ?? "",
-      subtotal,
-      shippingConfig
+      subtotal
     );
-  }, [effectiveAddress, subtotal, shippingConfig]);
+  }, [effectiveAddress, subtotal]);
 
   const deliveryFee = shippingResult.fee;
   const isDeliverable = !shippingResult.blocked;
@@ -218,13 +232,19 @@ export const useCheckout = () => {
       const response = await orderService.placeOrder(payload);
       const order = response.data;
 
-      // Clear FE cart after successful order
-      clearCart();
-
       // If there's a checkoutUrl (PayOS), redirect to it
       if (order.checkoutUrl) {
         window.location.href = order.checkoutUrl;
         return;
+      }
+
+      // Mark order as placed BEFORE clearing cart so the Checkout guard
+      // (cartItems.length === 0) knows NOT to redirect to /menu.
+      orderPlacedRef.current = true;
+
+      // Clear FE cart (only for normal cart checkout, not buy-now)
+      if (!buyNowItem) {
+        clearCart();
       }
 
       // Navigate to success page, passing the order code via navigation state
@@ -254,6 +274,7 @@ export const useCheckout = () => {
     clearCart,
     navigate,
     toast,
+    buyNowItem,
   ]);
 
   // ────────────────────────────────────────────────────────────────────────
@@ -271,6 +292,7 @@ export const useCheckout = () => {
     setPaymentMethod,
     // Voucher
     voucherState,
+    vouchers,
     setVoucherCode,
     applyVoucher,
     removeVoucher,
@@ -284,5 +306,6 @@ export const useCheckout = () => {
     // Submit
     isSubmitting,
     handlePlaceOrder,
+    orderPlacedRef,
   };
 };

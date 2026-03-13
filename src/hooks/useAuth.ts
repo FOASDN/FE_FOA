@@ -17,6 +17,7 @@ export const useAuth = () => {
   const login = useAuthStore((s) => s.login);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
+  const getUser = useAuthStore((s) => s.getUser);
   const hydrate = useAuthStore((s) => s.hydrate);
 
   const isAdmin = role === "ADMIN";
@@ -33,6 +34,7 @@ export const useAuth = () => {
     login,
     logout,
     setUser,
+    getUser,
     hydrate,
   };
 };

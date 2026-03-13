@@ -2,21 +2,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
 import { MOCK_UPSELL_ITEMS } from "@/constants/mockOrders";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { itemKey } from "@/store/cartStore";
 import { buildVariantChips } from "@/utils/cartVariants";
-import { TicketVoucher } from "@/components/shared/TicketVoucher";
-import voucherAPI from "@/services/voucher.service";
-import type { Voucher } from "@/types/voucher";
 
 const ShoppingCartPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
 
   // ─── Real state from Zustand Store ───
-  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [isVouchersOpen, setIsVouchersOpen] = useState(false);
 
   const {
     items: cartItems,
@@ -39,37 +33,9 @@ const ShoppingCartPage = () => {
     }
   }, [cartItems, removeItem]);
 
-  // ─── Fetch Active Vouchers ───
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      try {
-        const res = await voucherAPI.getVouchers({ is_active: true });
-        if (res.success && res.data) {
-          setVouchers(res.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch vouchers", error);
-      }
-    };
-    fetchVouchers();
-  }, []);
-
   const subtotal = totalPrice;
-  const deliveryFee = subtotal > 300000 || subtotal === 0 ? 0 : 50000;
 
-  let discount = 0;
-  if (selectedVoucher) {
-    if (selectedVoucher.discount_type === 'percentage') {
-      discount = subtotal * (selectedVoucher.discount_value / 100);
-      if (selectedVoucher.max_discount_amount) {
-        discount = Math.min(discount, selectedVoucher.max_discount_amount);
-      }
-    } else if (selectedVoucher.discount_type === 'fixed_amount') {
-      discount = selectedVoucher.discount_value;
-    }
-  }
-
-  const total = Math.max(0, subtotal + deliveryFee - discount);
+  const total = subtotal;
 
   // Mock upsell items (vẫn giữ để UI đẹp)
   const upsellItems = MOCK_UPSELL_ITEMS;
@@ -101,10 +67,6 @@ const ShoppingCartPage = () => {
               <h1 className="text-3xl md:text-4xl font-extrabold text-text-main dark:text-white leading-tight">
                 {t("customer:cart.title")}
               </h1>
-              <p className="text-[#9a734c] text-base font-normal">
-                Bạn có {cartItems.reduce((acc, item) => acc + item.quantity, 0)}{" "}
-                món trong giỏ hàng
-              </p>
             </div>
 
             {/* List Items */}
@@ -145,7 +107,9 @@ const ShoppingCartPage = () => {
                           </p>
 
                           {(() => {
-                            const chips = buildVariantChips((item as any).variations);
+                            const chips = buildVariantChips(
+                              (item as any).variations,
+                            );
                             if (!chips.length) return null;
 
                             return (
@@ -173,7 +137,8 @@ const ShoppingCartPage = () => {
                           })()}
                         </div>
                         <p className="text-lg font-bold text-text-main dark:text-white">
-                          {(item.price * item.quantity).toLocaleString("vi-VN")}đ
+                          {(item.price * item.quantity).toLocaleString("vi-VN")}
+                          đ
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-4 sm:mt-0">
@@ -181,12 +146,16 @@ const ShoppingCartPage = () => {
                           onClick={() => removeItem(itemKey(item))}
                           className="text-red-500 text-sm font-medium flex items-center gap-1 hover:underline"
                         >
-                          <span className="material-symbols-outlined text-lg">delete</span>
+                          <span className="material-symbols-outlined text-lg">
+                            delete
+                          </span>
                           {t("common:actions.delete")}
                         </button>
                         <div className="flex items-center gap-3">
                           <button
-                            onClick={() => updateQuantity(itemKey(item), item.quantity - 1)}
+                            onClick={() =>
+                              updateQuantity(itemKey(item), item.quantity - 1)
+                            }
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >
                             -
@@ -195,7 +164,9 @@ const ShoppingCartPage = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(itemKey(item), item.quantity + 1)}
+                            onClick={() =>
+                              updateQuantity(itemKey(item), item.quantity + 1)
+                            }
                             className="text-base font-bold flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-primary/20 transition-colors"
                           >
                             +
@@ -218,46 +189,6 @@ const ShoppingCartPage = () => {
                   <span className="material-symbols-outlined">add_circle</span>
                   {t("customer:cart.continueShopping", "Thêm món khác")}
                 </Link>
-
-                {/* Vouchers Section */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <button
-                      onClick={() => setIsVouchersOpen(!isVouchersOpen)}
-                      className="flex items-center gap-2 font-bold text-text-main dark:text-white text-base hover:text-primary transition-colors"
-                    >
-                      Khuyến mãi / Voucher
-                      <span className="material-symbols-outlined transition-transform duration-200" style={{ transform: isVouchersOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                        expand_more
-                      </span>
-                    </button>
-                    {selectedVoucher && (
-                      <button onClick={() => setSelectedVoucher(null)} className="text-red-500 text-sm font-bold hover:underline">Bỏ chọn</button>
-                    )}
-                  </div>
-                  {isVouchersOpen && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {vouchers.map(v => (
-                        <div key={v._id} onClick={() => {
-                          if (v.min_order_amount && subtotal < v.min_order_amount) {
-                            alert("Đơn hàng chưa đạt giá trị tối thiểu để sử dụng voucher này.");
-                            return;
-                          }
-                          setSelectedVoucher(v);
-                        }} className="cursor-pointer">
-                          <TicketVoucher
-                            code={v.code}
-                            title={v.title}
-                            discountValue={v.discount_type === 'percentage' ? `${v.discount_value}%` : `${v.discount_value.toLocaleString("vi-VN")}đ`}
-                            minOrder={v.min_order_amount ? `${v.min_order_amount.toLocaleString("vi-VN")}đ` : "0đ"}
-                            expiryDate={new Date(v.end_date).toLocaleDateString("vi-VN")}
-                            className={`${selectedVoucher?._id === v._id ? "ring-2 ring-primary scale-[1.02]" : "scale-100 opacity-90 hover:opacity-100"} shadow-sm transition-all origin-left pointer-events-none`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-bold text-text-main dark:text-white">
@@ -289,37 +220,7 @@ const ShoppingCartPage = () => {
               <div className="sticky top-24 flex flex-col gap-6">
                 {/* Price Breakdown */}
                 <div className="bg-white dark:bg-white/5 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/10">
-                  <p className="text-text-main dark:text-white text-lg font-bold mb-6">
-                    {t("customer:cart.grandTotal", "Tóm tắt đơn hàng")}
-                  </p>
                   <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">{t("customer:cart.subtotal")}</span>
-                      <span className="text-sm font-medium">
-                        {subtotal.toLocaleString("vi-VN")}đ
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[#9a734c]">
-                      <span className="text-sm">{t("customer:cart.deliveryFee")}</span>
-                      <span className="text-sm font-medium text-green-600">
-                        {deliveryFee === 0
-                          ? t("common:status.free", "Miễn phí")
-                          : `${deliveryFee.toLocaleString("vi-VN")}đ`}
-                      </span>
-                    </div>
-
-                    {discount > 0 && (
-                      <div className="flex justify-between items-center text-primary font-bold">
-                        <span className="text-sm">
-                          Giảm giá (Voucher)
-                        </span>
-                        <span className="text-sm">
-                          -{discount.toLocaleString("vi-VN")}đ
-                        </span>
-                      </div>
-                    )}
-
-                    <hr className="border-gray-100 dark:border-white/10 my-2" />
                     <div className="flex justify-between items-center text-text-main dark:text-white">
                       <span className="text-lg font-bold">
                         {t("customer:cart.grandTotal")}
@@ -330,11 +231,13 @@ const ShoppingCartPage = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => navigate("/checkout", { state: { selectedVoucher, discount } })}
+                    onClick={() => navigate("/checkout")}
                     className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg mt-8 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                   >
                     {t("customer:cart.checkout", "Tiến hành thanh toán")}
-                    <span className="material-symbols-outlined">arrow_forward</span>
+                    <span className="material-symbols-outlined">
+                      arrow_forward
+                    </span>
                   </button>
 
                   <p className="text-center text-[10px] text-[#9a734c] mt-4 uppercase tracking-widest font-bold">

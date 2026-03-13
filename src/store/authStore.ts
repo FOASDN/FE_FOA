@@ -87,6 +87,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (user) => {
     setStoredUser(user);
+    // Reset location alert state so it shows after login
+    localStorage.removeItem("location_alert_dismissed");
     set({
       user,
       isAuthenticated: true,
@@ -120,7 +122,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user, role: user.role });
       }
     } catch (error) {
+      // If cookie session is invalid/expired, clear local auth to avoid mismatch
       console.error("Failed to update user context:", error);
+      clearStoredUser();
+      set({
+        user: null,
+        isAuthenticated: false,
+        role: null,
+      });
     }
   },
 

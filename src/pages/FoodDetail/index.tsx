@@ -3,12 +3,17 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSafeCart } from "@/hooks/useSafeCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast, ToastContainer } from "@/hooks/useToast";
+import { useSupportChatStore } from "@/store/supportChatStore";
+import toast from "react-hot-toast";
 import productAPI from "@/services/product.service";
+import reviewService from "@/services/review.service";
 import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useAllergyCheck } from "@/hooks/useAllergyCheck";
+import { User, ThumbsUp, MessageSquare, Star, Loader2 } from "lucide-react";
+import VariantModal from "@/components/model/VariantModel";
+
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -16,7 +21,7 @@ const getImageUrl = (image: any): string => {
   if (typeof image === "string") return image;
   return "";
 };
-import VariantModal from "@/components/model/VariantModel";
+
 
 const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +29,7 @@ const FoodDetailPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const { safeAddItem } = useSafeCart();
   const { isAuthenticated } = useAuth();
-  const { toasts, toast, dismiss } = useToast();
+  const { openChat } = useSupportChatStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,9 @@ const FoodDetailPage = () => {
 
   // FSS-40: Check allergy status for this product
   const allergyResult = useAllergyCheck(product);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [isBuyNowMode, setIsBuyNowMode] = useState(false);
 
   useEffect(() => {
     const fetchProductAndSuggestions = async () => {
@@ -45,6 +53,13 @@ const FoodDetailPage = () => {
         const res = await productAPI.getProductById(id);
         setProduct(res.data);
         
+        // Fetch reviews
+        setLoadingReviews(true);
+        const reviewRes = await reviewService.getProductReviews(id);
+        setReviews(reviewRes.data || []);
+        setLoadingReviews(false);
+        
+
         // Fetch suggested foods
         setLoadingSuggested(true);
         if (isAuthenticated) {
@@ -62,7 +77,7 @@ const FoodDetailPage = () => {
         }
       } catch (err) {
         console.error("Failed to fetch product or suggestions:", err);
-        toast("Không tìm thấy sản phẩm", "error");
+        toast.error("Không tìm thấy sản phẩm");
       } finally {
         setLoading(false);
         setLoadingSuggested(false);
@@ -86,6 +101,7 @@ const FoodDetailPage = () => {
 
     const hasVariants = (product as any).variants?.length > 0;
     if (hasVariants) {
+      setIsBuyNowMode(false);
       setOpenVariantModal(true);
       return;
     }
@@ -201,7 +217,7 @@ const FoodDetailPage = () => {
                       }`}>{allergyResult.warningMessage}</p>
                       {allergyResult.conflictIngredients.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {allergyResult.conflictIngredients.map((ing, i) => (
+                          {allergyResult.conflictIngredients.map((ing: string, i: number) => (
                             <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                               allergyResult.level === 'danger'
                                 ? 'bg-red-100 text-red-700'
@@ -339,43 +355,110 @@ const FoodDetailPage = () => {
                       <span>Mua ngay</span>
                     </button>
                   </div>
+                  <div className="mt-4 max-w-sm ml-auto">
+                    <button
+                      onClick={() => openChat()}
+                      className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors w-full justify-center"
+                    >
+                      <MessageSquare className="size-5" />
+                      Nhắn tin
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* REVIEWS SECTION */}
-            <section className="mb-16 max-w-5xl">
-              <h2 className="text-2xl font-bold text-text-main dark:text-white mb-8">
-                {t("customer:foodDetail.reviews")}
+            <section id="reviews" className="mb-16 max-w-5xl">
+              <h2 className="text-3xl font-black text-text-main dark:text-white mb-8 flex items-center gap-3">
+                <MessageSquare className="w-8 h-8 text-primary" />
+                Đánh giá từ khách hàng
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 h-fit text-center">
-                  <span className="text-5xl font-extrabold text-text-main dark:text-white mb-2">
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                {/* Summary Card */}
+                <div className="md:col-span-1 bg-white dark:bg-white/5 rounded-3xl p-8 border border-gray-100 dark:border-white/10 h-fit text-center shadow-sm">
+                  <div className="text-6xl font-black text-primary mb-2">
                     {Number(product?.rating ?? 0).toFixed(1)}
-                  </span>
-                  <div className="flex justify-center gap-1 text-yellow-400 mb-2 mt-2">
-                    <span className="material-symbols-outlined fill-1">
-                      star
-                    </span>
-                    <span className="material-symbols-outlined fill-1">
-                      star
-                    </span>
-                    <span className="material-symbols-outlined fill-1">
-                      star
-                    </span>
-                    <span className="material-symbols-outlined fill-1">
-                      star
-                    </span>
-                    <span className="material-symbols-outlined">star_half</span>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    Dựa trên {Number(product?.review_count ?? 0)} đánh giá
+                  <div className="flex justify-center gap-1 text-yellow-400 mb-4 scale-125">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className={`w-4 h-4 ${Number(product?.rating ?? 0) >= s ? "fill-current" : "text-gray-200 dark:text-gray-700"}`} />
+                    ))}
+                  </div>
+                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                    Dựa trên {Number(product?.review_count ?? 0)} lượt đánh giá
                   </p>
                 </div>
-                <div className="md:col-span-2 space-y-4">
-                  <p className="text-gray-500 italic">
-                    Chưa có nhận xét chi tiết cho sản phẩm này.
-                  </p>
+
+                {/* Review List */}
+                <div className="md:col-span-3 space-y-6">
+                  {loadingReviews ? (
+                    <div className="flex flex-col items-center py-10 gap-3">
+                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                      <p className="text-gray-500 font-medium italic text-sm">Đang tải nhận xét...</p>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-10 text-center border border-dashed border-gray-200 dark:border-white/10">
+                      <p className="text-gray-500 font-medium">
+                        Món này chưa có nhận xét chi tiết. Hãy là người đầu tiên đánh giá!
+                      </p>
+                    </div>
+                  ) : (
+                    reviews.map((rev) => (
+                      <div key={rev._id} className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-gray-100 dark:border-white/10 shadow-sm transition-all hover:border-primary/20">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 overflow-hidden">
+                              {rev.user_id?.avatar ? (
+                                <img src={rev.user_id.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-6 h-6" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-text-main dark:text-white leading-tight">
+                                {rev.isAnonymous ? "Người dùng ẩn danh" : rev.user_id?.username || "Khách hàng"}
+                              </p>
+                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                {new Date(rev.createdAt).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-0.5 mt-1">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} className={`w-3 h-3 ${rev.rating >= s ? "text-yellow-400 fill-current" : "text-gray-200 dark:text-gray-700"}`} />
+                            ))}
+                          </div>
+                        </div>
+
+                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-4 pl-1">
+                          {rev.comment}
+                        </p>
+
+                        {rev.images && rev.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {rev.images.map((img: any, i: number) => (
+                              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm">
+                                <img 
+                                  src={typeof img === 'string' ? `${import.meta.env.VITE_API_URL}/files/${img}` : img.url || img.secure_url} 
+                                  alt="Review content" 
+                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 cursor-zoom-in"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="pt-3 border-t border-gray-50 dark:border-white/5 flex items-center gap-4">
+                          <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-400 hover:text-primary transition-colors">
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            Hữu ích
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </section>
@@ -394,7 +477,7 @@ const FoodDetailPage = () => {
                       {isAuthenticated ? "Món ăn an toàn cho bạn" : "Có thể bạn sẽ thích"}
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {isAuthenticated 
+                      {isAuthenticated
                         ? "Được AI chọn lọc dựa trên hồ sơ sức khỏe và phân tích thành phần tỉ mỉ."
                         : "Khám phá thêm các hương vị hấp dẫn khác từ thực đơn của chúng tôi."}
                     </p>
@@ -410,8 +493,8 @@ const FoodDetailPage = () => {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {suggestedFoods.map((suggestedItem) => (
-                      <FoodCard 
-                        key={suggestedItem._id} 
+                      <FoodCard
+                        key={suggestedItem._id}
                         id={suggestedItem._id}
                         name={suggestedItem.name}
                         image={getImageUrl(suggestedItem.image)}
@@ -435,7 +518,7 @@ const FoodDetailPage = () => {
         basePrice={Number(product?.price ?? 0)}
         variants={(product as any)?.variants ?? []}
         quantity={quantity}
-        toastError={(msg) => toast(msg, "error")}
+        toastError={(msg) => toast.error(msg)}
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
@@ -461,7 +544,6 @@ const FoodDetailPage = () => {
           );
         }}
       />
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 };

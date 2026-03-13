@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
+import { useCart } from "@/hooks/useCart";
+import toast from "react-hot-toast";
 
 // ── Helper ──────────────────────────────────────────────
 const getImageUrl = (image: Product["image"]): string => {
@@ -32,6 +34,7 @@ const BestSellerSection = () => {
   const { t } = useTranslation(["customer", "common"]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -129,10 +132,6 @@ const BestSellerSection = () => {
                         <h3 className="font-bold text-lg text-slate-800 leading-tight group-hover:text-orange-600 transition-colors line-clamp-1">
                           {dish.name}
                         </h3>
-                        <p className="text-xs font-medium text-gray-400 mt-1 flex items-center gap-1">
-                          <Store className="w-3 h-3" />
-                          {dish.restaurant}
-                        </p>
                       </div>
                       <div className="flex flex-col items-end pl-2">
                         <span className="text-lg font-black text-slate-900">
@@ -147,8 +146,21 @@ const BestSellerSection = () => {
                         {dish.time}
                       </div>
                     </div>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
 
-                    <Button className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-slate-100 text-slate-900 hover:bg-slate-900 hover:text-white">
+                        addItem({
+                          productId: dish._id,
+                          name: dish.name,
+                          image: imageUrl,
+                          price: dish.price,
+                          quantity: 1,
+                        });
+                        toast.success("Đã thêm vào giỏ hàng!");
+                      }}
+                      className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 bg-slate-100 text-slate-900 hover:bg-slate-900 hover:text-white"
+                    >
                       <Plus className="w-4 h-4" />
                       {t("customer:menu.addToCart")}
                     </Button>

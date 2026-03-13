@@ -49,13 +49,13 @@ export function TicketVoucher({
         <div
             className={`relative flex overflow-hidden rounded-2xl border ${isDisabled
                 ? 'border-gray-200 bg-gray-50 dark:bg-gray-900/50 opacity-70'
-                : 'border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/20 hover:shadow-lg hover:shadow-orange-500/10'
+                    : 'border-primary bg-gradient-to-r from-primary/10 to-primary/20 dark:from-primary/30 dark:to-primary/20 hover:shadow-lg hover:shadow-primary/10'
                 } transition-all duration-300 ${className}`}
         >
             {/* Left — Discount Value */}
             <div className={`flex flex-col items-center justify-center px-2 py-5 w-[135px] shrink-0 ${isDisabled
                 ? 'bg-gray-100 dark:bg-gray-800'
-                : 'bg-gradient-to-b from-orange-500 to-amber-500'
+                : 'bg-primary dark:bg-primary-dark'
                 }`}
             >
                 <span className={`text-2xl font-black text-center whitespace-nowrap overflow-hidden text-ellipsis w-full px-1 ${isDisabled ? 'text-gray-400' : 'text-white'}`}>
@@ -118,7 +118,7 @@ export function TicketVoucher({
                 <div className="flex items-center pr-4">
                     <button
                         onClick={(e) => { e.stopPropagation(); onUse(code); }}
-                        className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-600/20 active:scale-95 transition-all"
+                            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 active:scale-95 transition-all"
                     >
                         {t('customer:voucherDetail.useNow')}
                     </button>
@@ -127,3 +127,4 @@ export function TicketVoucher({
         </div>
     );
 }
+export default TicketVoucher;
