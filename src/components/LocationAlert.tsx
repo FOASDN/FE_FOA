@@ -43,10 +43,6 @@ const LocationAlert = ({ loading, isValid, error }: Props) => {
         <div className="flex items-center gap-3 mb-4">
           {loading && <Loader2 className="w-6 h-6 animate-spin text-orange-500" />}
 
-          {!loading && error && (
-            <AlertTriangle className="w-6 h-6 text-red-500" />
-          )}
-
           {!loading && isValid === false && (
             <AlertTriangle className="w-6 h-6 text-red-500" />
           )}

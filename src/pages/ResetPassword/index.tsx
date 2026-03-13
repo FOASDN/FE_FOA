@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import authService from "@/services/auth.service";
+import logo from "@/assets/logo.png";
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -58,7 +59,7 @@ const ResetPasswordPage = () => {
                                 ? "Chào mừng thành viên mới!"
                                 : t('auth:resetPassword.heroTitle', 'Tạo mật khẩu mới, thật an toàn.')}
                         </h1>
-                        <div className="h-1 w-20 bg-orange-500 rounded-full" />
+                        <div className="h-1 w-20 bg-orange-600 rounded-full" />
                     </div>
                 </div>
             </div>
@@ -68,14 +69,13 @@ const ResetPasswordPage = () => {
                 <div className="w-full max-w-[420px] flex flex-col gap-8">
                     {/* Logo */}
                     <div className="flex flex-col items-center text-center gap-4">
-                        <Link
-                            to="/"
-                            className="flex items-center gap-2.5 text-orange-600 group"
-                        >
-                            <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[20px]">restaurant_menu</span>
-                            </div>
-                            <h2 className="text-2xl font-black tracking-tighter">FoodieDash</h2>
+                        <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+                            <img
+                                src={logo}
+                                alt="FoodieDash"
+                                className="h-18 -ml-8 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+                            />
+                            <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
                         </Link>
                         <div className="flex flex-col gap-1">
                             <h2 className="text-foreground text-3xl font-black tracking-tight">
@@ -116,7 +116,7 @@ const ResetPasswordPage = () => {
                                     type="text"
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value)}
-                                    className="w-full rounded-lg border border-input bg-background h-12 px-4 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-center tracking-[0.5em] font-bold text-xl"
+                                    className="w-full rounded-lg border border-input bg-background h-12 px-4 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-600/20 focus:border-orange-600 transition-all outline-none text-center tracking-[0.5em] font-bold text-xl"
                                     placeholder="------"
                                     maxLength={6}
                                     required
@@ -132,7 +132,7 @@ const ResetPasswordPage = () => {
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full rounded-lg border border-input bg-background h-12 px-4 pr-12 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                        className="w-full rounded-lg border border-input bg-background h-12 px-4 pr-12 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-600/20 focus:border-orange-600 transition-all outline-none"
                                         placeholder={t('auth:resetPassword.newPasswordPlaceholder')}
                                         required
                                         minLength={6}
@@ -156,7 +156,7 @@ const ResetPasswordPage = () => {
                                     type={showPassword ? "text" : "password"}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full rounded-lg border border-input bg-background h-12 px-4 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none"
+                                    className="w-full rounded-lg border border-input bg-background h-12 px-4 text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-orange-600/20 focus:border-orange-600 transition-all outline-none"
                                     placeholder={t('auth:resetPassword.confirmPasswordPlaceholder')}
                                     required
                                     minLength={6}
@@ -173,7 +173,7 @@ const ResetPasswordPage = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="mt-2 flex w-full items-center justify-center rounded-lg h-12 px-5 bg-orange-600 text-white text-base font-bold transition-all hover:bg-orange-500 active:scale-[0.98] shadow-lg shadow-orange-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="mt-2 flex w-full items-center justify-center rounded-lg h-12 px-5 bg-orange-600 text-white text-base font-bold transition-all hover:bg-orange-600 active:scale-[0.98] shadow-lg shadow-orange-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loading ? (
                                     <span className="material-symbols-outlined animate-spin">progress_activity</span>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, Phone, MapPin, CheckCircle, Navigation, Wallet, Clock, RotateCcw } from "lucide-react";
+import { Loader2, Phone, CheckCircle, Wallet, Clock, RotateCcw, Map, MapPin } from "lucide-react";
 import orderService, { type Order } from "@/services/order.service";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
@@ -60,6 +60,7 @@ export default function StaffDeliveryMode() {
         }
     };
 
+    // SỬA LẠI LINK GOOGLE MAPS CHUẨN
     const openMap = (address: string) => {
         const query = encodeURIComponent(address);
         window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
@@ -68,141 +69,149 @@ export default function StaffDeliveryMode() {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-32 gap-3 min-h-[60vh]">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-gray-500 font-medium">Đang tải đơn hàng...</p>
+                <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+                <p className="text-gray-500 font-bold">Đang tải đơn hàng...</p>
             </div>
         );
     }
 
     return (
-        <div className="max-w-[800px] mx-auto pb-10">
+        <div className="max-w-[800px] mx-auto pb-10 px-4 sm:px-0">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#f8f7f6] pt-2 pb-4 z-10 border-b border-gray-200 dark:border-white/10">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#f8f7f6] pt-4 pb-4 z-10 border-b border-gray-200">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
                         Đơn đang giao
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Tổng: <strong className="text-primary">{orders.length}</strong> đơn hàng
+                    <p className="text-sm text-gray-500 mt-1 font-medium">
+                        Tổng: <strong className="text-orange-500">{orders.length}</strong> đơn hàng
                     </p>
                 </div>
                 <button
                     onClick={() => fetchDeliveries(true)}
-                    className="p-2 rounded-xl bg-white shadow-sm border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all"
+                    className="p-3 rounded-2xl bg-white shadow-sm border border-gray-200 hover:bg-orange-50 active:scale-95 transition-all text-slate-600 hover:text-orange-500"
                 >
-                    <RotateCcw className="w-5 h-5 text-gray-600" />
+                    <RotateCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
             {orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                    <div className="w-24 h-24 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle className="w-10 h-10 text-gray-400" />
+                <div className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm">
+                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-5 border border-slate-100">
+                        <CheckCircle className="w-10 h-10 text-slate-300" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">
                         Bạn hiện không có đơn nào
                     </h2>
-                    <p className="text-gray-500">
-                        Hãy quay lại Bảng Kanban để nhận thêm đơn đi giao nhé!
+                    <p className="text-gray-500 font-medium">
+                        Hãy đợi Bếp phân công đơn hàng mới nhé!
                     </p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-6">
                     {orders.map((order) => {
                         const isActioning = actioningIds.has(order._id);
                         const address = order.delivery_address;
-                        const fullAddress = `${address?.detail || ""}, ${address?.ward || ""}, ${address?.district || ""}, ${address?.city || ""}`;
+                        const fullAddress = `${address?.detail || ""}, ${address?.ward || ""}, ${address?.district || ""}`;
                         const isCOD = order.payment.method === "cash_on_delivery";
 
                         return (
                             <div
                                 key={order._id}
-                                className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100 dark:border-white/10"
+                                className="bg-white rounded-[2rem] p-5 sm:p-6 shadow-sm border border-slate-200"
                             >
                                 {/* Order Top Info */}
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-100 text-orange-700 text-xs font-bold mb-2">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {new Date(order.updatedAt).toLocaleTimeString("vi-VN", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
+                                <div className="flex justify-between items-center mb-5 pb-4 border-b border-slate-100">
+                                    <div className="flex items-center gap-3">
+                                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600 font-black text-lg">
+                                            #{order.code.slice(-4)}
                                         </span>
-                                        <h3 className="text-lg font-black text-gray-900 dark:text-white block">
-                                            #{order.code}
-                                        </h3>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                                Mã Đơn Hàng
+                                            </h3>
+                                            <div className="text-sm font-bold text-slate-700 flex items-center gap-1.5 mt-0.5">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {new Date(order.updatedAt).toLocaleTimeString("vi-VN", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Consumer Info Card */}
-                                <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 mb-4">
-                                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-200 dark:border-white/10">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
-                                            {(address?.receiver_name || "K").charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-gray-900 dark:text-white truncate">
-                                                {address?.receiver_name || order.user_id?.username || "Khách hàng"}
+                                {/* THÔNG TIN GIAO HÀNG (Làm siêu to để dễ bấm) */}
+                                <div className="bg-slate-50 rounded-2xl p-4 mb-5 border border-slate-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                {(address?.receiver_name || "K").charAt(0).toUpperCase()}
                                             </div>
-                                            <div className="text-sm font-medium text-gray-500">
-                                                {address?.phone || order.user_id?.phone || "Không có SĐT"}
+                                            <div>
+                                                <div className="font-bold text-gray-900 text-lg">
+                                                    {address?.receiver_name || (order.user_id as any)?.username || "Khách hàng"}
+                                                </div>
+                                                <div className="text-sm font-bold text-orange-600">
+                                                    {address?.phone || (order.user_id as any)?.phone || "Không có SĐT"}
+                                                </div>
                                             </div>
                                         </div>
-                                        {/* Call Button */}
+                                        {/* Nút Call cực to */}
                                         <a
-                                            href={`tel:${address?.phone || order.user_id?.phone}`}
-                                            className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0 hover:bg-green-200 active:scale-95 transition-all"
+                                            href={`tel:${address?.phone || (order.user_id as any)?.phone}`}
+                                            className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 hover:bg-emerald-200 active:scale-95 transition-all shadow-sm"
                                         >
                                             <Phone className="w-5 h-5 fill-current" />
                                         </a>
                                     </div>
 
-                                    {/* Delivery Location */}
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-0.5 shrink-0">
-                                            <MapPin className="w-5 h-5 text-red-500" />
+                                    {/* Nút chỉ đường cực to */}
+                                    <button
+                                        onClick={() => openMap(fullAddress)}
+                                        className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-300 transition-all group active:scale-[0.98]"
+                                    >
+                                        <div className="flex items-start gap-3 text-left">
+                                            <MapPin className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Địa chỉ nhận</p>
+                                                <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">
+                                                    {fullAddress}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 pr-2">
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">
-                                                {fullAddress}
-                                            </p>
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                            <Map className="w-4 h-4" />
                                         </div>
-                                        <button
-                                            onClick={() => openMap(fullAddress)}
-                                            className="shrink-0 p-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 active:scale-95 transition-all tooltip"
-                                            title="Mở bản đồ"
-                                        >
-                                            <Navigation className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                                    </button>
                                 </div>
 
-                                {/* Items Summary (brief) */}
-                                <div className="mb-4">
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">
-                                        Chi tiết đơn
-                                    </span>
-                                    <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                                        {order.items.map(item => `x${item.quantity} ${item.product_id?.name}`).join(", ")}
+                                {/* Chi tiết món ăn */}
+                                <div className="mb-5 px-2">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Đơn hàng gồm:</div>
+                                    <div className="text-sm font-medium text-slate-700 leading-relaxed">
+                                        {order.items.map((item, idx) => {
+                                            const prod = item.product_id as any;
+                                            return <span key={idx} className="mr-2 inline-block">• {item.quantity}x {prod?.name || 'Sản phẩm'}</span>;
+                                        })}
                                     </div>
                                 </div>
 
                                 {/* Payment Section (Crucial) */}
-                                <div className={`p-4 rounded-xl mb-5 flex items-center justify-between border ${isCOD ? 'bg-orange-50/50 border-orange-200 dark:bg-orange-900/10 dark:border-orange-800/30' : 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-800/30'}`}>
+                                <div className={`p-5 rounded-2xl mb-6 flex items-center justify-between border-2 ${isCOD ? 'bg-orange-50 border-orange-200' : 'bg-emerald-50 border-emerald-200'}`}>
                                     <div className="flex items-center gap-3">
-                                        <Wallet className={`w-5 h-5 ${isCOD ? 'text-orange-500' : 'text-emerald-500'}`} />
+                                        <Wallet className={`w-6 h-6 ${isCOD ? 'text-orange-500' : 'text-emerald-500'}`} />
                                         <div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5">
                                                 {PAYMENT_LABEL[order.payment.method] || order.payment.method}
                                             </div>
-                                            <div className={`font-black text-xl tracking-tight ${isCOD ? 'text-orange-600' : 'text-emerald-600'}`}>
+                                            <div className={`font-black text-2xl tracking-tight ${isCOD ? 'text-orange-600' : 'text-emerald-600'}`}>
                                                 {order.total_price.toLocaleString("vi-VN")}đ
                                             </div>
                                         </div>
                                     </div>
                                     {isCOD && (
-                                        <span className="px-2.5 py-1 bg-orange-100 text-orange-700 font-bold text-[10px] rounded-lg">
+                                        <span className="px-3 py-1.5 bg-orange-500 text-white font-black text-xs uppercase tracking-wider rounded-lg shadow-sm">
                                             THU TIỀN
                                         </span>
                                     )}
@@ -212,7 +221,7 @@ export default function StaffDeliveryMode() {
                                 <button
                                     onClick={() => handleCompleteDelivery(order._id)}
                                     disabled={isActioning}
-                                    className="w-full py-4 rounded-xl bg-amber-500 text-white font-bold text-base shadow-sm hover:bg-[#ee8c2b] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
+                                    className={`w-full py-4 rounded-xl text-white font-black text-base shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 ${isCOD ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'}`}
                                 >
                                     {isActioning ? (
                                         <>
@@ -221,8 +230,8 @@ export default function StaffDeliveryMode() {
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle className="w-5 h-5" />
-                                            {isCOD ? "GIAO XONG & ĐÃ THU TIỀN" : "XÁC NHẬN GIAO XONG"}
+                                            <CheckCircle className="w-6 h-6" />
+                                            {isCOD ? "GIAO XONG & ĐÃ THU TIỀN" : "XÁC NHẬN ĐÃ GIAO"}
                                         </>
                                     )}
                                 </button>

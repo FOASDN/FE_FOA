@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, Check, Loader2 } from "lucide-react";
 
-const REJECT_REASONS = [
-  { value: "out_of_stock", label: "Hết món" },
-  { value: "overloaded", label: "Quán đang quá tải" },
-  { value: "closed", label: "Ngoài giờ phục vụ" },
-  { value: "cannot_fulfill", label: "Không thể đáp ứng yêu cầu" },
-  { value: "other", label: "Lý do khác" },
-] as const;
+const REJECTION_REASONS = [
+  "Hết nguyên liệu món ăn",
+  "Cửa hàng đang quá tải",
+  "Địa chỉ giao hàng quá xa",
+  "Thông tin khách hàng không chính xác",
+  "Cửa hàng chuẩn bị đóng cửa",
+  "Khác"
+];
 
 interface RejectModalProps {
   isOpen: boolean;
@@ -24,88 +25,85 @@ export default function RejectModal({
   onClose,
   isLoading,
 }: RejectModalProps) {
-  const [selectedReason, setSelectedReason] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    if (!selectedReason) return;
-    onConfirm(selectedReason);
+    const finalReason = rejectionReason === "Khác" ? customReason : rejectionReason;
+    if (!finalReason) return;
+    onConfirm(finalReason);
   };
 
   const handleClose = () => {
     if (isLoading) return;
-    setSelectedReason("");
+    setRejectionReason("");
+    setCustomReason("");
     onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white">
-                Từ chối đơn hàng
-              </h2>
-              <p className="text-sm text-gray-500">#{orderCode}</p>
-            </div>
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        onClick={handleClose}
+      />
+      <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="px-8 pt-8 pb-4">
+          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-6 mx-auto">
+            <AlertTriangle className="w-8 h-8" />
           </div>
-          <button
-            onClick={handleClose}
-            disabled={isLoading}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+          <h3 className="text-xl font-black text-slate-900 text-center mb-2">Từ chối đơn hàng?</h3>
+          <p className="text-slate-500 text-center text-sm mb-6">
+            Đang xử lý đơn: <span className="font-bold">#{orderCode}</span>. 
+            Vui lòng chọn lý do để thông báo cho khách hàng.
+          </p>
 
-        {/* Reason dropdown */}
-        <div className="mb-6">
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-            Lý do từ chối <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={selectedReason}
-            onChange={(e) => setSelectedReason(e.target.value)}
-            disabled={isLoading}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white focus:border-red-400 focus:ring-2 focus:ring-red-400/20 outline-none transition-all disabled:opacity-50"
-          >
-            <option value="">-- Chọn lý do --</option>
-            {REJECT_REASONS.map((r) => (
-              <option key={r.value} value={r.label}>
-                {r.label}
-              </option>
+          <div className="space-y-2 mb-6">
+            {REJECTION_REASONS.map((reason) => (
+              <button
+                key={reason}
+                onClick={() => setRejectionReason(reason)}
+                className={`w-full p-4 rounded-xl border-2 text-left text-sm font-bold transition-all flex items-center justify-between ${
+                  rejectionReason === reason
+                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200'
+                }`}
+              >
+                {reason}
+                {rejectionReason === reason && <Check className="w-4 h-4" />}
+              </button>
             ))}
-          </select>
-        </div>
+          </div>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleClose}
-            disabled={isLoading}
-            className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-all disabled:opacity-50"
-          >
-            Hủy bỏ
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!selectedReason || isLoading}
-            className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-          >
-            {isLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
-          </button>
+          {rejectionReason === "Khác" && (
+            <textarea
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+              placeholder="Nhập lý do cụ thể..."
+              className="w-full p-4 rounded-xl border-2 border-slate-100 bg-slate-50 text-sm font-medium focus:border-orange-500 focus:ring-0 mb-6 resize-none"
+              rows={3}
+            />
+          )}
+
+          <div className="flex gap-3 pb-4">
+            <button
+              onClick={handleClose}
+              disabled={isLoading}
+              className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={isLoading || !rejectionReason || (rejectionReason === "Khác" && !customReason)}
+              className="flex-[1.5] py-4 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Xác nhận từ chối
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -64,7 +64,7 @@ const ProfileLayout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <div className="bg-card rounded-2xl p-8 shadow-[0_4px_20px_-2px_rgba(28,19,13,0.05)] border border-border flex flex-col items-center text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent" />
+              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-orange-600/10 to-transparent" />
 
               <div className="relative mb-4">
                 <div className="size-28 rounded-full border-4 border-card shadow-md overflow-hidden bg-accent flex items-center justify-center">
@@ -89,7 +89,7 @@ const ProfileLayout = () => {
                   type="button"
                   onClick={onPickAvatar}
                   disabled={uploading || loadingMe}
-                  className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full border-2 border-card shadow-sm hover:scale-105 transition-transform disabled:opacity-60"
+                  className="absolute bottom-0 right-0 bg-orange-600 text-orange-600-foreground p-1.5 rounded-full border-2 border-card shadow-sm hover:scale-105 transition-transform disabled:opacity-60"
                   title="Đổi ảnh đại diện"
                 >
                   <span className="material-symbols-outlined text-[18px]">
@@ -106,7 +106,7 @@ const ProfileLayout = () => {
                 {loadingMe ? "" : (me?.email || "")}
               </p>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-6 border border-primary/20">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-600/10 text-orange-600 text-xs font-bold uppercase tracking-wider mb-6 border border-orange-600/20">
                 <span className="material-symbols-outlined text-sm">stars</span>
                 {typeof me?.collected_points === "number" ? `${me.collected_points} điểm` : "—"}
               </div>
@@ -139,7 +139,7 @@ const ProfileLayout = () => {
                 {({ isActive }) => (
                   <>
                     <span
-                      className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}
+                      className={`material-symbols-outlined ${isActive ? "text-orange-600" : ""}`}
                       style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
                     >
                       person
@@ -157,7 +157,7 @@ const ProfileLayout = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>
+                    <span className={`material-symbols-outlined ${isActive ? "text-orange-600" : ""}`}>
                       receipt_long
                     </span>
                     Lịch sử đơn hàng
@@ -189,7 +189,7 @@ const ProfileLayout = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`material-symbols-outlined ${isActive ? "text-primary" : ""}`}>
+                    <span className={`material-symbols-outlined ${isActive ? "text-orange-600" : ""}`}>
                       confirmation_number
                     </span>
                     Ví Voucher
@@ -197,11 +197,23 @@ const ProfileLayout = () => {
                 )}
               </NavLink>
               <NavLink
-                to="/addresses"
-                className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent text-muted-foreground hover:text-foreground font-medium transition-colors"
+                to="/profile/addresses"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${isActive ? "bg-accent text-foreground" : "hover:bg-accent text-muted-foreground hover:text-foreground"
+                  }`
+                }
               >
-                <span className="material-symbols-outlined">location_on</span>
-                Địa chỉ
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`material-symbols-outlined ${isActive ? "text-orange-600" : ""}`}
+                      style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                    >
+                      location_on
+                    </span>
+                    Địa chỉ
+                  </>
+                )}
               </NavLink>
               <div className="h-px bg-border mx-4 my-2" />
               <button

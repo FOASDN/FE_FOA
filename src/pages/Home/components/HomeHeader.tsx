@@ -6,7 +6,8 @@ import i18n from "../../../config/i18n";
 import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
-import { useCart } from "@/hooks/useCart";
+import { getSupportSocket } from "@/lib/support-socket";
+import logo from "@/assets/logo.png";
 
 interface HomeHeaderProps {
   searchQuery?: string;
@@ -27,10 +28,25 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
+  const { items, totalItems, totalPrice, clearCart } = useCart();
+  const [showCartPreview, setShowCartPreview] = useState(false);
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const { playNotification } = useNotificationSound();
+  const prevUnreadCountRef = useRef(0);
+  const hasInitializedNotificationRef = useRef(false);
+
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = () => {
+    // Đầu tiên logout để auth chuyển sang guest (giữ lại cart của user trong localStorage)
     logout();
+    // Sau đó clear cart theo key guest để UI trống cho khách
+    clearCart();
     setShowDropdown(false);
     navigate("/");
   };
@@ -158,13 +174,71 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
       playNotification();
     }
 
-    prevUnreadCountRef.current = unreadCount;
-  }, [
-    unreadCount,
-    isAuthenticated,
-    showNotificationDropdown,
-    playNotification,
-  ]);
+    fetchActiveOrders();
+    const interval = setInterval(fetchActiveOrders, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  // Real-time socket listener for notifications
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const socket = getSupportSocket();
+
+    socket.on("order:status_updated", (data: any) => {
+      console.log("Header received real-time notification:", data);
+
+      // Create a local notification object to append to the list
+      const newNoti: Notification = {
+        _id: `temp-${Date.now()}`,
+        title: "Cập nhật đơn hàng",
+        body: data.message,
+        type: "ORDER_STATUS_UPDATED" as any,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setNotifications((prev) => [newNoti, ...prev].slice(0, 50));
+      setUnreadCount((prev) => prev + 1);
+      playNotification();
+    });
+
+    return () => {
+      socket.off("order:status_updated");
+    };
+  }, [isAuthenticated, user?._id, playNotification]);
+
+  // Click outside logic
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setShowDropdown(false);
+      }
+
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setShowNotificationDropdown(false);
+      }
+
+      if (mobileMenuRef.current && isMobileMenuOpen && !mobileMenuRef.current.contains(target)) {
+        const hamburger = document.querySelector("[data-mobile-trigger]");
+        if (hamburger && !hamburger.contains(target)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMobileMenuOpen]);
+
+  // Body scroll lock
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobileMenuOpen]);
 
   return (
     <>
@@ -225,19 +299,14 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
         {/* ═══════ MAIN HEADER — white, clean ═══════ */}
         <div className="bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 lg:gap-8">
-            {/* Logo — orange icon + dark text (original style) */}
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0"
-            >
-              <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  restaurant_menu
-                </span>
-              </div>
-              <h1 className="text-2xl font-black tracking-tighter">
-                FoodieDash
-              </h1>
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2.5 text-orange-600 hover:scale-105 transition-transform group shrink-0">
+              <img
+                src={logo}
+                alt="FoodieDash"
+                className="h-18 -mt-2 -mb-2 -ml-10 -mr-12 object-contain group-hover:rotate-12 transition-transform duration-300"
+              />
+              <h1 className="text-2xl font-black tracking-tighter">FoodieDash</h1>
             </Link>
 
             {/* Search Bar */}
@@ -541,25 +610,6 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                           <div>
                             <p className="font-semibold">Tin nhắn</p>
                             <p className="text-xs text-gray-500">Xem lại cuộc hội thoại</p>
-                          </div>
-                        </Link>
-                        <Link
-                          to="/profile/history"
-                          className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all group"
-                          onClick={() => setShowDropdown(false)}
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative">
-                            <span className="material-symbols-outlined text-[18px] text-blue-600">
-                              receipt_long
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-semibold">
-                              {t("common:nav.orders")}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {t("customer:profile.orderHistory")}
-                            </p>
                           </div>
                         </Link>
                       </div>

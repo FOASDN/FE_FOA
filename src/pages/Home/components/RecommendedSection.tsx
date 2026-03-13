@@ -1,24 +1,16 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles, Star, ArrowRight, Plus } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import recommendationService from "@/services/recommendation.service";
-import type { AIRecommendation } from "@/services/recommendation.service";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
-import { useAuthStore } from "@/store/authStore";
 import { useCart } from "@/hooks/useCart";
-import toast from "react-hot-toast";
+import { useToast } from "@/hooks/useToast";
+import { useAuthStore } from "@/store/authStore";
+import { FoodCard } from "@/components/shared/FoodCard";
 
-// ── Helpers ───────────────────────────────────────────────
-
-const getImageUrl = (image: Product["image"]): string => {
-  if (!image) return "";
-  if (typeof image === "object" && image.secure_url) return image.secure_url;
-  if (typeof image === "string") return image;
-  return "";
-};
 
 // Nhãn gợi ý mặc định khi dùng fallback (không có AI)
 const FALLBACK_TAGS = ["Healthy Choice", "Top Pick", "Best Match"];
@@ -40,7 +32,7 @@ const RecommendedSkeleton = () => (
 // ── Types (union để render chung) ─────────────────────────
 
 type DisplayItem =
-  | { type: "ai"; data: AIRecommendation }
+  | { type: "ai"; data: any }
   | { type: "fallback"; data: Product; tag: string };
 
 // ── Main Component ────────────────────────────────────────
@@ -49,6 +41,8 @@ const RecommendedSection = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
   const { isAuthenticated } = useAuthStore();
+  const { addItem } = useCart();
+  const { toast } = useToast();
 
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,36 +103,39 @@ const RecommendedSection = () => {
   // ── Render ────────────────────────────────────────────
 
   return (
-    <section className="bg-linear-to-br from-orange-50 via-amber-50 to-white rounded-[2rem] p-6 md:p-8 border border-orange-100">
+    <section className="bg-linear-to-br from-orange-50 via-amber-50 to-white rounded-[2rem] p-6 md:p-8 border border-orange-100 shadow-sm transition-all hover:shadow-xl hover:shadow-orange-500/5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-orange-600 fill-orange-600 animate-pulse" />
-            <h2 className="text-2xl font-black text-slate-900">
-              {t("customer:home.aiSuggestion")}
-            </h2>
-            {isAIMode && (
-              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
-                AI
-              </span>
-            )}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200/50">
+              <Sparkles className="w-7 h-7 text-orange-600 fill-orange-600 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                  {t("customer:home.aiSuggestion")}
+                </h2>
+                {isAIMode && (
+                  <span className="text-[10px] font-black bg-emerald-500 text-white px-3 py-1 rounded-full shadow-lg shadow-emerald-500/20 uppercase tracking-widest">
+                    AI Active
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-500 font-medium mt-1">
+                {isAIMode
+                  ? t("customer:home.aiSuggestionSub", "Dựa trên sở thích và lịch sử đặt hàng của bạn")
+                  : "Những món được đánh giá cao nhất hôm nay"}
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-slate-500 font-medium ml-8">
-            {isAIMode
-              ? t(
-                  "customer:home.aiSuggestionSub",
-                  "Dựa trên sở thích và lịch sử đặt hàng của bạn",
-                )
-              : "Những món được đánh giá cao nhất hôm nay"}
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link to="/ai-suggestions">
             <Button
-              variant="ghost"
-              className="text-emerald-600 font-bold hover:bg-emerald-50 hover:text-emerald-700 text-sm"
+              variant="outline"
+              className="border-primary/20 text-primary font-bold hover:bg-primary/5 rounded-xl px-6"
             >
               Gợi ý món an toàn
             </Button>
@@ -146,7 +143,7 @@ const RecommendedSection = () => {
           <Link to="/menu">
             <Button
               variant="ghost"
-              className="text-orange-600 font-bold hover:bg-orange-100 hover:text-orange-700 flex items-center gap-1"
+              className="text-slate-600 font-bold hover:bg-slate-100 rounded-xl flex items-center gap-1"
             >
               {t("common:actions.viewAll")}
               <ArrowRight className="w-4 h-4" />
@@ -157,19 +154,45 @@ const RecommendedSection = () => {
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Not Logged In CTA */}
+        {!loading && !isAuthenticated && (
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 mb-4">
+            <div className="bg-white/60 backdrop-blur-md border border-orange-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center shrink-0">
+                  <Sparkles className="w-8 h-8 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Đăng nhập để nhận gợi ý AI Cá nhân hóa
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Để AI hiểu khẩu vị của bạn và đề xuất những món ăn phù hợp nhất.
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate("/login")}
+                className="bg-orange-600 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-orange-600/20 hover:bg-orange-700 transition-all whitespace-nowrap"
+              >
+                Đăng nhập ngay
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <>
             {isAuthenticated ? (
-              // AI loading state
-              <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-12">
-                <Sparkles className="w-8 h-8 text-orange-400 animate-spin mx-auto mb-4" />
-                <p className="text-orange-600 font-medium animate-pulse">
-                  AI đang phân tích thực đơn cho bạn...
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-20 bg-white/50 rounded-3xl border border-dashed border-orange-200">
+                <Sparkles className="w-12 h-12 text-orange-400 animate-spin mx-auto mb-4" />
+                <h3 className="text-xl font-black text-slate-900 mb-2">Đang phân tích khẩu vị...</h3>
+                <p className="text-slate-500 font-medium animate-pulse">
+                  AI đang tìm kiếm những món ăn phù hợp với bạn nhất
                 </p>
               </div>
             ) : (
-              // Skeleton cards (fallback)
               Array.from({ length: 3 }).map((_, i) => (
                 <RecommendedSkeleton key={i} />
               ))
@@ -182,101 +205,55 @@ const RecommendedSection = () => {
           items.map((item, idx) => {
             const isAI = item.type === "ai";
             const product = isAI ? item.data.product : item.data;
-            const imageUrl = getImageUrl(product.image);
-            const tagLabel = isAI
-              ? `Điểm: ${item.data.healthScore}/10`
-              : item.tag;
-            const subText = isAI ? item.data.aiReason : product.description;
+            const customBadge = isAI
+              ? {
+                  text: `Điểm: ${item.data.healthScore}/10`,
+                  className: 'bg-emerald-100 text-emerald-700',
+                  icon: <Sparkles className="w-3 h-3" />
+                }
+              : {
+                  text: item.tag,
+                  className: 'bg-orange-100 text-orange-700'
+                };
 
             return (
-              <div
+              <FoodCard
                 key={isAI ? product._id + idx : product._id}
-                onClick={() => navigate(`/food/${product._id}`)}
-                className="flex bg-white rounded-2xl p-4 gap-4 shadow-sm border border-orange-50 hover:shadow-xl hover:shadow-orange-500/10 transition-all cursor-pointer group"
-              >
-                {/* Image */}
-                <div className="relative w-28 h-28 rounded-xl overflow-hidden shrink-0 bg-orange-50">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-orange-200 text-3xl">
-                        restaurant
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-col flex-1 justify-between min-w-0">
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        {tagLabel}
-                      </div>
-                      <div className="flex items-center gap-1 text-xs font-bold text-slate-700 shrink-0">
-                        <Star className="w-3 h-3 text-orange-500 fill-orange-500" />
-                        {product.rating.toFixed(1)}
-                      </div>
-                    </div>
-                    <h3 className="font-bold text-lg text-slate-800 leading-tight mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2">
-                      {subText}
-                    </p>
-                  </div>
-                  <div className="flex items-end justify-between mt-2">
-                    <span className="font-black text-lg text-orange-600">
-                      {product.price.toLocaleString("vi-VN")}đ
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="text-[10px] text-slate-400 flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-[12px]">
-                          schedule
-                        </span>
-                        {product.time}
-                      </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-
-                          addItem({
-                            productId: product._id,
-                            name: product.name,
-                            image: imageUrl,
-                            price: product.price,
-                            quantity: 1,
-                          });
-                          toast.success("Đã thêm vào giỏ hàng!");
-                        }}
-                        className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shrink-0"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                id={product._id}
+                name={product.name}
+                image={typeof product.image === 'object' && product.image?.secure_url ? product.image.secure_url : (typeof product.image === 'string' ? product.image : '')}
+                price={product.price}
+                rating={product.rating}
+                restaurant={product.restaurant}
+                time={product.time}
+                description={isAI ? item.data.aiReason : product.description}
+                variant="horizontal"
+                customBadge={customBadge}
+                onAddToCart={() => {
+                  addItem({
+                    productId: product._id,
+                    name: product.name,
+                    image: typeof product.image === 'object' && product.image?.secure_url ? product.image.secure_url : (typeof product.image === 'string' ? product.image : ''),
+                    price: product.price,
+                    quantity: 1
+                  });
+                  toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+                }}
+              />
             );
           })}
 
-        {/* Empty state (AI mode, not loading, no items) */}
+        {/* Empty state */}
         {!loading && items.length === 0 && (
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-12 bg-white rounded-2xl border border-dashed border-orange-200">
-            <Sparkles className="w-10 h-10 text-orange-300 mx-auto mb-3" />
-            <p className="text-slate-500">
-              Chưa có đủ dữ liệu để gợi ý. Hãy cập nhật hồ sơ sức khỏe nhé!
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-16 bg-white/50 backdrop-blur-sm rounded-3xl border border-dashed border-orange-200">
+            <Sparkles className="w-12 h-12 text-orange-300 mx-auto mb-4" />
+            <h3 className="text-xl font-black text-slate-900 mb-2">Chưa có gợi ý nào</h3>
+            <p className="text-slate-500 max-w-sm mx-auto mb-6">
+              Bạn chưa có đủ dữ liệu để AI phân tích. Hãy cập nhật hồ sơ sức khỏe hoặc đặt hàng để AI hiểu bạn hơn nhé!
             </p>
             <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => navigate("/profile-settings")}
+              className="bg-orange-100 text-orange-600 font-bold rounded-xl px-8 py-6 hover:bg-orange-600 hover:text-white transition-all shadow-lg shadow-orange-200/50"
+              onClick={() => navigate("/profile")}
             >
               Cập nhật hồ sơ
             </Button>

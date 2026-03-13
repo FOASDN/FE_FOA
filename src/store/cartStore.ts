@@ -12,6 +12,7 @@ export interface CartItem {
   variations?: { name: string; choice: string }[];
   extras?: { id: string; name: string; price: number }[];
   note?: string;
+  selected?: boolean;
 }
 
 interface CartState {
@@ -25,24 +26,55 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
+  toggleSelectItem: (key: string) => void;
+  toggleSelectAll: (selected: boolean) => void;
   setOrderNote: (note: string) => void;
   clearOrderNote: () => void;
 
   clearCart: () => void;
   hydrate: () => void;
+  mergeGuestCartIntoCurrentUser: () => void;
 }
 
 // ---- Storage ----
 
-const CART_KEY = "foodie_cart";
-const NOTE_KEY = "foodie_cart_note";
+// Lưu cart theo từng user (hoặc guest) dựa theo auth store trong localStorage
+const BASE_CART_KEY = "foodie_cart";
+const BASE_NOTE_KEY = "foodie_cart_note";
+const AUTH_STORAGE_KEY = "foodiedash_user";
+const GUEST_CART_KEY = `${BASE_CART_KEY}_guest`;
+
+const getUserScopedKeys = () => {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) {
+      return {
+        cartKey: `${BASE_CART_KEY}_guest`,
+        noteKey: `${BASE_NOTE_KEY}_guest`,
+      };
+    }
+    const user = JSON.parse(raw) as { _id?: string };
+    const userId = user?._id || "guest";
+    return {
+      cartKey: `${BASE_CART_KEY}_${userId}`,
+      noteKey: `${BASE_NOTE_KEY}_${userId}`,
+    };
+  } catch {
+    return {
+      cartKey: `${BASE_CART_KEY}_guest`,
+      noteKey: `${BASE_NOTE_KEY}_guest`,
+    };
+  }
+};
 
 const saveCart = (items: CartItem[]) => {
-  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  const { cartKey } = getUserScopedKeys();
+  localStorage.setItem(cartKey, JSON.stringify(items));
 };
 
 const loadCart = (): CartItem[] => {
-  const raw = localStorage.getItem(CART_KEY);
+  const { cartKey } = getUserScopedKeys();
+  const raw = localStorage.getItem(cartKey);
   if (!raw) return [];
   try {
     return JSON.parse(raw) as CartItem[];
@@ -52,22 +84,41 @@ const loadCart = (): CartItem[] => {
 };
 
 const saveNote = (note: string) => {
-  localStorage.setItem(NOTE_KEY, note);
+  const { noteKey } = getUserScopedKeys();
+  localStorage.setItem(noteKey, note);
 };
 
 const loadNote = () => {
-  return localStorage.getItem(NOTE_KEY) ?? "";
+  const { noteKey } = getUserScopedKeys();
+  return localStorage.getItem(noteKey) ?? "";
+};
+
+const mergeItems = (base: CartItem[], incoming: CartItem[]): CartItem[] => {
+  const result = [...base];
+  for (const item of incoming) {
+    const key = itemKey(item);
+    const idx = result.findIndex((i) => itemKey(i) === key);
+    if (idx >= 0) {
+      result[idx] = { ...result[idx], quantity: result[idx].quantity + item.quantity };
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
 };
 
 // ---- Helpers ----
 
-const computeTotals = (items: CartItem[]) => ({
-  totalItems: items.reduce((sum, i) => sum + i.quantity, 0),
-  totalPrice: items.reduce((sum, i) => {
-    const extrasPrice = i.extras?.reduce((s, e) => s + e.price, 0) || 0;
-    return sum + (i.price + extrasPrice) * i.quantity;
-  }, 0),
-});
+const computeTotals = (items: CartItem[]) => {
+  const selectedItems = items.filter(i => i.selected !== false);
+  return {
+    totalItems: items.reduce((sum, i) => sum + i.quantity, 0),
+    totalPrice: selectedItems.reduce((sum, i) => {
+      const extrasPrice = i.extras?.reduce((s, e) => s + e.price, 0) || 0;
+      return sum + (i.price + extrasPrice) * i.quantity;
+    }, 0),
+  };
+};
 
 const normalizeVariations = (vars?: { name: string; choice: string }[]) =>
   (vars ?? [])
@@ -129,15 +180,29 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   updateQuantity: (key, quantity) => {
-  if (quantity <= 0) {
-    get().removeItem(key);
-    return;
-  }
-  const newItems = get().items.map((i) =>
-    itemKey(i) === key ? { ...i, quantity } : i
-  );
-  saveCart(newItems);
-  set({ items: newItems, ...computeTotals(newItems) });
+    if (quantity <= 0) {
+      get().removeItem(key);
+      return;
+    }
+    const newItems = get().items.map((i) =>
+      itemKey(i) === key ? { ...i, quantity } : i
+    );
+    saveCart(newItems);
+    set({ items: newItems, ...computeTotals(newItems) });
+  },
+
+  toggleSelectItem: (key) => {
+    const newItems = get().items.map((i) =>
+      itemKey(i) === key ? { ...i, selected: i.selected === false } : i
+    );
+    saveCart(newItems);
+    set({ items: newItems, ...computeTotals(newItems) });
+  },
+
+  toggleSelectAll: (selected) => {
+    const newItems = get().items.map((i) => ({ ...i, selected }));
+    saveCart(newItems);
+    set({ items: newItems, ...computeTotals(newItems) });
   },
 
   // NEW
@@ -149,13 +214,15 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   // NEW
   clearOrderNote: () => {
-    localStorage.removeItem(NOTE_KEY);
+    const { noteKey } = getUserScopedKeys();
+    localStorage.removeItem(noteKey);
     set({ orderNote: "" });
   },
 
   clearCart: () => {
-    localStorage.removeItem(CART_KEY);
-    localStorage.removeItem(NOTE_KEY);
+    const { cartKey, noteKey } = getUserScopedKeys();
+    localStorage.removeItem(cartKey);
+    localStorage.removeItem(noteKey);
     set({ items: [], orderNote: "", totalItems: 0, totalPrice: 0 });
   },
 
@@ -163,5 +230,34 @@ export const useCartStore = create<CartState>((set, get) => ({
     const items = loadCart();
     const orderNote = loadNote();
     set({ items, orderNote, ...computeTotals(items) });
+  },
+
+  mergeGuestCartIntoCurrentUser: () => {
+    const { cartKey } = getUserScopedKeys();
+
+    const guestRaw = localStorage.getItem(GUEST_CART_KEY);
+    if (!guestRaw) return;
+
+    let guestItems: CartItem[] = [];
+    try {
+      guestItems = JSON.parse(guestRaw) as CartItem[];
+    } catch {
+      guestItems = [];
+    }
+
+    const currentRaw = localStorage.getItem(cartKey);
+    let currentItems: CartItem[] = [];
+    if (currentRaw) {
+      try {
+        currentItems = JSON.parse(currentRaw) as CartItem[];
+      } catch {
+        currentItems = [];
+      }
+    }
+
+    const merged = mergeItems(currentItems, guestItems);
+    localStorage.setItem(cartKey, JSON.stringify(merged));
+    localStorage.removeItem(GUEST_CART_KEY);
+    set({ items: merged, ...computeTotals(merged) });
   },
 }));

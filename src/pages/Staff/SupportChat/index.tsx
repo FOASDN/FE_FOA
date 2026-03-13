@@ -655,7 +655,7 @@ export default function StaffSupportChatPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                                    {item.product_id?.name || 'Sản phẩm'}
+                                                    {(item.product_id as any)?.name || 'Sản phẩm'}
                                                 </p>
                                                 <p className="text-[10px] text-primary font-semibold mt-0.5">
                                                     {item.sub_total.toLocaleString('vi-VN')}đ

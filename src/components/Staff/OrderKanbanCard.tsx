@@ -60,11 +60,11 @@ export default function OrderKanbanCard({
       {/* Customer info */}
       <div className="flex items-center gap-2 mb-3 p-2.5 bg-gray-50 dark:bg-white/5 rounded-xl">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-          {order.user_id?.username?.charAt(0)?.toUpperCase() ?? "K"}
+          {typeof order.user_id === "object" ? order.user_id?.username?.charAt(0)?.toUpperCase() : "K"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
-            {order.user_id?.username ?? "Khách hàng"}
+            {typeof order.user_id === "object" ? order.user_id?.username : "Khách hàng"}
             {/* AI Flagging - Tối giản cho Bếp */}
             {order.staff_note_items && order.staff_note_items.some(n => n.toLowerCase().includes('dị ứng') || n.toLowerCase().includes('cảnh báo')) && (
               <div
@@ -78,7 +78,7 @@ export default function OrderKanbanCard({
               </div>
             )}
           </div>
-          {order.user_id?.phone && (
+          {typeof order.user_id === "object" && order.user_id?.phone && (
             <div className="flex items-center gap-1 text-[11px] text-gray-500">
               <Phone className="w-3 h-3" />
               {order.user_id.phone}
@@ -142,7 +142,7 @@ export default function OrderKanbanCard({
           <button
             onClick={() => onConfirm(order._id)}
             disabled={isActioning}
-            className="py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm hover:bg-[#ee8c2b] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-1"
+            className="py-2.5 rounded-xl bg-orange-500 text-white font-bold text-sm shadow-sm hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-1"
           >
             {isActioning ? <Loader2 className="w-4 h-4 animate-spin" /> : "Nhận đơn"}
           </button>
@@ -156,7 +156,7 @@ export default function OrderKanbanCard({
             onMarkReady(order._id);
           }}
           disabled={isActioning}
-          className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm hover:bg-[#ee8c2b] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-bold text-sm shadow-sm hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
         >
           {isActioning ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -173,7 +173,7 @@ export default function OrderKanbanCard({
             onAssignDelivery(order._id);
           }}
           disabled={isActioning}
-          className="w-full py-3 rounded-xl bg-amber-500 text-white font-black text-sm shadow-sm hover:bg-[#ee8c2b] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl bg-orange-500 text-white font-black text-sm shadow-sm hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
         >
           {isActioning ? (
             <Loader2 className="w-5 h-5 animate-spin" />

@@ -166,8 +166,9 @@ class OrderService {
 
   async cancelOrder(
     id: string,
+    data?: { reason: string }
   ): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.patch(`/orders/${id}/cancel`);
+    const response = await apiClient.patch(`/orders/${id}/cancel`, data);
     return response.data;
   }
 

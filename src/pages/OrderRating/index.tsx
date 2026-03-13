@@ -181,7 +181,7 @@ const OrderRatingPage = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <Loader2 className="w-12 h-12 text-orange-600 animate-spin" />
         <p className="text-[#8c7f5a] font-medium">Đang tải thông tin đơn hàng...</p>
       </div>
     );
@@ -191,7 +191,7 @@ const OrderRatingPage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <p className="text-[#8c7f5a] font-medium">Không tìm thấy đơn hàng</p>
-        <button onClick={() => navigate("/profile/history")} className="text-primary font-bold">Quay lại</button>
+        <button onClick={() => navigate("/profile/history")} className="text-orange-600 font-bold">Quay lại</button>
       </div>
     );
   }
@@ -212,16 +212,16 @@ const OrderRatingPage = () => {
 
         {/* Global Rating (Apply to all) */}
         {!allSubmitted && productRatings.length > 1 && (
-          <div className="mb-8 p-6 bg-primary/5 dark:bg-primary/10 rounded-2xl border-2 border-primary/20">
+          <div className="mb-8 p-6 bg-orange-600/5 dark:bg-orange-600/10 rounded-2xl border-2 border-orange-600/20">
             <div className="flex items-center justify-between mb-4">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="checkbox" 
                   checked={applyToAll} 
                   onChange={(e) => setApplyToAll(e.target.checked)}
-                  className="w-5 h-5 rounded border-primary text-primary focus:ring-primary"
+                  className="w-5 h-5 rounded border-orange-600 text-orange-600 focus:ring-orange-600"
                 />
-                <span className="text-[#1b140d] dark:text-white font-bold text-lg group-hover:text-primary transition-colors">
+                <span className="text-[#1b140d] dark:text-white font-bold text-lg group-hover:text-orange-600 transition-colors">
                   Áp dụng cùng mức đánh giá cho các món chưa gửi
                 </span>
               </label>
@@ -248,12 +248,12 @@ const OrderRatingPage = () => {
                   value={globalComment}
                   onChange={(e) => setGlobalComment(e.target.value)}
                   placeholder="Nhận xét chung cho các món còn lại..."
-                  className="w-full p-4 rounded-xl border-0 bg-white dark:bg-[#1a1b1c] shadow-inner focus:ring-2 focus:ring-primary/50 min-h-[100px] resize-none"
+                  className="w-full p-4 rounded-xl border-0 bg-white dark:bg-[#1a1b1c] shadow-inner focus:ring-2 focus:ring-orange-600/50 min-h-[100px] resize-none"
                 />
                 <button
                   onClick={handleGlobalSubmit}
                   disabled={globalSubmitting}
-                  className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl bg-orange-600 text-white font-bold text-lg shadow-lg hover:bg-orange-600/90 transition-all flex items-center justify-center gap-2"
                 >
                   {globalSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                   Gửi tất cả nhận xét
@@ -306,7 +306,7 @@ const OrderRatingPage = () => {
                       value={rating.comment}
                       onChange={(e) => updateRating(idx, { comment: e.target.value })}
                       placeholder="Món ăn có ngon không? Vừa miệng chứ?..."
-                      className="w-full p-4 rounded-xl border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1b1c] focus:ring-2 focus:ring-primary/50 min-h-[120px] resize-none"
+                      className="w-full p-4 rounded-xl border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1a1b1c] focus:ring-2 focus:ring-orange-600/50 min-h-[120px] resize-none"
                     />
                   </div>
 
@@ -326,7 +326,7 @@ const OrderRatingPage = () => {
                       ))}
                       
                       {rating.images.length < 4 && (
-                        <label className={`w-24 h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${rating.isUploading ? "opacity-50 pointer-events-none" : "hover:border-primary hover:bg-primary/5 border-gray-200 dark:border-gray-800"}`}>
+                        <label className={`w-24 h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${rating.isUploading ? "opacity-50 pointer-events-none" : "hover:border-orange-600 hover:bg-orange-600/5 border-gray-200 dark:border-gray-800"}`}>
                           <input 
                             type="file" 
                             accept="image/*" 
@@ -334,11 +334,11 @@ const OrderRatingPage = () => {
                             onChange={(e) => e.target.files?.[0] && handleFileUpload(idx, e.target.files[0])}
                           />
                           {rating.isUploading ? (
-                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                            <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
                           ) : (
                             <>
-                              <Camera className="w-6 h-6 text-primary" />
-                              <span className="text-[10px] font-bold text-primary uppercase">Tải lên</span>
+                              <Camera className="w-6 h-6 text-orange-600" />
+                              <span className="text-[10px] font-bold text-orange-600 uppercase">Tải lên</span>
                             </>
                           )}
                         </label>
@@ -351,7 +351,7 @@ const OrderRatingPage = () => {
                     disabled={rating.isSubmitting}
                     className={`w-full py-4 rounded-xl font-bold shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2 ${
                       rating.isSubmitted 
-                        ? "bg-primary text-white" 
+                        ? "bg-orange-600 text-white" 
                         : "bg-[#1b140d] dark:bg-white text-white dark:text-[#1b140d]"
                     }`}
                   >
@@ -373,7 +373,7 @@ const OrderRatingPage = () => {
             <p className="text-[#8c7f5a] mb-8">Cảm ơn bạn đã đóng góp ý kiến để chúng tôi cải thiện dịch vụ.</p>
             <button
               onClick={() => navigate("/profile/history")}
-              className="px-10 py-4 rounded-2xl bg-primary text-white font-black text-xl shadow-xl shadow-primary/30 hover:-translate-y-1 transition-all"
+              className="px-10 py-4 rounded-2xl bg-orange-600 text-white font-black text-xl shadow-xl shadow-orange-600/30 hover:-translate-y-1 transition-all"
             >
               Quay lại đơn hàng
             </button>

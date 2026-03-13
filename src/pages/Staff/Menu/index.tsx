@@ -1,7 +1,6 @@
 // Staff Menu Management Page
 
 import { useState } from "react";
-import { Search, CheckCircle, XCircle } from "lucide-react";
 
 interface MenuItem {
     id: string;
@@ -54,83 +53,95 @@ export default function StaffMenu() {
     const outOfStockItems = totalItems - inStockItems;
 
     return (
-        <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-7xl mx-auto w-full">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-[32px] font-extrabold text-[#1b140d] mb-1">Quản lý món ăn</h1>
-                    <p className="text-base text-[#9a734c]">Cập nhật trạng thái món ăn trong thực đơn</p>
+                    <h2 className="text-3xl font-black tracking-tight text-[#1b140d]">
+                        Quản lý thực đơn
+                    </h2>
+                    <p className="text-sm text-[#9a734c] mt-1">Cập nhật trạng thái món ăn trong thực đơn theo thời gian thực.</p>
                 </div>
+                
                 <div className="flex gap-4">
-                    <div className="px-6 py-4 bg-white border-2 border-[#e7dbcf] rounded-xl text-center min-w-[100px]">
-                        <div className="text-[28px] font-extrabold text-[#1b140d] leading-none">{totalItems}</div>
-                        <div className="text-xs font-semibold text-[#9a734c] mt-1">Tổng món</div>
+                    <div className="px-5 py-4 bg-white border border-[#e7dbcf] rounded-xl text-center min-w-[100px] shadow-sm">
+                        <div className="text-2xl font-bold text-[#1b140d] leading-none mb-1">{totalItems}</div>
+                        <div className="text-[10px] font-bold text-[#9a734c] uppercase tracking-wider">Tổng món</div>
                     </div>
-                    <div className="px-6 py-4 bg-emerald-50 border-2 border-emerald-500 rounded-xl text-center min-w-[100px]">
-                        <div className="text-[28px] font-extrabold text-emerald-500 leading-none">{inStockItems}</div>
-                        <div className="text-xs font-semibold text-[#9a734c] mt-1">Còn món</div>
+                    <div className="px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center min-w-[100px] shadow-sm">
+                        <div className="text-2xl font-bold text-emerald-600 leading-none mb-1">{inStockItems}</div>
+                        <div className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider">Còn món</div>
                     </div>
-                    <div className="px-6 py-4 bg-red-50 border-2 border-red-500 rounded-xl text-center min-w-[100px]">
-                        <div className="text-[28px] font-extrabold text-red-500 leading-none">{outOfStockItems}</div>
-                        <div className="text-xs font-semibold text-[#9a734c] mt-1">Hết món</div>
+                    <div className="px-5 py-4 bg-red-50 border border-red-200 rounded-xl text-center min-w-[100px] shadow-sm">
+                        <div className="text-2xl font-bold text-red-600 leading-none mb-1">{outOfStockItems}</div>
+                        <div className="text-[10px] font-bold text-red-600/70 uppercase tracking-wider">Hết món</div>
                     </div>
                 </div>
             </div>
 
             {/* Search & Filters */}
-            <div className="mb-6">
-                <div className="relative mb-4">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9a734c]" />
-                    <input
-                        type="text"
-                        placeholder="Tìm món ăn theo tên hoặc mô tả..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full py-3.5 pl-12 pr-4 border-2 border-[#e7dbcf] rounded-xl text-[15px] transition-all focus:outline-none focus:border-[#ee8c2b] focus:shadow-[0_0_0_4px_rgba(238,140,43,0.1)]"
-                    />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat}
-                            className={`px-5 py-2.5 rounded-[10px] text-sm font-semibold transition-all border-2 ${categoryFilter === cat
-                                    ? 'bg-[#ee8c2b] text-white border-[#ee8c2b]'
-                                    : 'bg-white text-[#1b140d] border-[#e7dbcf] hover:border-[#ee8c2b] hover:text-[#ee8c2b]'
-                                }`}
-                            onClick={() => setCategoryFilter(cat)}
-                        >
-                            {cat}{cat !== 'Tất cả' && ` (${menuItems.filter(i => i.category === cat).length})`}
-                        </button>
-                    ))}
+            <div className="bg-white border border-[#e7dbcf] rounded-xl p-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#9a734c]">
+                            search
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Tìm món ăn..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-[#fcfaf8] border-none focus:ring-2 focus:ring-[#ee8c2b]/50 text-sm"
+                        />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat}
+                                className={`shrink-0 px-4 py-2 rounded-lg font-medium text-sm transition-all ${categoryFilter === cat
+                                        ? 'bg-[#ee8c2b] text-white'
+                                        : 'bg-[#fcfaf8] text-[#1b140d] border border-[#e7dbcf] hover:border-[#ee8c2b] hover:text-[#ee8c2b]'
+                                    }`}
+                                onClick={() => setCategoryFilter(cat)}
+                            >
+                                {cat}{cat !== 'Tất cả' && ` (${menuItems.filter(i => i.category === cat).length})`}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             {/* Menu Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {filteredItems.map(item => (
-                    <div key={item.id} className={`bg-white rounded-2xl overflow-hidden border-2 border-[#e7dbcf] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:border-[#ee8c2b] transition-all ${!item.inStock ? 'opacity-70' : ''}`}>
-                        <div className="relative w-full h-[200px] overflow-hidden">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-bold text-white ${item.inStock ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                                {item.inStock ? '✓ Còn món' : '✗ Hết món'}
+                    <div key={item.id} className={`bg-white rounded-xl overflow-hidden border border-[#e7dbcf] hover:shadow-md hover:border-[#ee8c2b] transition-all flex flex-col ${!item.inStock ? 'opacity-80' : ''}`}>
+                        <div className="relative w-full h-[180px] overflow-hidden">
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className={`absolute top-3 right-3 px-2 py-1 rounded shadow-sm text-[10px] font-bold text-white uppercase tracking-wider ${item.inStock ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                                {item.inStock ? 'Sẵn sàng' : 'Hết hàng'}
                             </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-5 flex-1 flex flex-col">
                             <div className="flex justify-between items-start gap-3 mb-2">
-                                <h3 className="text-lg font-bold text-[#1b140d] leading-snug">{item.name}</h3>
-                                <div className="px-2.5 py-1 bg-[#f3ede7] rounded-md text-[11px] font-semibold text-[#9a734c] whitespace-nowrap">{item.category}</div>
+                                <h3 className="text-lg font-bold text-[#1b140d] leading-tight line-clamp-1">{item.name}</h3>
+                                <span className="px-2 py-0.5 bg-[#fcfaf8] border border-[#e7dbcf] rounded text-[10px] font-bold text-[#9a734c] uppercase">{item.category}</span>
                             </div>
-                            <p className="text-[13px] text-[#9a734c] leading-relaxed mb-4">{item.description}</p>
-                            <div className="flex justify-between items-center gap-3">
-                                <div className="text-xl font-extrabold text-[#ee8c2b]">{item.price.toLocaleString('vi-VN')}đ</div>
+                            <p className="text-sm text-[#9a734c] line-clamp-2 mb-4 flex-1">{item.description}</p>
+                            
+                            <div className="flex justify-between items-center pt-4 border-t border-[#e7dbcf]/50">
+                                <div className="text-xl font-black text-[#1b140d] tracking-tight">{item.price.toLocaleString('vi-VN')}đ</div>
                                 <button
-                                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-[10px] text-sm font-bold border-2 transition-all ${item.inStock
-                                            ? 'bg-white text-red-500 border-red-500 hover:bg-red-50'
+                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${item.inStock
+                                            ? 'bg-white text-red-600 border-red-200 hover:bg-red-50 hover:border-red-500'
                                             : 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
                                         }`}
                                     onClick={() => toggleStock(item.id)}
                                 >
-                                    {item.inStock ? <><XCircle className="w-[18px] h-[18px]" /> Đặt hết món</> : <><CheckCircle className="w-[18px] h-[18px]" /> Bật lại món</>}
+                                    <span className="material-symbols-outlined text-[18px]">
+                                        {item.inStock ? 'block' : 'check_circle'}
+                                    </span>
+                                    {item.inStock ? 'Tạm ngưng' : 'Mở lại'}
                                 </button>
                             </div>
                         </div>
@@ -139,8 +150,12 @@ export default function StaffMenu() {
             </div>
 
             {filteredItems.length === 0 && (
-                <div className="text-center py-16 text-[#9a734c]">
-                    <p className="text-lg font-semibold">Không tìm thấy món ăn nào</p>
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#fcfaf8] flex items-center justify-center mb-4">
+                        <span className="material-symbols-outlined text-3xl text-[#9a734c]">no_food</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-[#1b140d]">Không tìm thấy món nào</h3>
+                    <p className="text-sm text-[#9a734c]">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm của bạn.</p>
                 </div>
             )}
         </div>

@@ -100,7 +100,7 @@ const OrderFailedPage = () => {
           <div className="flex flex-col gap-3 w-full">
             <button
               onClick={() => navigate("/checkout", { replace: true })}
-              className="flex items-center justify-center rounded-lg h-14 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+              className="flex items-center justify-center rounded-lg h-14 bg-orange-600 text-white text-base font-bold leading-normal tracking-[0.015em] w-full shadow-lg shadow-orange-600/20 hover:scale-[1.02] transition-transform"
             >
               <span className="material-symbols-outlined mr-2">shopping_cart</span>
               <span>Quay lại checkout</span>

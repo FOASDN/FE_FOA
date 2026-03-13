@@ -60,20 +60,20 @@ const ForbiddenPage = () => {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                         onClick={() => navigate(-1)}
-                        className="px-6 py-3 rounded-xl border-2 border-[#e7dbcf] bg-white text-[#6b5744] font-bold hover:border-[#ee8c2b] hover:text-[#ee8c2b] transition-all"
+                        className="px-6 py-3 rounded-xl border-2 border-[#e7dbcf] bg-white text-[#6b5744] font-bold hover:border-[orange-600] hover:text-[orange-600] transition-all"
                     >
                         ← Quay lại
                     </button>
                     <Link
                         to="/"
-                        className="px-6 py-3 rounded-xl bg-[#ee8c2b] text-white font-bold hover:bg-[#d97706] transition-all shadow-lg shadow-orange-500/25"
+                        className="px-6 py-3 rounded-xl bg-[orange-600] text-white font-bold hover:bg-[#d97706] transition-all shadow-lg shadow-orange-500/25"
                     >
                         🏠 Về trang chủ
                     </Link>
                     {!isAuthenticated && (
                         <Link
                             to="/login"
-                            className="px-6 py-3 rounded-xl border-2 border-[#ee8c2b] text-[#ee8c2b] font-bold hover:bg-[#ee8c2b] hover:text-white transition-all"
+                            className="px-6 py-3 rounded-xl border-2 border-[orange-600] text-[orange-600] font-bold hover:bg-[orange-600] hover:text-white transition-all"
                         >
                             🔑 Đăng nhập
                         </Link>

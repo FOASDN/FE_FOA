@@ -13,6 +13,7 @@ import voucherService from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
 import type { AuthAddress } from "@/store/authStore";
 import { calculateShippingFee } from "@/utils/shipping";
+import { useSettingsStore } from "@/store/settingsStore";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -47,6 +48,11 @@ export const useCheckout = () => {
   const { items: storeCartItems, totalPrice: storeTotalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings, fetchSettings } = useSettingsStore();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   // Ref to signal that order has been placed successfully.
   // Using a ref (not state) so it survives the finally-block reset of isSubmitting
@@ -179,12 +185,21 @@ export const useCheckout = () => {
     if (!effectiveAddress) {
       return { fee: 0, blocked: false };
     }
+
+    const config = settings ? {
+      baseDeliveryFee: parseFloat(settings.baseDeliveryFee) || 15000,
+      feePerKm: parseFloat(settings.feePerKm) || 5000,
+      freeDeliveryEnabled: settings.freeDeliveryEnabled,
+      freeDeliveryThreshold: parseFloat(settings.freeDeliveryThreshold) || 300000,
+    } : undefined;
+
     return calculateShippingFee(
       effectiveAddress.district ?? "",
       effectiveAddress.city ?? "",
-      subtotal
+      subtotal,
+      config
     );
-  }, [effectiveAddress, subtotal]);
+  }, [effectiveAddress, subtotal, settings]);
 
   const deliveryFee = shippingResult.fee;
   const isDeliverable = !shippingResult.blocked;
@@ -303,6 +318,7 @@ export const useCheckout = () => {
     total,
     isDeliverable,
     shippingResult,
+    settings,
     // Submit
     isSubmitting,
     handlePlaceOrder,

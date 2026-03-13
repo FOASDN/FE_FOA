@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { useAuth } from "@/hooks/useAuth";
+import logo from "@/assets/logo.png";
 
 // ---- Sidebar Item Component ----
 
@@ -225,21 +226,24 @@ const AdminLayout = () => {
       >
         {/* Logo — same height as topbar */}
         <div
-          className="border-b border-[#e7dbcf]/50 dark:border-gray-800 flex items-center shrink-0 overflow-hidden"
+          className="border-b border-[#e7dbcf]/50 dark:border-gray-800 flex items-center shrink-0"
           style={{ height: TOPBAR_H }}
         >
-          <div
-            onClick={() => navigate("/admin/overview")}
+          <Link
+            to="/admin/overview"
             className={cn(
               "flex items-center text-orange-600 cursor-pointer group transition-all duration-300",
               isHovered ? "gap-2.5 px-5" : "justify-center w-full",
             )}
           >
-            <div className="bg-orange-600 text-white p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[20px]">
-                restaurant_menu
-              </span>
-            </div>
+            <img
+              src={logo}
+              alt="FoodieDash"
+              className={cn(
+                "object-contain group-hover:rotate-12 transition-transform duration-300",
+                isHovered ? "h-18 -ml-8 -mr-10" : "h-14"
+              )}
+            />
             {isHovered && (
               <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-200">
                 <h1 className="text-xl font-black tracking-tighter leading-none">
@@ -250,7 +254,7 @@ const AdminLayout = () => {
                 </p>
               </div>
             )}
-          </div>
+          </Link>
         </div>
 
         {/* Navigation */}
