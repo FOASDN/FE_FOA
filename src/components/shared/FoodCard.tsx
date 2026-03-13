@@ -57,6 +57,7 @@ export function FoodCard({
     customBadge,
     progress,
     onAddToCart,
+    rawItem,
     className = '',
 }: FoodCardProps) {
     const navigate = useNavigate();

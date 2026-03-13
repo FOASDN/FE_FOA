@@ -34,6 +34,7 @@ import OrderDetailPage from "./pages/OrderDetail";
 import TrackOrderPage from "./pages/TrackOrder";
 import AboutPage from "./pages/About";
 import BlogDetailPage from "./pages/BlogDetailPage";
+import CustomerMessagesPage from "./pages/Profile/Messages";
 import NotFoundPage from "./pages/NotFound";
 import ForbiddenPage from "./pages/Forbidden";
 import MainLayout from "./components/layout/MainLayout";
@@ -62,6 +63,8 @@ import StaffSupportChatPage from "./pages/Staff/SupportChat";
 import StaffSupportSettingsPage from "./pages/Staff/SupportSettings";
 import StaffDeliveryMode from "./pages/Staff/DeliveryMode";
 import StaffCustomerProfile from "./pages/Staff/CustomerProfile";
+import { AddToCartWarningModal } from "./components/shared/AddToCartWarningModal";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 function App() {
   const { hydrate, getUser, isAuthenticated } = useAuth();
@@ -82,6 +85,7 @@ function App() {
   return (
     <BrowserRouter>
       <OrderNotificationListener />
+      <ScrollToTop />
       <Toaster position="top-right" />
       <Routes>
         <Route element={<MainLayout />}>
@@ -105,6 +109,7 @@ function App() {
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
               <Route path="addresses" element={<AddressesPage />} />
             </Route>
+            <Route path="/messages" element={<CustomerMessagesPage />} />
             <Route
               path="/history"
               element={<Navigate to="/profile/history" replace />}
@@ -174,6 +179,7 @@ function App() {
         {/* Catch-all 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <AddToCartWarningModal />
     </BrowserRouter>
   );
 }

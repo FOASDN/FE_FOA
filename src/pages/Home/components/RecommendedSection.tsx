@@ -47,6 +47,7 @@ const RecommendedSection = () => {
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAIMode, setIsAIMode] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -60,9 +61,7 @@ const RecommendedSection = () => {
             const res = await recommendationService.getAIRecommendations();
             const aiData = res.data.data;
             if (!cancelled && aiData && aiData.length > 0) {
-              setItems(
-                aiData.map((d: any) => ({ type: "ai", data: d })),
-              );
+              setItems(aiData.map((d: any) => ({ type: "ai", data: d })));
               setIsAIMode(true);
               return;
             }

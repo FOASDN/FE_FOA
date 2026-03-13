@@ -16,6 +16,11 @@ import useDebounce from "@/hooks/useDebounce";
 import type { Product } from "@/types/product";
 import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/hooks/useCart";
+import { Plus, ArrowRight } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { checkProductAllergies } from "@/hooks/useAllergyCheck";
+import toast from "react-hot-toast";
 
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useCart } from "@/hooks/useCart";

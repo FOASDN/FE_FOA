@@ -61,7 +61,7 @@ const refreshToken = async (): Promise<void> => {
     const result = await axios.post<RefreshTokenResponse>(
       `${import.meta.env.VITE_BASE_API}/auth/refresh`,
       {},
-      { withCredentials: true }
+      { withCredentials: true },
     );
 
     console.log("RESULT:", result);
@@ -130,7 +130,7 @@ httpClient.interceptors.response.use(
       "shouldRenewToken:",
       shouldRenewToken,
       "url:",
-      originalRequest?.url
+      originalRequest?.url,
     );
 
     if (shouldRenewToken) {
@@ -145,7 +145,7 @@ httpClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // ============================
@@ -158,7 +158,7 @@ const _send = async <T>(
   method: TMethod,
   pathname: string,
   data?: unknown,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
 ): Promise<T> => {
   const response = await httpClient.request<T>({
     method,
@@ -176,13 +176,13 @@ const get = <T>(pathname: string, config?: AxiosRequestConfig) =>
 const post = <T>(
   pathname: string,
   data?: unknown,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
 ) => _send<T>("post", pathname, data, config);
 
 const put = <T>(
   pathname: string,
   data?: unknown,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
 ) => _send<T>("put", pathname, data, config);
 
 const del = <T>(pathname: string, config?: AxiosRequestConfig) =>
@@ -191,7 +191,7 @@ const del = <T>(pathname: string, config?: AxiosRequestConfig) =>
 const patch = <T>(
   pathname: string,
   data?: unknown,
-  config?: AxiosRequestConfig
+  config?: AxiosRequestConfig,
 ) => _send<T>("patch", pathname, data, config);
 
 const http = { get, post, put, del, patch };

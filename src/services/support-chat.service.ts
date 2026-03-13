@@ -20,7 +20,7 @@ export interface SupportMessage {
 }
 
 export interface CreateConversationPayload {
-    orderId: string;
+    orderId?: string;
 }
 
 export interface CreateConversationResponse {
@@ -48,10 +48,19 @@ const supportChatService = {
         return apiClient.get<GetMessagesResponse>(`/support/conversations/${conversationId}/messages`);
     },
 
+    listConversations() {
+        return apiClient.get<{ conversations: any[] }>('/support/conversations');
+    },
+
     sendMessage(conversationId: string, payload: SendMessagePayload) {
         return apiClient.post<SendMessageResponse>(`/support/conversations/${conversationId}/messages`, payload);
+    },
+
+    markAsRead(conversationId: string) {
+        return apiClient.patch(`/support/conversations/${conversationId}/read`);
     },
 };
 
 export default supportChatService;
+
 

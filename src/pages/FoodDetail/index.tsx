@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCart } from "@/hooks/useCart";
+import { useSafeCart } from "@/hooks/useSafeCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast, ToastContainer } from "@/hooks/useToast";
+import { useSupportChatStore } from "@/store/supportChatStore";
+import toast from "react-hot-toast";
 import productAPI from "@/services/product.service";
 import reviewService from "@/services/review.service";
 import recommendationService from "@/services/recommendation.service";
@@ -14,6 +15,7 @@ import {
   User, ThumbsUp, MessageSquare, Star, Loader2, Plus, Minus,
   Check, ChevronLeft, ShieldCheck, Flame, ShoppingCart, Zap, SearchX
 } from "lucide-react";
+import { useAllergyCheck } from "@/hooks/useAllergyCheck";
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -26,9 +28,9 @@ const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
-  const { addItem } = useCart();
+  const { safeAddItem } = useSafeCart();
   const { isAuthenticated } = useAuth();
-  const { toasts, toast, dismiss } = useToast();
+  const { openChat } = useSupportChatStore();
 
   // --- States ---
   const [product, setProduct] = useState<Product | null>(null);
@@ -37,6 +39,10 @@ const FoodDetailPage = () => {
   const [suggestedFoods, setSuggestedFoods] = useState<Product[]>([]);
   const [loadingSuggested, setLoadingSuggested] = useState(false);
   const [openVariantModal, setOpenVariantModal] = useState(false);
+  const [allergyBannerDismissed, setAllergyBannerDismissed] = useState(false);
+
+  // FSS-40: Check allergy status for this product
+  const allergyResult = useAllergyCheck(product);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [isBuyNowMode, setIsBuyNowMode] = useState(false);
@@ -71,6 +77,7 @@ const FoodDetailPage = () => {
         const res = await productAPI.getProductById(id);
         setProduct(res.data);
 
+        // Fetch reviews
         setLoadingReviews(true);
         const reviewRes = await reviewService.getProductReviews(id);
         setReviews(reviewRes.data || []);
@@ -87,7 +94,8 @@ const FoodDetailPage = () => {
           setSuggestedFoods(filtered);
         }
       } catch (err) {
-        toast("Không tìm thấy sản phẩm", "error");
+        console.error("Failed to fetch product or suggestions:", err);
+        toast.error("Không tìm thấy sản phẩm");
       } finally {
         setLoading(false);
         setLoadingSuggested(false);
@@ -135,7 +143,7 @@ const FoodDetailPage = () => {
     if (product.variants) {
       for (const g of product.variants) {
         if (g.required && (!selectedVariants[g.name] || selectedVariants[g.name].length === 0)) {
-          toast(`Vui lòng chọn ${g.name}`, "error");
+          toast.error(`Vui lòng chọn ${g.name}`);
           return;
         }
       }
@@ -145,7 +153,7 @@ const FoodDetailPage = () => {
       return picked.map((choice) => ({ name: g.name, choice }));
     }) : [];
 
-    addItem({
+    safeAddItem({
       productId: product._id,
       name: product.name,
       image: getImageUrl(product.image),
@@ -153,7 +161,7 @@ const FoodDetailPage = () => {
       quantity,
       variations,
     });
-    toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+    toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
   };
 
   const handleBuyNow = () => {
@@ -227,8 +235,84 @@ const FoodDetailPage = () => {
                 </div>
               </div>
 
-              {/* --- RIGHT COLUMN: DETAILS --- */}
-              <div className="lg:col-span-7 flex flex-col h-full">
+              {/* RIGHT COLUMN: Details & Actions */}
+              <div className="flex flex-col h-full pt-2">
+                {/* FSS-40: Allergy Warning Banner */}
+                {allergyResult.level !== "safe" && !allergyBannerDismissed && (
+                  <div
+                    className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${allergyResult.level === "danger"
+                      ? "bg-red-50 border-red-200"
+                      : "bg-amber-50 border-amber-200"
+                      }`}
+                  >
+                    <span
+                      className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${allergyResult.level === "danger"
+                        ? "text-red-500"
+                        : "text-amber-500"
+                        }`}
+                    >
+                      warning
+                    </span>
+                    <div className="flex-1">
+                      <p
+                        className={`font-bold text-sm ${allergyResult.level === "danger"
+                          ? "text-red-800"
+                          : "text-amber-800"
+                          }`}
+                      >
+                        {allergyResult.level === "danger"
+                          ? "⚠️ Cảnh báo dị ứng!"
+                          : "⚡ Lưu ý sức khỏe"}
+                      </p>
+                      <p
+                        className={`text-xs mt-1 ${allergyResult.level === "danger"
+                          ? "text-red-700"
+                          : "text-amber-700"
+                          }`}
+                      >
+                        {allergyResult.warningMessage}
+                      </p>
+                      {allergyResult.conflictIngredients.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {allergyResult.conflictIngredients.map(
+                            (ing: string, i: number) => (
+                              <span
+                                key={i}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${allergyResult.level === "danger"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-700"
+                                  }`}
+                              >
+                                {ing}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setAllergyBannerDismissed(true)}
+                      className="text-gray-400 hover:text-gray-600 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        close
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                <nav className="flex flex-wrap items-center gap-2 mb-4 text-sm">
+                  <Link
+                    className="text-[#9e6b47] hover:text-primary font-medium transition-colors"
+                    to="/menu"
+                  >
+                    {t("customer:menu.title")}
+                  </Link>
+                  <span className="text-[#9e6b47]/60">/</span>
+                  <span className="text-text-main dark:text-white font-semibold">
+                    {product.name}
+                  </span>
+                </nav>
 
                 <div className="mb-6">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
@@ -277,10 +361,21 @@ const FoodDetailPage = () => {
                 )}
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-slate-900 mb-3">Mô tả món ăn</h3>
-                  <p className="text-slate-600 leading-relaxed font-medium">
-                    {product.description || "Hương vị tuyệt hảo đang chờ bạn khám phá."}
-                  </p>
+                  <h3 className="text-lg font-bold text-text-main dark:text-white mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">
+                      description
+                    </span>
+                    {t("customer:foodDetail.description")}
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 relative">
+                    <span className="material-symbols-outlined absolute top-4 left-4 text-4xl text-gray-200 dark:text-gray-700/50 -z-0 select-none">
+                      format_quote
+                    </span>
+                    <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed tracking-wide relative z-10 pl-6 border-l-2 border-primary/20">
+                      {product.description ||
+                        "Đang cập nhật giới thiệu cho món ăn tuyệt vời này..."}
+                    </p>
+                  </div>
                 </div>
 
                 {/* VARIANTS SECTION */}
@@ -379,6 +474,15 @@ const FoodDetailPage = () => {
                     </button>
 
                   </div>
+                  <div className="mt-4 max-w-sm ml-auto">
+                    <button
+                      onClick={() => openChat()}
+                      className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors w-full justify-center"
+                    >
+                      <MessageSquare className="size-5" />
+                      Nhắn tin
+                    </button>
+                  </div>
                 </div>
 
               </div>
@@ -429,7 +533,11 @@ const FoodDetailPage = () => {
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                               {rev.user_id?.avatar ? (
-                                <img src={rev.user_id.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                <img
+                                  src={rev.user_id.avatar}
+                                  alt="Avatar"
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 <User className="w-6 h-6 text-slate-400" />
                               )}
@@ -470,6 +578,13 @@ const FoodDetailPage = () => {
                             ))}
                           </div>
                         )}
+
+                        <div className="pt-3 border-t border-gray-50 dark:border-white/5 flex items-center gap-4">
+                          <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-400 hover:text-primary transition-colors">
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            Hữu ích
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -524,12 +639,31 @@ const FoodDetailPage = () => {
         basePrice={Number(product?.price ?? 0)}
         variants={(product as any)?.variants ?? []}
         quantity={quantity}
-        toastError={(msg) => toast(msg, "error")}
-        onConfirm={() => {
-          // Logic cũ của em
+        toastError={(msg) => toast.error(msg)}
+        onConfirm={({ variations, unitPrice }) => {
+          if (!product) return;
+
+          safeAddItem(
+            product,
+            {
+              productId: product._id,
+              name: product.name,
+              image:
+                typeof product.image === "object"
+                  ? product.image.secure_url
+                  : product.image,
+              price: unitPrice,
+              quantity,
+              variations,
+            },
+            () => {
+              toast.success(
+                t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+              );
+            },
+          );
         }}
       />
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
     </div>
   );
 };
