@@ -1,7 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 
 function getSocketBaseUrl() {
-  const apiUrl = import.meta.env.VITE_BASE_API || "http://localhost:4004/api";
+  const apiUrl = import.meta.env.VITE_BASE_API;
   // Socket server is mounted at root (not /api)
   return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
 }
