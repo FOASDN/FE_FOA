@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCart } from "@/hooks/useCart";
+import { useSafeCart } from "@/hooks/useSafeCart";
 import { useAuth } from "@/hooks/useAuth";
 import { useSupportChatStore } from "@/store/supportChatStore";
 import toast from "react-hot-toast";
@@ -27,7 +27,7 @@ const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
-  const { addItem } = useCart();
+  const { safeAddItem } = useSafeCart();
   const { isAuthenticated } = useAuth();
   const { openChat } = useSupportChatStore();
 
@@ -106,36 +106,36 @@ const FoodDetailPage = () => {
       return;
     }
 
-    addItem({
-      productId: product._id,
-      name: product.name,
-      image: getImageUrl(product.image),
-      price: product.price,
-      quantity,
-    });
-
-    toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
+    safeAddItem(
+      product,
+      {
+        productId: product._id,
+        name: product.name,
+        image: getImageUrl(product.image),
+        price: product.price,
+        quantity,
+      },
+      () => {
+        toast(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"), "success");
+      }
+    );
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-
-    const hasVariants = (product as any).variants?.length > 0;
-    if (hasVariants) {
-      setIsBuyNowMode(true);
-      setOpenVariantModal(true);
-      return;
-    }
-
-    const buyNowItem = {
-      productId: product._id,
-      name: product.name,
-      image: getImageUrl(product.image),
-      price: product.price,
-      quantity,
-    };
-
-    navigate('/checkout', { state: { buyNowItem } });
+    safeAddItem(
+      product,
+      {
+        productId: product._id,
+        name: product.name,
+        image: getImageUrl(product.image),
+        price: product.price,
+        quantity,
+      },
+      () => {
+        navigate('/checkout');
+      }
+    );
   };
 
   return (
@@ -522,26 +522,26 @@ const FoodDetailPage = () => {
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
 
-          const itemData = {
-            productId: product._id,
-            name: product.name,
-            image:
-              typeof product.image === "object"
-                ? product.image.secure_url
-                : product.image,
-            price: unitPrice,
-            quantity,
-            variations,
-          };
-
-          if (isBuyNowMode) {
-            navigate('/checkout', { state: { buyNowItem: itemData } });
-          } else {
-            addItem(itemData);
-            toast.success(
-              t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!")
-            );
-          }
+          safeAddItem(
+            product,
+            {
+              productId: product._id,
+              name: product.name,
+              image:
+                typeof product.image === "object"
+                  ? product.image.secure_url
+                  : product.image,
+              price: unitPrice,
+              quantity,
+              variations,
+            },
+            () => {
+              toast(
+                t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+                "success",
+              );
+            }
+          );
         }}
       />
     </div>

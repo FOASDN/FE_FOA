@@ -16,7 +16,10 @@ export interface FoodCardProps {
     tags?: string[];
     healthStatus?: HealthStatus;
     allergenInfo?: string;
-    onAddToCart?: (id: string) => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: (id: string) => void;
+    onAddToCart?: (id: string, rawItem?: any) => void;
+    rawItem?: any; // To pass back to onAddToCart
     className?: string;
 }
 
@@ -39,6 +42,7 @@ export function FoodCard({
     healthStatus = 'safe',
     allergenInfo,
     onAddToCart,
+    rawItem,
     className = '',
 }: FoodCardProps) {
     const navigate = useNavigate();
@@ -121,7 +125,7 @@ export function FoodCard({
                     {/* Quick Add to Cart */}
                     {onAddToCart && !isDanger && (
                         <button
-                            onClick={(e) => { e.stopPropagation(); onAddToCart(id); }}
+                            onClick={(e) => { e.stopPropagation(); onAddToCart(id, rawItem); }}
                             className="w-9 h-9 rounded-xl bg-orange-600 hover:bg-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-600/25 active:scale-90 transition-all"
                             aria-label={t('customer:foodCard.addToCart')}
                         >
