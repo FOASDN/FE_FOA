@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../hooks/useAuth";
@@ -7,7 +7,7 @@ import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { getSupportSocket } from "@/lib/support-socket";
-import { apiClient } from "@/lib/api-client";
+// import { apiClient } from "@/lib/api-client";
 import logo from "@/assets/logo.png";
 import { useCart } from "@/hooks/useCart";
 
@@ -23,7 +23,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const { items: cartItems, totalItems, totalPrice, clearCart } = useCart();
+  const { items: cartItems, totalItems, clearCart } = useCart();
 
   const cartCount = cartItems.length;
   // Local input state for header search
@@ -32,7 +32,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const [showCartPreview, setShowCartPreview] = useState(false);
-  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+//   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -119,7 +119,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     };
   }, [isMobileMenuOpen]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const [listRes, countRes] = await Promise.all([
         notificationService.getMyNotifications(),
@@ -131,32 +131,38 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     }
-  };
+  }, [isAuthenticated]);
+
+//   const fetchActiveOrders = useCallback(async () => {
+//     try {
+//       const res = await apiClient.get("/orders/active-count");
+//       setActiveOrdersCount(res.data.data?.count || 0);
+//     } catch (error) {
+//       console.error("Failed to fetch active orders count", error);
+//     }
+//   }, [isAuthenticated]);
   useEffect(() => {
     if (!isAuthenticated) {
-      setNotifications([]);
-      setUnreadCount(0);
+      if (notifications.length > 0) setNotifications([]);
+      if (unreadCount !== 0) setUnreadCount(0);
+      if (prevUnreadCountRef.current !== 0) prevUnreadCountRef.current = 0;
+      if (hasInitializedNotificationRef.current !== false) hasInitializedNotificationRef.current = false;
       return;
     }
 
     fetchNotifications();
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    // fetchActiveOrders();
 
     const interval = setInterval(() => {
       fetchNotifications();
-    }, 10000);
+      // fetchActiveOrders();
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchNotifications]);
+
   useEffect(() => {
-    if (!isAuthenticated) {
-      prevUnreadCountRef.current = 0;
-      hasInitializedNotificationRef.current = false;
-      return;
-    }
+    if (!isAuthenticated) return;
 
     if (!hasInitializedNotificationRef.current) {
       prevUnreadCountRef.current = unreadCount;
@@ -167,10 +173,8 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     if (unreadCount > prevUnreadCountRef.current && !showNotificationDropdown) {
       playNotification();
     }
-
-    const interval = setInterval(fetchActiveOrders, 30000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    prevUnreadCountRef.current = unreadCount;
+  }, [isAuthenticated, unreadCount, playNotification, showNotificationDropdown]);
 
   // Real-time socket listener for notifications
   useEffect(() => {
@@ -178,7 +182,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
 
     const socket = getSupportSocket();
 
-    socket.on("order:status_updated", (data: any) => {
+    socket.on("order:status_updated", (data: { message: string }) => {
       console.log("Header received real-time notification:", data);
 
       // Create a local notification object to append to the list
@@ -186,7 +190,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
         _id: `temp-${Date.now()}`,
         title: "Cập nhật đơn hàng",
         body: data.message,
-        type: "ORDER_STATUS_UPDATED" as any,
+        type: "ORDER_STATUS_UPDATED",
         isRead: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -202,15 +206,6 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     };
   }, [isAuthenticated, user?._id, playNotification]);
 
-  // Placeholder for fetchActiveOrders if it was missed in previous views
-  const fetchActiveOrders = async () => {
-    try {
-      const res = await apiClient.get("/orders/active-count");
-      setActiveOrdersCount(res.data.data?.count || 0);
-    } catch (error) {
-      console.error("Failed to fetch active orders count", error);
-    }
-  };
 
   return (
     <>
@@ -569,18 +564,18 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                           </div>
                         </Link>
                         <Link
-                          to="/messages"
+                          to="/profile/history"
                           className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-all group"
                           onClick={() => setShowDropdown(false)}
                         >
                           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 group-hover:scale-110 transition-all relative">
                             <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                              chat
+                              receipt_long
                             </span>
                           </div>
                           <div>
-                            <p className="font-semibold">Tin nhắn</p>
-                            <p className="text-xs text-gray-500">Xem lại cuộc hội thoại</p>
+                            <p className="font-semibold">Đơn hàng</p>
+                            <p className="text-xs text-gray-500">Xem lại lịch sử đơn hàng</p>
                           </div>
                         </Link>
                       </div>

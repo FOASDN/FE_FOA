@@ -143,9 +143,9 @@ const OrderHistoryTabContent = () => {
   };
 
   const getImageUrl = (image: any) => {
-    if (!image) return "";
+    if (!image) return undefined;
     if (typeof image === "string") return image;
-    return image.secure_url || image.url || "";
+    return image.secure_url || image.url || undefined;
   };
 
   if (loading) {

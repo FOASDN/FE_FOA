@@ -1,3 +1,5 @@
+
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
     ShoppingBag,
@@ -130,11 +132,10 @@ export default function StaffLayout() {
     ];
 
     // Close sidebar on mobile when navigating
-    useEffect(() => {
-        if (sidebarOpen) {
-            setSidebarOpen(false);
-        }
-    }, [location.pathname]);
+    // Sync sidebar state when location changes
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
 
     const handleLogout = () => {
         // Clear token or auth state here

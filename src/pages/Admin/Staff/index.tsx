@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { clsx } from "clsx";
 import { apiClient } from "@/lib/api-client";
 
@@ -58,7 +59,7 @@ const AdminStaff = () => {
         phone: "",
     });
 
-    const fetchStaff = async () => {
+    const fetchStaff = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -74,7 +75,7 @@ const AdminStaff = () => {
             if (Array.isArray(payload.data)) {
                 raw = payload.data;
             } else if (payload.data && typeof payload.data === 'object') {
-                const dataObj = payload.data as any;
+                const dataObj = payload.data as { staff?: StaffAPI[]; users?: StaffAPI[]; customers?: StaffAPI[] };
                 raw = dataObj.staff || dataObj.users || dataObj.customers || [];
             } else {
                 raw = payload.staff || payload.users || payload.customers || [];
@@ -87,7 +88,7 @@ const AdminStaff = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const normalizeStaff = (s: StaffAPI): StaffMember => ({
         id: s._id,
@@ -104,7 +105,7 @@ const AdminStaff = () => {
 
     useEffect(() => {
         fetchStaff();
-    }, []);
+    }, [fetchStaff]);
 
     const handleDeactivate = async (id: string, currentStatus: string) => {
         if (!window.confirm(`Bạn có chắc muốn ${currentStatus === 'active' ? 'ngưng kích hoạt' : 'kích hoạt lại'} nhân viên này?`)) return;

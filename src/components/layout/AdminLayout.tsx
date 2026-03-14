@@ -41,14 +41,12 @@ const SidebarItem = ({
 
   const hasActiveChild = hasSubItems && subItems.some(sub => isPathMatch(currentPath, sub.href));
 
-  // Reset open state when collapsed
-  useEffect(() => {
-    if (isCollapsed) {
-        if (isOpen) setIsOpen(false);
-    } else if (hasActiveChild) {
-        if (!isOpen) setIsOpen(true);
-    }
-  }, [isCollapsed, hasActiveChild, isOpen]);
+  // Sync open state with collapsed/active state
+  if (isCollapsed && isOpen) {
+    setIsOpen(false);
+  } else if (!isCollapsed && hasActiveChild && !isOpen) {
+    setIsOpen(true);
+  }
 
   return (
     <div className="mb-0.5">
@@ -150,7 +148,7 @@ const NAV_ITEMS = [
     subItems: [
       { label: "Quản lý đơn hàng", href: "/admin/orders" },
       { label: "Công nợ nhân viên", href: "/admin/cash-control" },
-      { label: "Điều phối", href: "/admin/dispatch" },
+      // { label: "Điều phối", href: "/admin/dispatch" },
       { label: "Lịch trình giao", href: "/admin/delivery" },
     ],
   },

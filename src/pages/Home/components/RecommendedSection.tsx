@@ -32,7 +32,7 @@ const RecommendedSkeleton = () => (
 // ── Types (union để render chung) ─────────────────────────
 
 type DisplayItem =
-  | { type: "ai"; data: any }
+  | { type: "ai"; data: { product: Product; healthScore: number; aiReason: string } }
   | { type: "fallback"; data: Product; tag: string };
 
 // ── Main Component ────────────────────────────────────────
@@ -60,11 +60,11 @@ const RecommendedSection = () => {
             const res = await recommendationService.getAIRecommendations();
             const aiData = res.data.data;
             if (!cancelled && aiData && aiData.length > 0) {
-              setItems(aiData.map((d: any) => ({ type: "ai", data: d })));
+              setItems(aiData.map((d: { product: Product; healthScore: number; aiReason: string }) => ({ type: "ai", data: d })));
               setIsAIMode(true);
               return;
             }
-          } catch (_aiErr) {
+          } catch {
             // AI endpoint failed → fallback silently
           }
         }

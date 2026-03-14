@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
@@ -19,11 +19,11 @@ const RequireAuth = () => {
     const location = useLocation();
     const { toast } = useToast();
     const [shouldRedirect, setShouldRedirect] = useState(false);
-    const [hasWarned, setHasWarned] = useState(false);
+    const hasWarnedRef = useRef(false);
 
     useEffect(() => {
-        if (!isAuthenticated && !hasWarned) {
-            setHasWarned(true);
+        if (!isAuthenticated && !hasWarnedRef.current) {
+            hasWarnedRef.current = true;
             toast('Bạn cần đăng nhập để tiếp tục.', 'warning');
 
             const timer = setTimeout(() => {
@@ -32,7 +32,7 @@ const RequireAuth = () => {
 
             return () => clearTimeout(timer);
         }
-    }, [isAuthenticated, hasWarned, toast]);
+    }, [isAuthenticated, toast]);
 
     if (isAuthenticated) {
         return <Outlet />;

@@ -8,15 +8,15 @@ import toast from "react-hot-toast";
 import productAPI from "@/services/product.service";
 import reviewService from "@/services/review.service";
 import recommendationService from "@/services/recommendation.service";
-import type { Product, VariantGroup, VariantOption } from "@/types/product";
+import type { Product, VariantGroup } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
 import VariantModal from "@/components/model/VariantModel";
 import {
   User, ThumbsUp, MessageSquare, Star, Loader2, Plus, Minus,
-  Check, ChevronLeft, ShieldCheck, Flame, ShoppingCart, Zap, SearchX
+  Check, ChevronLeft, ShieldCheck, Flame, ShoppingCart, Zap,
+  SearchX, AlertTriangle, Info, FileText, Quote, MessageCircle, X
 } from "lucide-react";
 import { useAllergyCheck } from "@/hooks/useAllergyCheck";
-import { useCart } from "@/hooks/useCart";
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -29,8 +29,7 @@ const FoodDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
-  const { safeAddItem } = useSafeCart();
-  const { addItem } = useCart();
+  const { safeAddItem } = useSafeCart(); // Chỉ dùng safeAddItem để kích hoạt FSS-40
   const { isAuthenticated } = useAuth();
   const { openChat } = useSupportChatStore();
 
@@ -43,11 +42,10 @@ const FoodDetailPage = () => {
   const [openVariantModal, setOpenVariantModal] = useState(false);
   const [allergyBannerDismissed, setAllergyBannerDismissed] = useState(false);
 
-  // FSS-40: Check allergy status for this product
+  // FSS-40: Check allergy status
   const allergyResult = useAllergyCheck(product);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
-  const [isBuyNowMode, setIsBuyNowMode] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string[]>>({});
 
   // --- Logic ---
@@ -66,7 +64,6 @@ const FoodDetailPage = () => {
 
   const currentPrice = (product?.price || 0) + extraPrice;
 
-  // Cuộn lên đầu trang khi đổi món
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
@@ -79,7 +76,6 @@ const FoodDetailPage = () => {
         const res = await productAPI.getProductById(id);
         setProduct(res.data);
 
-        // Fetch reviews
         setLoadingReviews(true);
         const reviewRes = await reviewService.getProductReviews(id);
         setReviews(reviewRes.data || []);
@@ -96,7 +92,7 @@ const FoodDetailPage = () => {
           setSuggestedFoods(filtered);
         }
       } catch (err) {
-        console.error("Failed to fetch product or suggestions:", err);
+        console.error("Failed to fetch product:", err);
         toast.error("Không tìm thấy sản phẩm");
       } finally {
         setLoading(false);
@@ -132,16 +128,14 @@ const FoodDetailPage = () => {
     });
   };
 
-  const handleIncrease = () => {
-    setQuantity((prev) => prev + 1);
-  };
+  const handleIncrease = () => setQuantity((prev) => prev + 1);
+  const handleDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  const handleDecrease = () => {
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-  };
-
+  // --- [FIXED] Sửa lỗi logic bypass FSS-40 ---
   const handleAddToCart = () => {
     if (!product) return;
+
+    // Validate Variants
     if (product.variants) {
       for (const g of product.variants) {
         if (g.required && (!selectedVariants[g.name] || selectedVariants[g.name].length === 0)) {
@@ -150,25 +144,39 @@ const FoodDetailPage = () => {
         }
       }
     }
+
     const variations = product.variants ? product.variants.flatMap((g) => {
       const picked = selectedVariants[g.name] ?? [];
       return picked.map((choice) => ({ name: g.name, choice }));
     }) : [];
 
-    addItem({
+    const itemData = {
       productId: product._id,
       name: product.name,
       image: getImageUrl(product.image),
       price: currentPrice,
       quantity,
       variations,
+    };
+
+    // Phải dùng safeAddItem để kích hoạt luồng cảnh báo dị ứng
+    safeAddItem(product, itemData, () => {
+      toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
     });
-    toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    // Tương tự validate như Add To Cart...
+
+    if (product.variants) {
+      for (const g of product.variants) {
+        if (g.required && (!selectedVariants[g.name] || selectedVariants[g.name].length === 0)) {
+          toast.error(`Vui lòng chọn ${g.name}`);
+          return;
+        }
+      }
+    }
+
     const variations = product.variants ? product.variants.flatMap((g) => {
       const picked = selectedVariants[g.name] ?? [];
       return picked.map((choice) => ({ name: g.name, choice }));
@@ -182,11 +190,12 @@ const FoodDetailPage = () => {
       quantity,
       variations,
     };
+
     navigate('/checkout', { state: { buyNowItem } });
   };
 
   return (
-    <div className="bg-slate-50 font-sans min-h-screen pb-24 relative">
+    <div className="bg-slate-50 font-sans min-h-screen pb-32 relative">
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-6">
 
         {loading ? (
@@ -195,27 +204,29 @@ const FoodDetailPage = () => {
             <p className="font-medium text-slate-500 animate-pulse">Đang chuẩn bị món ăn...</p>
           </div>
         ) : !product ? (
-          <div className="text-center py-20 bg-white rounded-3xl mt-10 shadow-sm border border-slate-200">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-24 bg-white rounded-[2rem] mt-10 shadow-sm border border-slate-200">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
               <SearchX className="w-10 h-10 text-slate-400" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">Không tìm thấy món ăn</h2>
-            <button onClick={() => navigate("/menu")} className="mt-4 text-orange-600 font-bold hover:underline">
+            <h2 className="text-2xl font-black text-slate-800">Không tìm thấy món ăn</h2>
+            <button onClick={() => navigate("/menu")} className="mt-4 px-6 py-2.5 bg-orange-100 text-orange-600 rounded-xl font-bold hover:bg-orange-200 transition-colors">
               Quay lại thực đơn
             </button>
           </div>
         ) : (
-          <div>
+          <div className="animate-in fade-in duration-500">
             {/* --- BREADCRUMB --- */}
-            <nav className="flex items-center gap-2 mb-6 text-sm">
-              <button onClick={() => navigate(-1)} className="text-slate-500 hover:text-orange-600 transition-colors p-1 -ml-1 rounded-full hover:bg-orange-50">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <Link className="text-slate-500 hover:text-orange-600 font-medium" to="/menu">
-                Thực đơn
-              </Link>
-              <span className="text-slate-300">/</span>
-              <span className="text-slate-900 font-bold truncate max-w-[200px]">{product.name}</span>
+            <nav className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2 text-sm">
+                <button onClick={() => navigate(-1)} className="text-slate-500 hover:text-orange-600 transition-colors p-1 -ml-1 rounded-full hover:bg-orange-50">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <Link className="text-slate-500 hover:text-orange-600 font-medium" to="/menu">
+                  Thực đơn
+                </Link>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-900 font-bold truncate max-w-[150px] sm:max-w-[300px]">{product.name}</span>
+              </div>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -229,7 +240,7 @@ const FoodDetailPage = () => {
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-orange-600 shadow-md">
+                    <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider text-orange-600 shadow-md">
                       <Flame className="w-3.5 h-3.5 fill-current" />
                       Món bán chạy
                     </span>
@@ -237,89 +248,59 @@ const FoodDetailPage = () => {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Details & Actions */}
-              <div className="flex flex-col h-full pt-2">
-                {/* FSS-40: Allergy Warning Banner */}
+              {/* --- RIGHT COLUMN: DETAILS & ACTIONS --- */}
+              <div className="lg:col-span-7 flex flex-col h-full pt-2">
+
+                {/* [FIXED] FSS-40: Allergy Warning Banner */}
                 {allergyResult.level !== "safe" && !allergyBannerDismissed && (
                   <div
-                    className={`mb-4 rounded-2xl p-4 flex gap-3 items-start border ${allergyResult.level === "danger"
-                      ? "bg-red-50 border-red-200"
-                      : "bg-amber-50 border-amber-200"
+                    className={`mb-6 rounded-[1.5rem] p-4 flex gap-4 items-start border shadow-sm relative overflow-hidden ${allergyResult.level === "danger" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
                       }`}
                   >
-                    <span
-                      className={`material-symbols-outlined text-2xl shrink-0 mt-0.5 ${allergyResult.level === "danger"
-                        ? "text-red-500"
-                        : "text-amber-500"
-                        }`}
-                    >
-                      warning
-                    </span>
-                    <div className="flex-1">
-                      <p
-                        className={`font-bold text-sm ${allergyResult.level === "danger"
-                          ? "text-red-800"
-                          : "text-amber-800"
-                          }`}
-                      >
-                        {allergyResult.level === "danger"
-                          ? "⚠️ Cảnh báo dị ứng!"
-                          : "⚡ Lưu ý sức khỏe"}
+                    <div className={`p-2 rounded-xl shrink-0 ${allergyResult.level === "danger" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"}`}>
+                      {allergyResult.level === "danger" ? <AlertTriangle className="w-6 h-6" /> : <Info className="w-6 h-6" />}
+                    </div>
+                    <div className="flex-1 pt-0.5">
+                      <p className={`font-black text-sm mb-1 uppercase tracking-wide ${allergyResult.level === "danger" ? "text-red-800" : "text-amber-800"}`}>
+                        {allergyResult.level === "danger" ? "Cảnh báo dị ứng!" : "Lưu ý sức khỏe"}
                       </p>
-                      <p
-                        className={`text-xs mt-1 ${allergyResult.level === "danger"
-                          ? "text-red-700"
-                          : "text-amber-700"
-                          }`}
-                      >
+                      <p className={`text-sm font-medium leading-relaxed ${allergyResult.level === "danger" ? "text-red-700/90" : "text-amber-700/90"}`}>
                         {allergyResult.warningMessage}
                       </p>
                       {allergyResult.conflictIngredients.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {allergyResult.conflictIngredients.map(
-                            (ing: string, i: number) => (
-                              <span
-                                key={i}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${allergyResult.level === "danger"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-700"
-                                  }`}
-                              >
-                                {ing}
-                              </span>
-                            ),
-                          )}
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {allergyResult.conflictIngredients.map((ing: string, i: number) => (
+                            <span key={i} className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${allergyResult.level === "danger" ? "bg-white border-red-200 text-red-600" : "bg-white border-amber-200 text-amber-600"
+                              }`}>
+                              {ing}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
                     <button
                       onClick={() => setAllergyBannerDismissed(true)}
-                      className="text-gray-400 hover:text-gray-600 shrink-0"
+                      className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white/50 rounded-full transition-colors"
                     >
-                      <span className="material-symbols-outlined text-[18px]">
-                        close
-                      </span>
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
 
-                <nav className="flex flex-wrap items-center gap-2 mb-4 text-sm">
-                  <Link
-                    className="text-[#9e6b47] hover:text-primary font-medium transition-colors"
-                    to="/menu"
-                  >
-                    {t("customer:menu.title")}
-                  </Link>
-                  <span className="text-[#9e6b47]/60">/</span>
-                  <span className="text-text-main dark:text-white font-semibold">
-                    {product.name}
-                  </span>
-                </nav>
-
                 <div className="mb-6">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
-                    {product.name}
-                  </h1>
+                  <div className="flex justify-between items-start gap-4 mb-4">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">
+                      {product.name}
+                    </h1>
+                    {/* [FIXED] Nút Chat dời lên đây cho sang trọng */}
+                    <button
+                      onClick={() => openChat()}
+                      className="hidden sm:flex shrink-0 items-center justify-center w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors shadow-sm"
+                      title="Liên hệ tư vấn món ăn"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </button>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                     <span className="text-3xl font-black text-orange-600">
@@ -340,7 +321,7 @@ const FoodDetailPage = () => {
 
                 {/* AI Healthy Badge */}
                 {product.health_tags && product.health_tags.length > 0 && (
-                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-3xl p-5 mb-8 flex items-start gap-4">
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-[1.5rem] p-5 mb-8 flex items-start gap-4">
                     <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm shadow-emerald-500/20">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
@@ -362,20 +343,16 @@ const FoodDetailPage = () => {
                   </div>
                 )}
 
+                {/* [FIXED] Đoạn Description Icon Lucide */}
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-text-main dark:text-white mb-3 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary">
-                      description
-                    </span>
-                    {t("customer:foodDetail.description")}
+                  <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-orange-500" />
+                    {t("customer:foodDetail.description", "Mô tả món ăn")}
                   </h3>
-                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl p-6 relative">
-                    <span className="material-symbols-outlined absolute top-4 left-4 text-4xl text-gray-200 dark:text-gray-700/50 -z-0 select-none">
-                      format_quote
-                    </span>
-                    <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed tracking-wide relative z-10 pl-6 border-l-2 border-primary/20">
-                      {product.description ||
-                        "Đang cập nhật giới thiệu cho món ăn tuyệt vời này..."}
+                  <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden">
+                    <Quote className="absolute -top-2 -left-2 w-16 h-16 text-slate-200/50 -rotate-12" />
+                    <p className="text-base text-slate-600 leading-relaxed font-medium relative z-10 pl-4 border-l-[3px] border-orange-400 rounded-sm">
+                      {product.description || "Hương vị tuyệt hảo đang chờ bạn khám phá."}
                     </p>
                   </div>
                 </div>
@@ -384,7 +361,7 @@ const FoodDetailPage = () => {
                 {product.variants && product.variants.length > 0 && (
                   <div className="space-y-6 mb-8">
                     {product.variants.map((group) => (
-                      <div key={group.name} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+                      <div key={group.name} className="bg-white border border-slate-200 rounded-[1.5rem] p-5 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-900 text-lg">{group.name}</span>
@@ -399,7 +376,7 @@ const FoodDetailPage = () => {
                               </span>
                             )}
                           </div>
-                          <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
+                          <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg">
                             Đã chọn: {selectedVariants[group.name]?.length || 0}
                           </span>
                         </div>
@@ -411,13 +388,10 @@ const FoodDetailPage = () => {
                               <button
                                 key={option.choice}
                                 onClick={() => toggleVariant(group, option.choice)}
-                                className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left ${isSelected
-                                  ? "border-orange-500 bg-orange-50 shadow-sm"
-                                  : "border-slate-100 bg-white hover:border-orange-300"
+                                className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all text-left ${isSelected ? "border-orange-500 bg-orange-50 shadow-sm" : "border-slate-100 bg-white hover:border-orange-300"
                                   }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  {/* Radio/Checkbox Indicator */}
                                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? "border-orange-500 bg-orange-500" : "border-slate-300"
                                     }`}>
                                     {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -440,17 +414,24 @@ const FoodDetailPage = () => {
                   </div>
                 )}
 
-                {/* --- STICKY ACTION BAR (Thanh mua hàng trượt) --- */}
-                {/* Trên Mobile: Dính chặt đáy màn hình. Trên Desktop: Nằm gọn dưới nội dung */}
-                <div className="fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-200 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+                {/* --- [FIXED] STICKY ACTION BAR --- */}
+                <div className="fixed bottom-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
                   <div className="flex items-center gap-3 max-w-6xl mx-auto">
 
+                    {/* Nút Chat hiển thị trên Mobile */}
+                    <button
+                      onClick={() => openChat()}
+                      className="flex sm:hidden shrink-0 items-center justify-center w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors shadow-sm border border-orange-100"
+                    >
+                      <MessageCircle className="w-6 h-6" />
+                    </button>
+
                     {/* Quantity Selector */}
-                    <div className="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-2xl px-1.5 h-14 min-w-[120px] shrink-0">
+                    <div className="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-2xl px-1.5 h-14 min-w-[100px] sm:min-w-[120px] shrink-0">
                       <button onClick={handleDecrease} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-600 hover:text-orange-600 active:scale-95 transition-all">
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="font-black text-lg text-slate-900 w-8 text-center">
+                      <span className="font-black text-lg text-slate-900 w-6 sm:w-8 text-center">
                         {quantity}
                       </span>
                       <button onClick={handleIncrease} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-600 hover:text-orange-600 active:scale-95 transition-all">
@@ -464,7 +445,7 @@ const FoodDetailPage = () => {
                       className="flex-1 h-14 bg-orange-100 text-orange-700 font-black text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-200 active:scale-95 transition-all"
                     >
                       <ShoppingCart className="w-5 h-5 hidden sm:block" />
-                      Thêm vào giỏ
+                      Thêm
                     </button>
 
                     <button
@@ -476,114 +457,128 @@ const FoodDetailPage = () => {
                     </button>
 
                   </div>
-                  <div className="mt-4 max-w-sm ml-auto">
-                    <button
-                      onClick={() => openChat()}
-                      className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors w-full justify-center"
-                    >
-                      <MessageSquare className="size-5" />
-                      Nhắn tin
-                    </button>
-                  </div>
                 </div>
 
               </div>
             </div>
 
             {/* --- REVIEWS SECTION --- */}
-            <section className="mt-20 border-t border-slate-200 pt-16">
+            <section className="mt-16 border-t border-slate-200 pt-16">
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
                 <MessageSquare className="w-8 h-8 text-orange-500" />
                 Đánh giá từ khách hàng
               </h2>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Summary Card */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+
+                {/* 1. KHUNG TỔNG QUAN (BÊN TRÁI) */}
                 <div className="lg:col-span-4">
-                  <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center shadow-sm sticky top-24">
-                    <div className="text-6xl font-black text-slate-900 mb-2 tracking-tighter">
+                  <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 text-center shadow-sm sticky top-24">
+                    <div className="text-6xl md:text-7xl font-black text-slate-900 mb-4 tracking-tighter">
                       {Number(product?.rating ?? 0).toFixed(1)}
                     </div>
-                    <div className="flex justify-center gap-1 mb-4">
+                    <div className="flex justify-center gap-1.5 mb-5 scale-110">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className={`w-6 h-6 ${Number(product?.rating ?? 0) >= s ? "fill-yellow-400 text-yellow-400" : "fill-slate-100 text-slate-200"}`} />
+                        <Star
+                          key={s}
+                          className={`w-5 h-5 ${Number(product?.rating ?? 0) >= s ? "fill-yellow-400 text-yellow-400" : "fill-slate-100 text-slate-200"}`}
+                        />
                       ))}
                     </div>
-                    <p className="text-sm font-bold text-slate-500">
-                      Dựa trên {Number(product?.review_count ?? 0)} lượt đánh giá
+                    <p className="text-sm font-bold text-slate-500 bg-slate-50 py-2 rounded-xl inline-block px-4">
+                      Dựa trên {product?.review_count || reviews.length} lượt đánh giá
                     </p>
                   </div>
                 </div>
 
-                {/* Review List */}
-                <div className="lg:col-span-8 space-y-5">
+                {/* 2. KHUNG DANH SÁCH COMMENT (BÊN PHẢI) */}
+                <div className="lg:col-span-8 space-y-6">
                   {loadingReviews ? (
-                    <div className="flex flex-col items-center py-10 gap-3">
-                      <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
-                      <p className="text-slate-500 font-medium">Đang tải nhận xét...</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                      <Loader2 className="w-10 h-10 text-orange-500 animate-spin mb-4" />
+                      <p className="text-slate-500 font-bold animate-pulse">Đang tải nhận xét...</p>
                     </div>
                   ) : reviews.length === 0 ? (
-                    <div className="bg-slate-100/50 rounded-3xl p-12 text-center border border-dashed border-slate-300">
-                      <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500 font-bold">Món này chưa có nhận xét chi tiết.</p>
-                      <p className="text-slate-400 text-sm mt-1">Hãy là người đầu tiên đánh giá!</p>
+                    <div className="text-center py-20 bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm border border-slate-100">
+                        <MessageCircle className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900 mb-2">Chưa có đánh giá nào</h3>
+                      <p className="text-slate-500 font-medium">Bạn sẽ là người đầu tiên trải nghiệm và chia sẻ cảm nhận chứ?</p>
                     </div>
                   ) : (
-                    reviews.map((rev) => (
-                      <div key={rev._id} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-                        <div className="flex justify-between items-start mb-4">
+                    reviews.map((review, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all duration-300 relative overflow-hidden group"
+                      >
+                        {/* Ngoặc kép trang trí chìm ở góc phải */}
+                        <Quote className="absolute -top-4 -right-4 w-24 h-24 text-slate-50 group-hover:text-orange-50 transition-colors -rotate-12 pointer-events-none" />
+
+                        {/* Info User */}
+                        <div className="flex items-start justify-between mb-4 relative z-10">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                              {rev.user_id?.avatar ? (
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 overflow-hidden border border-slate-200">
+                              {review.user?.avatar || review.user_id?.avatar ? (
                                 <img
-                                  src={rev.user_id.avatar}
+                                  src={review.user?.avatar || review.user_id?.avatar}
                                   alt="Avatar"
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <User className="w-6 h-6 text-slate-400" />
+                                <User className="w-6 h-6" />
                               )}
                             </div>
                             <div>
-                              <p className="font-bold text-slate-900">
-                                {rev.isAnonymous ? "Người dùng ẩn danh" : rev.user_id?.username || "Khách hàng"}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <h4 className="font-bold text-slate-900 text-base leading-tight mb-1">
+                                {review.isAnonymous ? "Khách hàng ẩn danh" : (review.user?.name || review.user_id?.username || "Khách hàng")}
+                              </h4>
+                              <div className="flex items-center gap-2">
                                 <div className="flex gap-0.5">
-                                  {[1, 2, 3, 4, 5].map((s) => (
-                                    <Star key={s} className={`w-3.5 h-3.5 ${rev.rating >= s ? "text-yellow-400 fill-yellow-400" : "text-slate-200 fill-slate-200"}`} />
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3.5 h-3.5 ${i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-slate-200 fill-slate-100"}`}
+                                    />
                                   ))}
                                 </div>
                                 <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                                 <span className="text-[11px] text-slate-500 font-medium">
-                                  {new Date(rev.createdAt).toLocaleDateString("vi-VN")}
+                                  {new Date(review.createdAt).toLocaleDateString("vi-VN")}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        <p className="text-slate-700 leading-relaxed mb-4">
-                          {rev.comment}
+                        {/* Nội dung Comment */}
+                        <p className="text-slate-600 leading-relaxed font-medium relative z-10">
+                          {review.comment}
                         </p>
 
-                        {rev.images && rev.images.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {rev.images.map((img: any, i: number) => (
-                              <div key={i} className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 cursor-zoom-in">
-                                <img
-                                  src={typeof img === 'string' ? `${import.meta.env.VITE_API_URL}/files/${img}` : img.url || img.secure_url}
-                                  alt="Review"
-                                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                                />
-                              </div>
-                            ))}
+                        {/* Hình ảnh đính kèm */}
+                        {review.images && review.images.length > 0 && (
+                          <div className="flex gap-3 mt-5 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            {review.images.map((img: string | any, i: number) => {
+                              const imgSrc = typeof img === 'string' ? img : img?.url || img?.secure_url;
+                              return (
+                                <div key={i} className="w-20 h-20 shrink-0 rounded-[1rem] overflow-hidden border border-slate-200 cursor-zoom-in relative group/img">
+                                  <img
+                                    src={imgSrc}
+                                    alt="Review"
+                                    className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors" />
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
-                        <div className="pt-3 border-t border-gray-50 dark:border-white/5 flex items-center gap-4">
-                          <button className="flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-400 hover:text-primary transition-colors">
-                            <ThumbsUp className="w-3.5 h-3.5" />
+                        {/* Tương tác */}
+                        <div className="pt-4 mt-5 border-t border-slate-100 flex items-center justify-end relative z-10">
+                          <button className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-orange-600 transition-colors">
+                            <ThumbsUp className="w-4 h-4" />
                             Hữu ích
                           </button>
                         </div>
@@ -633,7 +628,7 @@ const FoodDetailPage = () => {
         )}
       </main>
 
-      {/* Component Modal Variant cũ của em */}
+      {/* Component Modal Variant (Nếu cần cho thẻ gợi ý) */}
       <VariantModal
         open={openVariantModal}
         onClose={() => setOpenVariantModal(false)}
@@ -644,25 +639,19 @@ const FoodDetailPage = () => {
         toastError={(msg) => toast.error(msg)}
         onConfirm={({ variations, unitPrice }) => {
           if (!product) return;
-
           safeAddItem(
             product,
             {
               productId: product._id,
               name: product.name,
-              image:
-                typeof product.image === "object"
-                  ? product.image.secure_url
-                  : product.image,
+              image: typeof product.image === "object" ? product.image.secure_url : product.image,
               price: unitPrice,
               quantity,
               variations,
             },
             () => {
-              toast.success(
-                t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
-              );
-            },
+              toast.success(t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"));
+            }
           );
         }}
       />

@@ -19,18 +19,31 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
 }) => {
     const [mounted, setMounted] = useState(false);
 
+    // Sync body scroll with isOpen
     useEffect(() => {
         if (isOpen) {
-            setMounted(true);
             document.body.style.overflow = 'hidden';
         } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    // Sync mounted state
+    if (isOpen && !mounted) {
+        setMounted(true);
+    }
+
+    useEffect(() => {
+        if (!isOpen && mounted) {
             const timer = setTimeout(() => {
                 setMounted(false);
             }, 300);
-            document.body.style.overflow = 'unset';
             return () => clearTimeout(timer);
         }
-    }, [isOpen]);
+    }, [isOpen, mounted]);
 
     if (!mounted && !isOpen) return null;
 
