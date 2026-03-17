@@ -24,14 +24,11 @@ export interface HealthGoalOption {
 }
 
 export const DIET_OPTIONS: DietOption[] = [
-  { id: "heart-healthy", label: "Tốt cho tim mạch", icon: "favorite" },
-  { id: "low-sugar", label: "Ít đường", icon: "water_drop" },
-  { id: "low-fat", label: "Ít béo", icon: "monitor_weight" },
-  { id: "high-protein", label: "Nhiều đạm", icon: "fitness_center" },
+  { id: "vegan", label: "Ăn chay", icon: "eco" },
   { id: "keto", label: "Keto", icon: "local_fire_department" },
-  { id: "vegetarian", label: "Món chay", icon: "eco" },
-  { id: "high-sodium-warning", label: "Cảnh báo: Cao Natri", icon: "warning" },
-  { id: "high-sugar-warning", label: "Cảnh báo: Nhiều đường", icon: "warning" },
+  { id: "eat_clean", label: "Eat Clean", icon: "grass" },
+  { id: "low_carb", label: "Low Carb", icon: "monitoring" },
+  { id: "gluten_free", label: "Không Gluten", icon: "block" },
 ];
 
 export const ALLERGY_OPTIONS: AllergyOption[] = [

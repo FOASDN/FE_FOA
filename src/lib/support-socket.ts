@@ -2,6 +2,10 @@ import { io, type Socket } from "socket.io-client";
 
 function getSocketBaseUrl() {
   const apiUrl = import.meta.env.VITE_BASE_API;
+  if (!apiUrl) {
+    console.warn("VITE_BASE_API is not defined. Socket connection might fail.");
+    return "";
+  }
   // Socket server is mounted at root (not /api)
   return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
 }

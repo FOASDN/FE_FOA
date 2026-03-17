@@ -36,24 +36,9 @@ export const PRICE_STEPS = [
 /** Health tag options dùng chung */
 export const HEALTH_TAG_OPTIONS = [
   {
-    id: "heart_healthy",
-    label: "Tốt cho tim mạch",
-    color: "bg-green-100 text-green-700 border-green-200",
-  },
-  {
-    id: "low_sugar",
-    label: "Ít đường",
-    color: "bg-blue-100 text-blue-700 border-blue-200",
-  },
-  {
-    id: "low_fat",
-    label: "Ít béo",
-    color: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  },
-  {
-    id: "high_protein",
-    label: "Nhiều đạm",
-    color: "bg-orange-100 text-orange-700 border-orange-200",
+    id: "vegan",
+    label: "Ăn chay",
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
   },
   {
     id: "keto",
@@ -61,18 +46,18 @@ export const HEALTH_TAG_OPTIONS = [
     color: "bg-purple-100 text-purple-700 border-purple-200",
   },
   {
-    id: "vegan",
-    label: "Món chay",
-    color: "bg-teal-100 text-teal-700 border-teal-200",
+    id: "eat_clean",
+    label: "Eat Clean",
+    color: "bg-blue-100 text-blue-700 border-blue-200",
   },
   {
-    id: "warning_sodium",
-    label: "Cảnh báo: Cao Natri",
-    color: "bg-red-100 text-red-700 border-red-200",
+    id: "low_carb",
+    label: "Low Carb",
+    color: "bg-indigo-100 text-indigo-700 border-indigo-200",
   },
   {
-    id: "warning_sugar",
-    label: "Cảnh báo: Nhiều đường",
-    color: "bg-rose-100 text-rose-700 border-rose-200",
+    id: "gluten_free",
+    label: "Không Gluten",
+    color: "bg-orange-100 text-orange-700 border-orange-200",
   },
 ] as const;
