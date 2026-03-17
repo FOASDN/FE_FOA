@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiClient } from "../lib/api-client";
 
 type LocationState = {
   lat: number | null;
@@ -38,16 +39,12 @@ export function useUserLocation() {
       async (pos) => {
         const { latitude, longitude } = pos.coords;
         try {
-          const res = await fetch(`${import.meta.env.VITE_BASE_API}/location`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              lat: latitude,
-              lng: longitude,
-            }),
+          const res = await apiClient.post("location", {
+            lat: latitude,
+            lng: longitude,
           });
 
-          const data = await res.json();
+          const data = res.data;
           console.log("📦 BACKEND RESPONSE:", data);
 
           setState({

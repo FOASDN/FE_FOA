@@ -2,8 +2,13 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_BASE_API;
 
+if (!API_BASE_URL) {
+  console.error("VITE_BASE_API is not defined in environment variables!");
+  console.error("Requests will likely fail or hit the wrong port.");
+}
+
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL || "",
   headers: {
     "Content-Type": "application/json",
   },
