@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, AlertTriangle, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
 
 const REJECTION_REASONS = [
   "Hết nguyên liệu món ăn",

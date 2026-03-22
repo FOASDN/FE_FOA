@@ -16,14 +16,12 @@ import useDebounce from "@/hooks/useDebounce";
 import type { Product } from "@/types/product";
 import { CUSTOMER_CATEGORY_FILTERS } from "@/constants/product.constants";
 import { Button } from "@/components/ui/button";
-import { useCart } from "@/hooks/useCart";
-import { Plus, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { checkProductAllergies } from "@/hooks/useAllergyCheck";
 import toast from "react-hot-toast";
 
 import { FoodCard } from "@/components/shared/FoodCard";
-import { useCart } from "@/hooks/useCart";
+import { useSafeCart } from "@/hooks/useSafeCart";
 import { useToast } from "@/hooks/useToast";
 
 const FoodCardSkeleton = () => (
@@ -45,8 +43,9 @@ const FoodCardSkeleton = () => (
 const MenuPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { addItem } = useCart();
+  const { safeAddItem } = useSafeCart();
   const { toast } = useToast();
+  const user = useAuthStore((s) => s.user);
 
   // ── State ──
   const categoryParam = searchParams.get("category") || "all";
@@ -334,28 +333,46 @@ const MenuPage = () => {
             {/* Food Grid */}
             {!loading && products.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products.map((item) => (
-                  <FoodCard
-                    key={item._id}
-                    id={item._id}
-                    name={item.name}
-                    image={typeof item.image === 'object' && item.image?.secure_url ? item.image.secure_url : (typeof item.image === 'string' ? item.image : '')}
-                    price={item.price}
-                    rating={item.rating}
-                    restaurant={item.restaurant}
-                    time={item.time}
-                    onAddToCart={() => {
-                      addItem({
-                        productId: item._id,
-                        name: item.name,
-                        image: typeof item.image === 'object' && item.image?.secure_url ? item.image.secure_url : (typeof item.image === 'string' ? item.image : ''),
-                        price: item.price,
-                        quantity: 1
-                      });
-                      toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
-                    }}
-                  />
-                ))}
+                {products.map((item) => {
+                  let mappedHealthStatus: "safe" | "warning" | "danger" = "safe";
+                  let allergenMessage = "";
+                  if (user?.preferences) {
+                    const result = checkProductAllergies(
+                      item,
+                      user.preferences.allergies || [],
+                      user.preferences.dietary || [],
+                      user.preferences.health_goals || []
+                    );
+                    mappedHealthStatus = result.level;
+                    allergenMessage = result.level === "danger" ? "Dị ứng" : "Cảnh báo";
+                  }
+
+                  return (
+                    <FoodCard
+                      key={item._id}
+                      id={item._id}
+                      name={item.name}
+                      image={typeof item.image === 'object' && item.image?.secure_url ? item.image.secure_url : (typeof item.image === 'string' ? item.image : '')}
+                      price={item.price}
+                      rating={item.rating}
+                      restaurant={item.restaurant}
+                      time={item.time}
+                      healthStatus={mappedHealthStatus}
+                      allergenInfo={allergenMessage}
+                      onAddToCart={() => {
+                        safeAddItem(item, {
+                          productId: item._id,
+                          name: item.name,
+                          image: typeof item.image === 'object' && item.image?.secure_url ? item.image.secure_url : (typeof item.image === 'string' ? item.image : ''),
+                          price: item.price,
+                          quantity: 1
+                        }, () => {
+                          toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+                        });
+                      }}
+                    />
+                  );
+                })}
               </div>
             )}
 

@@ -6,10 +6,10 @@ import { Link, useNavigate } from "react-router-dom";
 import recommendationService from "@/services/recommendation.service";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
-import { useCart } from "@/hooks/useCart";
-import { useToast } from "@/hooks/useToast";
 import { useAuthStore } from "@/store/authStore";
 import { FoodCard } from "@/components/shared/FoodCard";
+import { useSafeCart } from "@/hooks/useSafeCart";
+import { useToast } from "@/hooks/useToast";
 
 
 // Nhãn gợi ý mặc định khi dùng fallback (không có AI)
@@ -32,7 +32,7 @@ const RecommendedSkeleton = () => (
 // ── Types (union để render chung) ─────────────────────────
 
 type DisplayItem =
-  | { type: "ai"; data: any }
+  | { type: "ai"; data: { product: Product; healthScore: number; aiReason: string } }
   | { type: "fallback"; data: Product; tag: string };
 
 // ── Main Component ────────────────────────────────────────
@@ -41,13 +41,21 @@ const RecommendedSection = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
   const { isAuthenticated } = useAuthStore();
-  const { addItem } = useCart();
+  const healthProfileKey = useAuthStore((s) =>
+    s.user?.preferences
+      ? JSON.stringify({
+          d: s.user.preferences.dietary,
+          a: s.user.preferences.allergies,
+          g: s.user.preferences.health_goals,
+        })
+      : ""
+  );
+  const { safeAddItem } = useSafeCart();
   const { toast } = useToast();
 
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAIMode, setIsAIMode] = useState(false);
-  const { addItem } = useCart();
 
   useEffect(() => {
     let cancelled = false;
@@ -60,12 +68,22 @@ const RecommendedSection = () => {
           try {
             const res = await recommendationService.getAIRecommendations();
             const aiData = res.data.data;
-            if (!cancelled && aiData && aiData.length > 0) {
-              setItems(aiData.map((d: any) => ({ type: "ai", data: d })));
+            if (!cancelled && aiData != null) {
+              if (aiData.length > 0) {
+                setItems(
+                  aiData.map((d: { product: Product; healthScore: number; aiReason: string }) => ({
+                    type: "ai" as const,
+                    data: d,
+                  })),
+                );
+                setIsAIMode(true);
+                return;
+              }
+              setItems([]);
               setIsAIMode(true);
               return;
             }
-          } catch (_aiErr) {
+          } catch {
             // AI endpoint failed → fallback silently
           }
         }
@@ -98,7 +116,7 @@ const RecommendedSection = () => {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, healthProfileKey]);
 
   // ── Render ────────────────────────────────────────────
 
@@ -171,7 +189,7 @@ const RecommendedSection = () => {
                   </p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => navigate("/login")}
                 className="bg-orange-600 text-white font-bold rounded-xl px-8 h-12 shadow-lg shadow-orange-600/20 hover:bg-orange-700 transition-all whitespace-nowrap"
               >
@@ -207,14 +225,14 @@ const RecommendedSection = () => {
             const product = isAI ? item.data.product : item.data;
             const customBadge = isAI
               ? {
-                  text: `Điểm: ${item.data.healthScore}/10`,
-                  className: 'bg-emerald-100 text-emerald-700',
-                  icon: <Sparkles className="w-3 h-3" />
-                }
+                text: `Điểm: ${item.data.healthScore}/10`,
+                className: 'bg-emerald-100 text-emerald-700',
+                icon: <Sparkles className="w-3 h-3" />
+              }
               : {
-                  text: item.tag,
-                  className: 'bg-orange-100 text-orange-700'
-                };
+                text: item.tag,
+                className: 'bg-orange-100 text-orange-700'
+              };
 
             return (
               <FoodCard
@@ -230,14 +248,15 @@ const RecommendedSection = () => {
                 variant="horizontal"
                 customBadge={customBadge}
                 onAddToCart={() => {
-                  addItem({
+                  safeAddItem(product, {
                     productId: product._id,
                     name: product.name,
                     image: typeof product.image === 'object' && product.image?.secure_url ? product.image.secure_url : (typeof product.image === 'string' ? product.image : ''),
                     price: product.price,
                     quantity: 1
+                  }, () => {
+                    toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
                   });
-                  toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
                 }}
               />
             );

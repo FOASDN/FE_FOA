@@ -1,9 +1,9 @@
+
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
     ShoppingBag,
     Users,
-    Sparkles,
     LogOut,
     Menu,
     X,
@@ -17,7 +17,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { getSupportSocket } from "@/lib/support-socket";
 import toast from "react-hot-toast";
-import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import logo from "@/assets/logo.png";
@@ -55,7 +54,7 @@ export default function StaffLayout() {
     useEffect(() => {
         const socket = getSupportSocket();
 
-        socket.on('order:new', (data: any) => {
+        socket.on('order:new', (data: { _id: string; code: string; total_price: number; itemsCount: number; createdAt: string }) => {
             console.log('New order received:', data);
 
             const newNotif: OrderNotification = {
@@ -123,16 +122,6 @@ export default function StaffLayout() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Đóng sidebar trên mobile khi chuyển trang
-    useEffect(() => {
-        setSidebarOpen(false);
-    }, [location.pathname]);
-
-    const handleLogout = () => {
-        // Thực hiện logic clear token ở đây
-        navigate('/login');
-    };
-
     const navItems = [
         { path: '/staff', label: 'Tổng quan', icon: LayoutDashboard, exact: true },
         { path: '/staff/orders', label: 'Quản lý Đơn hàng', icon: ShoppingBag },
@@ -141,6 +130,17 @@ export default function StaffLayout() {
         { path: '/staff/support', label: 'Chat Hỗ trợ', icon: MessageCircleMore },
         { path: '/staff/customers', label: 'Khách hàng', icon: Users },
     ];
+
+    // Close sidebar on mobile when navigating
+    // Sync sidebar state when location changes
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+
+    const handleLogout = () => {
+        // Clear token or auth state here
+        navigate('/login');
+    };
 
     // Helper để lấy tên trang hiện tại hiển thị trên Topbar
     const getCurrentPageTitle = () => {

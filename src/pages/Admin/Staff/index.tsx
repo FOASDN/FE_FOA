@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { clsx } from "clsx";
 import { apiClient } from "@/lib/api-client";
 
@@ -58,7 +59,7 @@ const AdminStaff = () => {
         phone: "",
     });
 
-    const fetchStaff = async () => {
+    const fetchStaff = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -74,7 +75,7 @@ const AdminStaff = () => {
             if (Array.isArray(payload.data)) {
                 raw = payload.data;
             } else if (payload.data && typeof payload.data === 'object') {
-                const dataObj = payload.data as any;
+                const dataObj = payload.data as { staff?: StaffAPI[]; users?: StaffAPI[]; customers?: StaffAPI[] };
                 raw = dataObj.staff || dataObj.users || dataObj.customers || [];
             } else {
                 raw = payload.staff || payload.users || payload.customers || [];
@@ -87,7 +88,7 @@ const AdminStaff = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const normalizeStaff = (s: StaffAPI): StaffMember => ({
         id: s._id,
@@ -104,7 +105,7 @@ const AdminStaff = () => {
 
     useEffect(() => {
         fetchStaff();
-    }, []);
+    }, [fetchStaff]);
 
     const handleDeactivate = async (id: string, currentStatus: string) => {
         if (!window.confirm(`Bạn có chắc muốn ${currentStatus === 'active' ? 'ngưng kích hoạt' : 'kích hoạt lại'} nhân viên này?`)) return;
@@ -153,16 +154,31 @@ const AdminStaff = () => {
         return matchesSearch && matchesRole;
     });
 
-    const getRoleBadge = (_role: string) => {
-        return "bg-orange-100 text-orange-700 border-orange-200";
+    const getRoleBadge = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin':
+                return "bg-purple-100 text-purple-700 border-purple-200";
+            case 'staff':
+                return "bg-blue-100 text-blue-700 border-blue-200";
+            default:
+                return "bg-orange-100 text-orange-700 border-orange-200";
+        }
     };
 
-    const getRoleLabel = (_role: string) => {
-        return "Nhân viên";
+    const getRoleLabel = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return "Quản trị viên";
+            case 'staff': return "Nhân viên";
+            default: return "Nhân viên";
+        }
     };
 
-    const getRoleIcon = (_role: string) => {
-        return "person";
+    const getRoleIcon = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return "shield_person";
+            case 'staff': return "person";
+            default: return "person";
+        }
     };
 
     const getStatusBadge = (status: StaffMember["status"]) => {

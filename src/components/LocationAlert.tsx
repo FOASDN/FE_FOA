@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,24 +12,14 @@ const DISMISSED_KEY = "location_alert_dismissed";
 
 const LocationAlert = ({ loading, isValid, error }: Props) => {
   const { isAuthenticated } = useAuth();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // Chỉ hiện nếu user ĐÃ ĐĂNG NHẬP và CHƯA từng bấm "Đã hiểu" trong phiên này/sau khi login
-    if (isAuthenticated) {
-      const alreadyDismissed = localStorage.getItem(DISMISSED_KEY) === "true";
-      if (!alreadyDismissed) {
-        setVisible(true);
-      }
-    } else {
-      setVisible(false);
-    }
-  }, [isAuthenticated]); // Chạy lại khi trạng thái login thay đổi
+  const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === "true");
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "true");
-    setVisible(false);
+    setDismissed(true);
   };
+
+  const visible = !!isAuthenticated && !dismissed;
 
   if (!visible) return null;
   if (!loading && !error && isValid === null) return null;

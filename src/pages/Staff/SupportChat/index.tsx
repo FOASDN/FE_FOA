@@ -101,11 +101,11 @@ export default function StaffSupportChatPage() {
         const orderId = searchParams.get('orderId');
         if (!orderId || conversations.length === 0) return;
         const match = conversations.find((c) => c.orderId === orderId);
-        if (match) {
+        if (match && selectedConversationId !== match.id) {
             setSelectedConversationId(match.id);
-            setExpandedCustomers((prev) => ({ ...prev, [match.customerName]: true }));
+            setExpandedCustomers((prev) => prev[match.customerName] ? prev : { ...prev, [match.customerName]: true });
         }
-    }, [conversations, searchParams, setSelectedConversationId]);
+    }, [conversations, searchParams, setSelectedConversationId, selectedConversationId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,7 +115,7 @@ export default function StaffSupportChatPage() {
     useEffect(() => {
         const conv = conversations.find((c) => c.id === selectedConversationId);
         if (!conv?.orderId) {
-            setOrderDetail(null);
+            if (orderDetail) setOrderDetail(null);
             return;
         }
         setLoadingOrder(true);
@@ -655,7 +655,7 @@ export default function StaffSupportChatPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                                    {(item.product_id as any)?.name || 'Sản phẩm'}
+                                                    {(item.product_id as unknown as { name: string })?.name || 'Sản phẩm'}
                                                 </p>
                                                 <p className="text-[10px] text-primary font-semibold mt-0.5">
                                                     {item.sub_total.toLocaleString('vi-VN')}đ

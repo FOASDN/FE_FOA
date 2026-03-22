@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { clsx } from "clsx";
+import {
+    Map,
+    Truck,
+    Users,
+    Clock,
+    Star,
+    Phone,
+    Eye,
+    X,
+    Package,
+    Navigation,
+    MoreVertical
+} from "lucide-react";
 
+// --- MOCK DATA ---
 const SHIPPERS_MOCK = [
     { id: "1", name: "Nguyễn Văn A", phone: "0901234567", status: "active", currentOrders: 2, totalDeliveries: 156, rating: 4.8, avgTime: "28 phút", zone: "Quận 1" },
     { id: "2", name: "Trần Văn B", phone: "0912345678", status: "active", currentOrders: 1, totalDeliveries: 203, rating: 4.9, avgTime: "25 phút", zone: "Quận 3" },
@@ -28,324 +41,235 @@ const AdminDelivery = () => {
     const [activeTab, setActiveTab] = useState("all");
     const [selectedShipper, setSelectedShipper] = useState<string | null>(null);
 
-    const getStatusColor = (status: string) => {
+    // --- Helper Functions ---
+    const getShipperStatus = (status: string) => {
         switch (status) {
-            case "active":
-                return "bg-green-100 text-green-700 border-green-200";
-            case "busy":
-                return "bg-amber-100 text-amber-700 border-amber-200";
-            case "offline":
-                return "bg-gray-100 text-gray-600 border-gray-200";
-            default:
-                return "bg-gray-100 text-gray-600";
+            case "active": return { label: "Sẵn sàng", color: "bg-emerald-100 text-emerald-700 border-emerald-200" };
+            case "busy": return { label: "Đang giao", color: "bg-orange-100 text-orange-700 border-orange-200" };
+            case "offline": return { label: "Nghỉ ngơi", color: "bg-slate-100 text-slate-600 border-slate-200" };
+            default: return { label: status, color: "bg-slate-100 text-slate-600" };
         }
     };
 
-    const getStatusLabel = (status: string) => {
+    const getDeliveryStatus = (status: string) => {
         switch (status) {
-            case "active":
-                return "Sẵn sàng";
-            case "busy":
-                return "Đang bận";
-            case "offline":
-                return "Offline";
-            default:
-                return status;
+            case "pending": return { label: "Chờ lấy", color: "bg-slate-100 text-slate-700", bar: "bg-slate-300" };
+            case "picking_up": return { label: "Đang lấy", color: "bg-blue-100 text-blue-700", bar: "bg-blue-500" };
+            case "delivering": return { label: "Đang giao", color: "bg-orange-100 text-orange-700", bar: "bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]" };
+            case "delivered": return { label: "Đã giao", color: "bg-emerald-100 text-emerald-700", bar: "bg-emerald-500" };
+            default: return { label: status, color: "bg-slate-100 text-slate-600", bar: "bg-slate-300" };
         }
     };
 
-    const getDeliveryStatusColor = (status: string) => {
-        switch (status) {
-            case "pending":
-                return "bg-gray-100 text-gray-700";
-            case "picking_up":
-                return "bg-blue-100 text-blue-700";
-            case "delivering":
-                return "bg-[#ee8c2b]/20 text-[#ee8c2b]";
-            case "delivered":
-                return "bg-green-100 text-green-700";
-            default:
-                return "bg-gray-100 text-gray-600";
-        }
-    };
-
-    const getDeliveryStatusLabel = (status: string) => {
-        switch (status) {
-            case "pending":
-                return "Chờ lấy";
-            case "picking_up":
-                return "Đang lấy";
-            case "delivering":
-                return "Đang giao";
-            case "delivered":
-                return "Đã giao";
-            default:
-                return status;
-        }
-    };
+    // Filter logic
+    const filteredDeliveries = activeTab === "all"
+        ? ACTIVE_DELIVERIES
+        : ACTIVE_DELIVERIES.filter(d => d.status === activeTab);
 
     return (
-        <div className="max-w-7xl mx-auto w-full">
-            {/* Header */}
-            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500">
+
+            {/* --- HEADER --- */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h2 className="text-3xl font-black tracking-tight text-[#1b140d]">
-                        Quản lý giao hàng
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                        Giám sát giao hàng
                     </h2>
-                    <p className="text-[#9a734c] mt-1">
-                        Theo dõi shipper và trạng thái giao hàng real-time.
+                    <p className="text-slate-500 mt-1 font-medium">
+                        Theo dõi vị trí Shipper và tiến độ đơn hàng theo thời gian thực.
                     </p>
                 </div>
                 <div className="flex gap-3">
                     <button
                         type="button"
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-[#e7dbcf] rounded-lg text-sm font-semibold text-[#1b140d] hover:bg-[#f3ede7]"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-all active:scale-95"
                     >
-                        <span className="material-symbols-outlined text-base">map</span>
-                        Xem bản đồ
-                    </button>
-                    <button
-                        type="button"
-                        className="flex items-center gap-2 px-4 py-2 bg-[#ee8c2b] text-white rounded-lg text-sm font-bold shadow-sm hover:bg-[#d87c24]"
-                    >
-                        <span className="material-symbols-outlined text-base">person_add</span>
-                        Thêm shipper
+                        <Map className="w-4 h-4" />
+                        Mở bản đồ tổng
                     </button>
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="bg-white border border-[#e7dbcf] rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <span className="material-symbols-outlined text-green-600">delivery_truck_speed</span>
+            {/* --- STATS CARDS --- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-emerald-100 rounded-2xl">
+                            <Truck className="w-6 h-6 text-emerald-600" />
                         </div>
-                        <span className="text-2xl font-black text-green-600">3</span>
+                        <span className="text-3xl font-black text-emerald-600 tracking-tight">3</span>
                     </div>
-                    <p className="text-xs font-medium text-[#9a734c]">Đang giao hàng</p>
-                    <p className="text-sm text-[#9a734c] mt-1">5 đơn đang xử lý</p>
+                    <p className="text-sm font-bold text-slate-900">Đang đi giao</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">5 đơn đang trên đường</p>
                 </div>
 
-                <div className="bg-white border border-[#e7dbcf] rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <span className="material-symbols-outlined text-blue-600">group</span>
+                <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-blue-100 rounded-2xl">
+                            <Users className="w-6 h-6 text-blue-600" />
                         </div>
-                        <span className="text-2xl font-black text-blue-600">3/5</span>
+                        <span className="text-3xl font-black text-blue-600 tracking-tight">3/5</span>
                     </div>
-                    <p className="text-xs font-medium text-[#9a734c]">Shipper online</p>
-                    <p className="text-sm text-[#9a734c] mt-1">60% khả dụng</p>
+                    <p className="text-sm font-bold text-slate-900">Shipper Online</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">60% nhân sự khả dụng</p>
                 </div>
 
-                <div className="bg-white border border-[#e7dbcf] rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-[#ee8c2b]/10 rounded-lg">
-                            <span className="material-symbols-outlined text-[#ee8c2b]">schedule</span>
+                <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-orange-100 rounded-2xl">
+                            <Clock className="w-6 h-6 text-orange-600" />
                         </div>
-                        <span className="text-2xl font-black text-[#1b140d]">28</span>
+                        <span className="text-3xl font-black text-slate-900 tracking-tight">28'</span>
                     </div>
-                    <p className="text-xs font-medium text-[#9a734c]">Thời gian TB</p>
-                    <p className="text-sm text-[#9a734c] mt-1">phút/đơn hàng</p>
+                    <p className="text-sm font-bold text-slate-900">Thời gian TB</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">phút / đơn hàng</p>
                 </div>
 
-                <div className="bg-white border border-[#e7dbcf] rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2 bg-amber-100 rounded-lg">
-                            <span className="material-symbols-outlined text-amber-600">star</span>
+                <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-yellow-100 rounded-2xl">
+                            <Star className="w-6 h-6 text-yellow-600 fill-yellow-600" />
                         </div>
-                        <span className="text-2xl font-black text-amber-600">4.8</span>
+                        <span className="text-3xl font-black text-slate-900 tracking-tight">4.8</span>
                     </div>
-                    <p className="text-xs font-medium text-[#9a734c]">Đánh giá TB</p>
-                    <p className="text-sm text-[#9a734c] mt-1">Từ khách hàng</p>
+                    <p className="text-sm font-bold text-slate-900">Đánh giá Shipper</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Tuần hiện tại</p>
                 </div>
             </div>
 
-            {/* Active Deliveries Section */}
-            <div className="bg-white border border-[#e7dbcf] rounded-xl p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-[#1b140d]">Đơn hàng đang giao</h3>
-                    <div className="border-b border-[#e7dbcf]">
-                        <div className="flex gap-6">
-                            {STATUS_TABS.map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={clsx(
-                                        "pb-3 border-b-2 text-sm font-semibold whitespace-nowrap transition-colors",
-                                        activeTab === tab.id
-                                            ? "border-[#ee8c2b] text-[#ee8c2b]"
-                                            : "border-transparent text-[#9a734c] hover:text-[#1b140d]"
-                                    )}
-                                >
-                                    {tab.label} ({tab.count})
-                                </button>
-                            ))}
-                        </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+                {/* --- LEFT: ACTIVE DELIVERIES (2 Cột) --- */}
+                <div className="xl:col-span-2 flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-black text-slate-900">Tiến trình giao hàng</h3>
                     </div>
-                </div>
 
-                <div className="space-y-4">
-                    {ACTIVE_DELIVERIES.map((delivery) => (
-                        <div
-                            key={delivery.id}
-                            className="border border-[#e7dbcf] rounded-lg p-4 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm font-bold text-[#1b140d]">#{delivery.id}</span>
-                                        <span className={clsx("px-2 py-0.5 rounded-full text-xs font-bold", getDeliveryStatusColor(delivery.status))}>
-                                            {getDeliveryStatusLabel(delivery.status)}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-xs text-[#9a734c] mb-1">Shipper</p>
-                                            <p className="font-semibold text-[#1b140d]">{delivery.shipper}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-[#9a734c] mb-1">Khách hàng</p>
-                                            <p className="font-semibold text-[#1b140d]">{delivery.customer}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-[#9a734c] mb-1">Địa chỉ</p>
-                                            <p className="font-semibold text-[#1b140d] truncate">{delivery.address}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs text-[#9a734c] mb-1">Dự kiến</p>
-                                    <p className="text-sm font-bold text-[#ee8c2b]">{delivery.estimatedTime}</p>
-                                </div>
-                            </div>
-
-                            {/* Progress bar */}
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-[#9a734c]">Tiến độ</span>
-                                    <span className="font-bold text-[#1b140d]">{delivery.progress}%</span>
-                                </div>
-                                <div className="w-full bg-[#f3ede7] h-2 rounded-full overflow-hidden">
-                                    <div
-                                        className="bg-[#ee8c2b] h-full rounded-full transition-all"
-                                        style={{ width: `${delivery.progress}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Shipper List */}
-            <div className="bg-white border border-[#e7dbcf] rounded-xl overflow-hidden">
-                <div className="p-6 border-b border-[#e7dbcf]">
-                    <h3 className="text-lg font-bold text-[#1b140d]">Danh sách shipper</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-[#fcfaf8] border-b border-[#e7dbcf]">
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider">Tên</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider">Điện thoại</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider">Khu vực</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-center">Trạng thái</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-center">Đơn hiện tại</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-center">Tổng giao</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-center">Đánh giá</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-center">TG TB</th>
-                                <th className="py-4 px-6 text-xs font-bold text-[#9a734c] uppercase tracking-wider text-right">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#e7dbcf]">
-                            {SHIPPERS_MOCK.map((shipper) => (
-                                <tr key={shipper.id} className="hover:bg-[#fcfaf8] transition-colors">
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-[#ee8c2b]/20 flex items-center justify-center">
-                                                <span className="text-[#ee8c2b] font-bold text-sm">
-                                                    {shipper.name.charAt(0)}
-                                                </span>
-                                            </div>
-                                            <span className="text-sm font-semibold text-[#1b140d]">{shipper.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className="text-sm text-[#9a734c]">{shipper.phone}</span>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className="text-sm text-[#1b140d] font-medium">{shipper.zone}</span>
-                                    </td>
-                                    <td className="py-4 px-6 text-center">
-                                        <span className={clsx("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border", getStatusColor(shipper.status))}>
-                                            {getStatusLabel(shipper.status)}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-6 text-center">
-                                        <span className="text-sm font-bold text-[#1b140d]">{shipper.currentOrders}</span>
-                                    </td>
-                                    <td className="py-4 px-6 text-center">
-                                        <span className="text-sm font-bold text-[#1b140d]">{shipper.totalDeliveries}</span>
-                                    </td>
-                                    <td className="py-4 px-6 text-center">
-                                        <div className="flex items-center justify-center gap-1">
-                                            <span className="material-symbols-outlined text-[#ee8c2b] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                                            <span className="text-sm font-bold text-[#1b140d]">{shipper.rating}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6 text-center">
-                                        <span className="text-sm text-[#9a734c]">{shipper.avgTime}</span>
-                                    </td>
-                                    <td className="py-4 px-6 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedShipper(shipper.id)}
-                                                className="p-2 text-[#9a734c] hover:text-[#ee8c2b] hover:bg-[#ee8c2b]/10 rounded-lg transition-colors"
-                                                title="Xem chi tiết"
-                                            >
-                                                <span className="material-symbols-outlined text-xl">visibility</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="p-2 text-[#9a734c] hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Gọi điện"
-                                            >
-                                                <span className="material-symbols-outlined text-xl">call</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Shipper Detail Modal Placeholder */}
-            {selectedShipper && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-bold text-[#1b140d]">
-                                Chi tiết shipper #{selectedShipper}
-                            </h3>
+                    {/* Tabs Pill Style */}
+                    <div className="flex gap-2 overflow-x-auto pb-4 mb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        {STATUS_TABS.map((tab) => (
                             <button
-                                type="button"
-                                onClick={() => setSelectedShipper(null)}
-                                className="p-2 hover:bg-[#f3ede7] rounded-lg transition-colors"
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all border ${activeTab === tab.id
+                                        ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                                        : "bg-white text-slate-600 border-slate-200 hover:border-orange-300 hover:text-orange-600"
+                                    }`}
                             >
-                                <span className="material-symbols-outlined">close</span>
+                                {tab.label} <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === tab.id ? 'bg-white/20' : 'bg-slate-100'}`}>{tab.count}</span>
                             </button>
-                        </div>
-                        <div className="text-center py-12 text-[#9a734c]">
-                            Chi tiết shipper, lịch sử giao hàng, performance metrics...
+                        ))}
+                    </div>
+
+                    <div className="space-y-4">
+                        {filteredDeliveries.map((delivery) => {
+                            const statusInfo = getDeliveryStatus(delivery.status);
+
+                            return (
+                                <div
+                                    key={delivery.id}
+                                    className="bg-white border border-slate-200 rounded-[1.5rem] p-5 hover:shadow-lg hover:border-orange-200 transition-all group"
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
+                                                <Package className="w-6 h-6 text-slate-400 group-hover:text-orange-500" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-base font-black text-slate-900">{delivery.id}</span>
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusInfo.color}`}>
+                                                        {statusInfo.label}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
+                                                    Shipper: <span className="font-bold text-slate-700">{delivery.shipper}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-left sm:text-right bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-xl">
+                                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dự kiến đến</p>
+                                            <p className="text-lg font-black text-orange-600">{delivery.estimatedTime}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-100 flex items-start gap-3">
+                                        <Navigation className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900 mb-0.5">Khách: {delivery.customer}</p>
+                                            <p className="text-xs font-medium text-slate-600">{delivery.address}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Progress bar */}
+                                    <div>
+                                        <div className="flex justify-between text-xs font-bold mb-2">
+                                            <span className="text-slate-500 uppercase tracking-wider text-[10px]">Tiến trình giao hàng</span>
+                                            <span className="text-slate-900">{delivery.progress}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/50 relative">
+                                            <div
+                                                className={`absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out ${statusInfo.bar}`}
+                                                style={{ width: `${delivery.progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* --- RIGHT: SHIPPER LIST (1 Cột) --- */}
+                <div className="xl:col-span-1">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-black text-slate-900">Đội ngũ Shipper</h3>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm">
+                        <div className="divide-y divide-slate-100">
+                            {SHIPPERS_MOCK.map((shipper) => {
+                                const shipStatus = getShipperStatus(shipper.status);
+                                return (
+                                    <div key={shipper.id} className="p-4 hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-black text-sm border border-orange-200">
+                                                    {shipper.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-900">{shipper.name}</h4>
+                                                    <p className="text-xs font-medium text-slate-500">{shipper.phone}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${shipStatus.color}`}>
+                                                {shipStatus.label}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2 mt-3">
+                                            <div className="bg-slate-50 rounded-lg p-2 text-center border border-slate-100">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Đơn nhận</p>
+                                                <p className="text-sm font-black text-slate-900">{shipper.currentOrders}</p>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg p-2 text-center border border-slate-100">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Khu vực</p>
+                                                <p className="text-sm font-bold text-slate-900">{shipper.zone}</p>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                                    <span className="text-sm font-black text-slate-900">{shipper.rating}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
                 </div>
-            )}
+
+            </div>
         </div>
     );
 };

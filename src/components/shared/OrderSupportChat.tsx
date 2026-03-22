@@ -103,7 +103,7 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
 
             {/* Floating Chat Panel (Cửa sổ chat nổi) */}
             {isOpen && (
-                <div className="fixed bottom-[240px] right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300">
+                <div className="fixed bottom-[100px] right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300">
 
                     {/* Header */}
                     <div className="relative flex items-center justify-between px-5 py-4 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 z-10">
@@ -221,7 +221,7 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
             )}
             {/* Floating Bubble (Bong bóng chat khi thu nhỏ) */}
             {!isOpen && !showEntryCard && (
-                <div className="fixed bottom-[180px] right-6 z-[60] animate-in zoom-in fade-in duration-300">
+                <div className="fixed bottom-6 right-6 z-[60] animate-in zoom-in fade-in duration-300">
                     <button
                         type="button"
                         onClick={handleToggle}
