@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, ShieldCheck, ShieldAlert, Star, Plus, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 import recommendationService from "@/services/recommendation.service";
 import type { Product } from "@/types/product";
+import { useAuthStore } from "@/store/authStore";
 
 // ── Helpers ──────────────────────────────────────────────
 const getImageUrl = (image: Product["image"]): string => {
@@ -43,6 +44,15 @@ const SafeFoodSkeleton = () => (
 // ── Main Component ───────────────────────────────────────
 const SafeAlternativesPage = () => {
   const navigate = useNavigate();
+  const healthProfileKey = useAuthStore((s) =>
+    s.user?.preferences
+      ? JSON.stringify({
+          d: s.user.preferences.dietary,
+          a: s.user.preferences.allergies,
+          g: s.user.preferences.health_goals,
+        })
+      : ""
+  );
 
   const [data, setData] = useState<SafeFoodsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +86,7 @@ const SafeAlternativesPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [healthProfileKey]);
 
   const allFilters = [
     ...(data?.filters.allergies || []).map((a) => ({ label: `Không ${a}`, type: "allergy" as const })),

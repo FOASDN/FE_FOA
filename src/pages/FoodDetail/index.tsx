@@ -17,6 +17,7 @@ import {
   SearchX, AlertTriangle, Info, FileText, Quote, MessageCircle, X
 } from "lucide-react";
 import { useAllergyCheck } from "@/hooks/useAllergyCheck";
+import { useAllergyWarningStore } from "@/store/allergyWarningStore";
 
 const getImageUrl = (image: any): string => {
   if (!image) return "";
@@ -32,6 +33,7 @@ const FoodDetailPage = () => {
   const { safeAddItem } = useSafeCart(); // Chỉ dùng safeAddItem để kích hoạt FSS-40
   const { isAuthenticated } = useAuth();
   const { openChat } = useSupportChatStore();
+  const openWarning = useAllergyWarningStore((s) => s.openWarning); // FSS-40: for Buy Now
 
   // --- States ---
   const [product, setProduct] = useState<Product | null>(null);
@@ -66,6 +68,7 @@ const FoodDetailPage = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setAllergyBannerDismissed(false); // Reset banner state when viewing a new product
   }, [id]);
 
   useEffect(() => {
@@ -191,7 +194,22 @@ const FoodDetailPage = () => {
       variations,
     };
 
-    navigate('/checkout', { state: { buyNowItem } });
+    const doNavigate = () => navigate('/checkout', { state: { buyNowItem } });
+
+    // FSS-40: Check allergies before Buy Now — same guard as Add to Cart
+    if (allergyResult.level !== 'safe') {
+      openWarning(
+        {
+          productName: product.name,
+          conflictIngredients: allergyResult.conflictIngredients,
+          warningMessage: allergyResult.warningMessage,
+          level: allergyResult.level,
+        },
+        doNavigate
+      );
+    } else {
+      doNavigate();
+    }
   };
 
   return (
