@@ -20,8 +20,14 @@ export const useSafeCart = () => {
 
     const ObjectUserAllergies = user.preferences?.allergies ?? [];
     const ObjectUserDietary = user.preferences?.dietary ?? [];
+    const ObjectUserHealthGoals = user.preferences?.health_goals ?? [];
 
-    const result = checkProductAllergies(product, ObjectUserAllergies, ObjectUserDietary);
+    const result = checkProductAllergies(
+      product,
+      ObjectUserAllergies,
+      ObjectUserDietary,
+      ObjectUserHealthGoals
+    );
 
     if (result.level === 'safe') {
       cart.addItem(cartItemPayload);

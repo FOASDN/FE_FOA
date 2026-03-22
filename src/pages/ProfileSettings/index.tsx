@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-// Removed useAuthStore
+import { useAuthStore } from "@/store/authStore";
 import { useToast } from "@/hooks/useToast";
 import { userService } from "@/services/profile.service";
 
@@ -25,6 +25,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 const ProfileSettingsPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const { toast } = useToast();
+  const getUser = useAuthStore((s) => s.getUser);
 
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [loading, setLoading] = useState(true);
@@ -168,6 +169,7 @@ const ProfileSettingsPage = () => {
         allergies,
         health_goals: healthGoals,
       });
+      await getUser();
       setInitialPrefs({ dietary: diet, allergies, health_goals: healthGoals });
       setIsHealthEditMode(false);
       toast("Cài đặt sức khỏe đã được cập nhật", "success");
@@ -188,6 +190,7 @@ const ProfileSettingsPage = () => {
         allergies: [],
         health_goals: [],
       });
+      await getUser();
       setDiet([]);
       setAllergies([]);
       setHealthGoals([]);

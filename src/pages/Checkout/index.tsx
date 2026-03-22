@@ -50,6 +50,7 @@ const CheckoutPage = () => {
   const setUser = useAuthStore((s) => s.setUser);
   const userAllergies = user?.preferences?.allergies ?? [];
   const userDietary = user?.preferences?.dietary ?? [];
+  const userHealthGoals = user?.preferences?.health_goals ?? [];
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [allergyConflicts, setAllergyConflicts] = useState<any[]>([]);
   const [showAllergyWarning, setShowAllergyWarning] = useState(false);
@@ -71,7 +72,7 @@ const CheckoutPage = () => {
         quantity: cartItems[index].quantity
       }));
 
-      const conflicts = scanCartForAllergies(itemsToScan, userAllergies, userDietary);
+      const conflicts = scanCartForAllergies(itemsToScan, userAllergies, userDietary, userHealthGoals);
       if (conflicts.length > 0) {
         setAllergyConflicts(conflicts);
         setShowAllergyWarning(true);

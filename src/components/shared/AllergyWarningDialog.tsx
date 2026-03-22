@@ -109,11 +109,12 @@ export function AllergyWarningDialog({ conflicts, onConfirm, onCancel }: Allergy
 export function scanCartForAllergies(
   cartItems: { product: Product; quantity: number }[],
   userAllergies: string[],
-  userDietary: string[] = []
+  userDietary: string[] = [],
+  userHealthGoals: string[] = []
 ): ConflictItem[] {
   const conflicts: ConflictItem[] = [];
   for (const { product } of cartItems) {
-    const result = checkProductAllergies(product, userAllergies, userDietary);
+    const result = checkProductAllergies(product, userAllergies, userDietary, userHealthGoals);
     if (result.level !== 'safe') {
       conflicts.push({
         productName: product.name,
