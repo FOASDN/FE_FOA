@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { History, Plus, Loader2 } from "lucide-react";
 import orderService, { type Order } from "@/services/order.service";
 import { useCart } from "@/hooks/useCart";
-import { useToast } from "@/hooks/useToast";
+import toast from "react-hot-toast";
 
 const formatRelativeTime = (isoDate: string) => {
   const created = new Date(isoDate);
@@ -27,7 +27,6 @@ const HistorySection: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { addItem } = useCart();
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchRecentOrders = async () => {
@@ -179,7 +178,7 @@ const HistorySection: React.FC = () => {
                         price: item.price,
                         quantity: 1,
                       });
-                      toast("Đã thêm món vào giỏ hàng!", "success");
+                      toast.success("Đã thêm món vào giỏ hàng!");
                     }}
                     className="mt-1 w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors"
                     aria-label="Đặt lại món ăn này"

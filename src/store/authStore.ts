@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { disconnectSupportSocket, reconnectSupportSocket } from "@/lib/support-socket";
 
 // ---- Types (aligned with BE) ----
 
@@ -89,6 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     setStoredUser(user);
     // Reset location alert state so it shows after login
     localStorage.removeItem("location_alert_dismissed");
+    reconnectSupportSocket();
     set({
       user,
       isAuthenticated: true,
@@ -98,6 +100,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     clearStoredUser();
+    disconnectSupportSocket();
     set({
       user: null,
       isAuthenticated: false,

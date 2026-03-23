@@ -579,7 +579,7 @@ export const VoucherWalletContent = () => {
                     ) : rewardProducts.length > 0 ? (
                         rewardProducts.map((product) => {
                             const pts = Math.ceil(product.price / 100);
-                            const imgUrl = typeof product.image === "string" ? product.image : product.image.secure_url;
+                            const imgUrl = typeof product.image === "string" ? product.image : product.image?.secure_url || "";
                             return (
                                 <div key={product._id} className="w-60 bg-card p-3 rounded-[24px] border border-border hover:shadow-lg transition-all group shrink-0 flex-none">
                                     <div className="relative aspect-[4/3] bg-muted rounded-2xl mb-3 overflow-hidden">

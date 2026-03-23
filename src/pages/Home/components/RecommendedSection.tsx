@@ -9,7 +9,7 @@ import type { Product } from "@/types/product";
 import { useAuthStore } from "@/store/authStore";
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useSafeCart } from "@/hooks/useSafeCart";
-import { useToast } from "@/hooks/useToast";
+import toast from "react-hot-toast";
 
 
 // Nhãn gợi ý mặc định khi dùng fallback (không có AI)
@@ -51,7 +51,6 @@ const RecommendedSection = () => {
       : ""
   );
   const { safeAddItem } = useSafeCart();
-  const { toast } = useToast();
 
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,7 +254,7 @@ const RecommendedSection = () => {
                     price: product.price,
                     quantity: 1
                   }, () => {
-                    toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+                    toast.success(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'));
                   });
                 }}
               />

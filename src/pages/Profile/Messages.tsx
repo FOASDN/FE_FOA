@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import supportChatService from "@/services/support-chat.service";
 import { MessageSquare, Clock, ArrowRight, ShoppingBag } from "lucide-react";
 import { useSupportChatStore } from "@/store/supportChatStore";
+import { getSupportSocket } from "@/lib/support-socket";
 
 /*
 - [x] Frontend: Creating `Messages.tsx` page as a standalone view (no profile layout)
@@ -27,7 +28,7 @@ interface Conversation {
 
 const CustomerMessagesPage = () => {
   const { } = useTranslation(["common", "customer"]);
-  const { openChat } = useSupportChatStore();
+  const { openChat, isOpen: storeIsOpen, orderId: storeOrderId } = useSupportChatStore();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,22 +48,61 @@ const CustomerMessagesPage = () => {
     fetchConversations();
   }, []);
 
+  // Socket listener cho tin nhắn mới
+  useEffect(() => {
+    const socket = getSupportSocket();
+    if (!socket) return;
+
+    const handleInboxUpdate = (data: { conversationId: string, message: any }) => {
+      setConversations(prev => prev.map(conv => {
+        if (conv.id === data.conversationId) {
+          return {
+            ...conv,
+            unreadCount: conv.unreadCount + 1,
+            lastMessage: {
+              content: data.message.content,
+              createdAt: data.message.createdAt,
+              senderType: data.message.senderType
+            },
+            updatedAt: data.message.createdAt
+          };
+        }
+        return conv;
+      }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+    };
+
+    socket.on("support:inbox_updated", handleInboxUpdate);
+    return () => {
+      socket.off("support:inbox_updated", handleInboxUpdate);
+    };
+  }, []);
+
+  // Theo dõi Store để xóa badge khi chat đang mở
+  useEffect(() => {
+    if (storeIsOpen && storeOrderId) {
+      setConversations(prev => prev.map(conv => {
+        if (conv.orderId === storeOrderId) {
+          return { ...conv, unreadCount: 0 };
+        }
+        return conv;
+      }));
+    }
+  }, [storeIsOpen, storeOrderId]);
+
   const handleOpenChat = (orderId: string | undefined) => {
     openChat(orderId || "");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="space-y-8">
-          <div className="flex flex-col gap-3">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-              Hộp thư hỗ trợ
-            </h1>
-            <p className="text-slate-500 text-base font-medium max-w-2xl">
-              Danh sách cuộc trò chuyện với nhân viên cửa hàng. Chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7.
-            </p>
-          </div>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          Hộp thư hỗ trợ
+        </h1>
+        <p className="text-slate-500 text-sm font-medium">
+          Danh sách cuộc trò chuyện với nhân viên cửa hàng. Chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7.
+        </p>
+      </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-6">
@@ -135,8 +175,6 @@ const CustomerMessagesPage = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 };

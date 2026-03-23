@@ -16,7 +16,8 @@ export function getSupportSocket() {
   if (!socket) {
     socket = io(getSocketBaseUrl(), {
       withCredentials: true,
-      transports: ["websocket", "polling"],
+      // Default: ['polling', 'websocket'] which is safer for sending cookies on first request
+      transports: ["polling", "websocket"],
       // Automatically reconnect
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -45,6 +46,20 @@ export function getSupportSocket() {
 export function disconnectSupportSocket() {
   if (socket) {
     socket.disconnect();
-    socket = null;
+    // Do not set socket = null so that active hooks keep their listeners.
+  }
+}
+
+/**
+ * Reconnect the socket. Call this on login to ensure the socket uses the new credentials.
+ */
+export function reconnectSupportSocket() {
+  if (socket) {
+    socket.disconnect();
+    setTimeout(() => {
+      socket?.connect();
+    }, 100); // Small delay to ensure clean disconnect
+  } else {
+    getSupportSocket();
   }
 }

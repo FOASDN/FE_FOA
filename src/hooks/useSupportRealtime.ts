@@ -17,11 +17,16 @@ export function useSupportRealtime(
     const socket = getSupportSocket();
 
     const tryJoin = () => {
+      console.debug('[SupportRealtime] Attempting to join conversation:', conversationId);
       socket.emit('support:join', conversationId, (ok: boolean) => {
+        console.debug(`[SupportRealtime] join response for ${conversationId}:`, ok);
         if (!ok) {
           // Retry join once after 1.5s — socket auth may not be ready yet on first connect
           setTimeout(() => {
-            socket.emit('support:join', conversationId);
+            console.debug('[SupportRealtime] Retrying join for conversation:', conversationId);
+            socket.emit('support:join', conversationId, (ok2: boolean) => {
+              console.debug(`[SupportRealtime] retry join response for ${conversationId}:`, ok2);
+            });
           }, 1500);
         }
       });
@@ -38,8 +43,11 @@ export function useSupportRealtime(
     socket.on('connect', tryJoin);
 
     const handler = (payload: any) => {
+      console.debug('[SupportRealtime] Received support:new_message', payload);
       if (payload?.conversationId === conversationId) {
         callbackRef.current(payload);
+      } else {
+        console.debug(`[SupportRealtime] Ignored message (mismatch focus): expected ${conversationId}, got ${payload?.conversationId}`);
       }
     };
 

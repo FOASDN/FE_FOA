@@ -108,8 +108,8 @@ function App() {
               <Route path="history" element={<OrderHistoryTabContent />} />
               <Route path="wallet" element={<VoucherWalletProfilePage />} />
               <Route path="addresses" element={<AddressesPage />} />
+              <Route path="messages" element={<CustomerMessagesPage />} />
             </Route>
-            <Route path="/messages" element={<CustomerMessagesPage />} />
             <Route
               path="/history"
               element={<Navigate to="/profile/history" replace />}

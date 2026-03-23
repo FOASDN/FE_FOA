@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./useCart";
 import type { CartItem } from "./useCart";
 import { useAuth } from "./useAuth";
-import { useToast } from "./useToast";
+import toast from "react-hot-toast";
 import orderService from "@/services/order.service";
 import type {
   PaymentMethod,
@@ -47,7 +47,6 @@ export const useCheckout = () => {
   const location = useLocation();
   const { items: storeCartItems, totalPrice: storeTotalPrice, clearCart, orderNote } = useCart();
   const { user } = useAuth();
-  const { toast } = useToast();
   const { settings, fetchSettings } = useSettingsStore();
 
   useEffect(() => {
@@ -147,9 +146,8 @@ export const useCheckout = () => {
           error: null,
           code: code.toUpperCase(),
         }));
-        toast(
+        toast.success(
           `Áp dụng voucher thành công! Giảm ${res.data.discountAmount.toLocaleString("vi-VN")}đ`,
-          "success",
         );
       }
     } catch (err: any) {
@@ -162,9 +160,9 @@ export const useCheckout = () => {
         discountAmount: 0,
         error: message,
       }));
-      toast(message, "error");
+      toast.error(message);
     }
-  }, [voucherState.code, totalPrice, toast]);
+  }, [voucherState.code, totalPrice]);
 
   const removeVoucher = useCallback(() => {
     setVoucherState({
@@ -213,14 +211,14 @@ export const useCheckout = () => {
 
     // Guard: cart must not be empty
     if (cartItems.length === 0) {
-      toast("Giỏ hàng của bạn đang trống", "warning");
+      toast("Giỏ hàng của bạn đang trống", { icon: "⚠️" });
       navigate("/menu");
       return;
     }
 
     // Guard: must have delivery address
     if (!effectiveAddress) {
-      toast("Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng", "warning");
+      toast("Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng", { icon: "⚠️" });
       return;
     }
 
@@ -274,7 +272,7 @@ export const useCheckout = () => {
     } catch (err: any) {
       const message =
         err?.response?.data?.message ?? "Đặt hàng thất bại. Vui lòng thử lại.";
-      toast(message, "error");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -288,7 +286,6 @@ export const useCheckout = () => {
     orderNote,
     clearCart,
     navigate,
-    toast,
     buyNowItem,
   ]);
 

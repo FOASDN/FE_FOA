@@ -165,7 +165,7 @@ const ProfileLayout = () => {
                 )}
               </NavLink>
               <NavLink
-                to="/messages"
+                to="/profile/messages"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${isActive ? "bg-accent text-foreground" : "hover:bg-accent text-muted-foreground hover:text-foreground"
                   }`

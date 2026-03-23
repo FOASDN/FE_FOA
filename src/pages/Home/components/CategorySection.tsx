@@ -34,7 +34,7 @@ const CATEGORIES = [
     image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=500&fit=crop", // Ảnh món ăn kèm/snack
   },
   {
-    id: "Giải Khát & Tráng Miệng",
+    id: "Gọi Thêm Ăn Kèm",
     name: "Đồ Uống & Tráng Miệng",
     image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=500&fit=crop", // Ảnh Đồ uống
   },

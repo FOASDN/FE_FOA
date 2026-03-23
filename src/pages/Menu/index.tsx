@@ -22,7 +22,7 @@ import toast from "react-hot-toast";
 
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useSafeCart } from "@/hooks/useSafeCart";
-import { useToast } from "@/hooks/useToast";
+
 
 const FoodCardSkeleton = () => (
   <div className="bg-white rounded-[2rem] border border-slate-100 p-3 shadow-sm animate-pulse">
@@ -44,7 +44,6 @@ const MenuPage = () => {
   const { t } = useTranslation(["customer", "common"]);
   const [searchParams, setSearchParams] = useSearchParams();
   const { safeAddItem } = useSafeCart();
-  const { toast } = useToast();
   const user = useAuthStore((s) => s.user);
 
   // ── State ──
@@ -367,7 +366,7 @@ const MenuPage = () => {
                           price: item.price,
                           quantity: 1
                         }, () => {
-                          toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+                          toast.success(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'));
                         });
                       }}
                     />
