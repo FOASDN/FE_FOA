@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOrderSupportChat } from '@/hooks/useOrderSupportChat';
 import { useSupportChatStore } from '@/store/supportChatStore';
+import supportChatService from '@/services/support-chat.service';
 
 interface OrderSupportChatProps {
     orderId?: string;
@@ -10,8 +11,8 @@ interface OrderSupportChatProps {
 }
 
 export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, showEntryCard = true, onClose }: OrderSupportChatProps) {
-    const { isOpen: storeIsOpen, orderId: storeOrderId, minimizeChat, openChat } = useSupportChatStore();
-    
+    const { isOpen: storeIsOpen, orderId: storeOrderId, minimizeChat, openChat, unreadCount, latestUnreadOrderId, markOrderRead } = useSupportChatStore();
+
     // If showEntryCard is true, it's a local instance (like on Product page)
     // If false, it's the global instance.
     const [localIsOpen, setLocalIsOpen] = useState(initialOpen);
@@ -21,6 +22,7 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
 
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const panelRef = useRef<HTMLDivElement | null>(null);
 
     const {
         conversation,
@@ -37,12 +39,38 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isOpen]); // Thêm isOpen để cuộn khi vừa mở chat
 
+    // Đóng khi nhấn bên ngoài
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                if (showEntryCard) setLocalIsOpen(false);
+                else minimizeChat();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, showEntryCard, minimizeChat]);
+
+    // Đánh dấu đã đọc khi mở chat
+    useEffect(() => {
+        const convId = conversation?.id || (conversation as any)?._id;
+        if (isOpen && convId && orderId) {
+            void supportChatService.markAsRead(String(convId)).then(() => {
+                markOrderRead(orderId);
+            });
+        }
+    }, [isOpen, conversation, orderId, markOrderRead]);
+
     const handleToggle = () => {
         if (showEntryCard) {
             setLocalIsOpen(prev => !prev);
         } else {
             if (isOpen) minimizeChat();
-            else openChat(orderId);
+            else {
+                const targetOrder = unreadCount > 0 ? latestUnreadOrderId : storeOrderId;
+                openChat(targetOrder || undefined);
+            }
         }
     };
 
@@ -103,7 +131,10 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
 
             {/* Floating Chat Panel (Cửa sổ chat nổi) */}
             {isOpen && (
-                <div className="fixed bottom-[100px] right-4 sm:right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300">
+                <div 
+                    ref={panelRef}
+                    className="fixed bottom-[110px] right-4 sm:right-6 z-[70] w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/20 border border-slate-200/60 dark:border-slate-700 flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 fade-in duration-300"
+                >
 
                     {/* Header */}
                     <div className="relative flex items-center justify-between px-5 py-4 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 z-10">
@@ -221,7 +252,7 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
             )}
             {/* Floating Bubble (Bong bóng chat khi thu nhỏ) */}
             {!isOpen && !showEntryCard && (
-                <div className="fixed bottom-6 right-6 z-[60] animate-in zoom-in fade-in duration-300">
+                <div className="fixed bottom-[104px] right-6 z-[60] animate-in zoom-in fade-in duration-300">
                     <button
                         type="button"
                         onClick={handleToggle}
@@ -232,9 +263,9 @@ export function OrderSupportChat({ orderId: propOrderId, initialOpen = false, sh
                         </span>
                         
                         {/* Unread Badge for bubble */}
-                        {messages.filter(m => !m.isRead && m.senderType === 'STAFF').length > 0 && (
+                        {((!showEntryCard && unreadCount > 0) || (showEntryCard && messages.filter(m => !m.isRead && m.senderType === 'STAFF').length > 0)) && (
                             <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-black text-white border-2 border-white shadow-lg animate-bounce">
-                                {messages.filter(m => !m.isRead && m.senderType === 'STAFF').length}
+                                {!showEntryCard ? (unreadCount > 99 ? '99+' : unreadCount) : messages.filter(m => !m.isRead && m.senderType === 'STAFF').length}
                             </span>
                         )}
 

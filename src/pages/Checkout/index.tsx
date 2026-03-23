@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCheckout } from "@/hooks/useCheckout";
-import { useToast } from "@/hooks/useToast";
-import { ToastContainer } from "@/hooks/useToast";
+import toast from "react-hot-toast";
 import { calculateShippingFee } from "@/utils/shipping";
 import { AddressModal } from "@/components/shared/AddressModal";
 import { userService } from "@/services/profile.service";
@@ -43,8 +42,6 @@ const CheckoutPage = () => {
   } = useCheckout();
 
   const [isVouchersOpen, setIsVouchersOpen] = useState(false);
-
-  const { toasts, dismiss, toast } = useToast();
 
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -150,9 +147,6 @@ const CheckoutPage = () => {
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-[#1b140d] dark:text-white min-h-screen font-display">
-      {/* Toast notifications */}
-      <ToastContainer toasts={toasts} dismiss={dismiss} />
-
       <div className="layout-container flex h-full grow flex-col">
         <main className="max-w-[1200px] mx-auto w-full px-6 py-8">
           {/* ── Progress ── */}
@@ -535,7 +529,7 @@ const CheckoutPage = () => {
                             vouchers.map(v => (
                               <div key={v._id} onClick={() => {
                                 if (v.min_order_amount && subtotal < v.min_order_amount) {
-                                  toast(`Đơn hàng tối thiểu ${v.min_order_amount.toLocaleString("vi-VN")}đ để dùng voucher này`, "error");
+                                  toast.error(`Đơn hàng tối thiểu ${v.min_order_amount.toLocaleString("vi-VN")}đ để dùng voucher này`);
                                   return;
                                 }
                                 setVoucherCode(v.code);

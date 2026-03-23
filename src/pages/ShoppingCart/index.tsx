@@ -1,24 +1,25 @@
+import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { MOCK_UPSELL_ITEMS } from "@/constants/mockOrders";
-import { useEffect } from "react";
 import { itemKey } from "@/store/cartStore";
 import { buildVariantChips } from "@/utils/cartVariants";
 import { TicketVoucher } from "@/components/shared/TicketVoucher";
 import voucherAPI from "@/services/voucher.service";
 import type { Voucher } from "@/types/voucher";
-import { useState, useMemo } from "react";
 import { Ticket, X, Plus, ShoppingCart as CartIcon, Loader2 } from "lucide-react";
 import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
-import { useToast } from "@/hooks/useToast";
+import toast from "react-hot-toast";
+import { useAuthStore } from "@/store/authStore";
+import { useSettingsStore } from "@/store/settingsStore";
+import { calculateShippingFee } from "@/utils/shipping";
 
 const ShoppingCartPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation(["customer", "common"]);
-  const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
   // ─── Real state from Zustand Store ───
@@ -33,6 +34,7 @@ const ShoppingCartPage = () => {
     setOrderNote,
     toggleSelectItem,
     toggleSelectAll,
+    clearCart,
   } = useCart();
 
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -43,6 +45,13 @@ const ShoppingCartPage = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [upsellProducts, setUpsellProducts] = useState<Product[]>([]);
   const [loadingUpsell, setLoadingUpsell] = useState(true);
+
+  const user = useAuthStore((s) => s.user);
+  const { settings, fetchSettings } = useSettingsStore();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   useEffect(() => {
     const fetchVouchers = async () => {
@@ -120,7 +129,29 @@ const ShoppingCartPage = () => {
     return 0;
   }, [appliedVoucher, subtotal]);
 
-  const deliveryFee = subtotal > 300000 || subtotal === 0 ? 0 : 50000;
+  const deliveryFee = useMemo(() => {
+    if (subtotal === 0) return 0;
+    
+    // Use the default address to estimate if possible
+    const defaultAddress = user?.addresses?.find((a: any) => a.isDefault) || user?.addresses?.[0];
+    
+    const config = settings ? {
+      baseDeliveryFee: parseFloat(settings.baseDeliveryFee) || 15000,
+      feePerKm: parseFloat(settings.feePerKm) || 5000,
+      freeDeliveryEnabled: settings.freeDeliveryEnabled,
+      freeDeliveryThreshold: parseFloat(settings.freeDeliveryThreshold) || 300000,
+    } : undefined;
+
+    const result = calculateShippingFee(
+      (defaultAddress as any)?.district || "",
+      (defaultAddress as any)?.city || "Đà Nẵng",
+      subtotal,
+      config
+    );
+
+    return result.fee;
+  }, [user, subtotal, settings]);
+
   const total = Math.max(0, subtotal + deliveryFee - discountAmount);
 
   // Mock upsell items (vẫn giữ để UI đẹp)
@@ -162,22 +193,36 @@ const ShoppingCartPage = () => {
                   <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
-                      checked={cartItems.every((i) => i.selected !== false)}
-                      onChange={(e) => toggleSelectAll(e.target.checked)}
-                      className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                    />
+                       checked={cartItems.every((i) => i.selected !== false)}
+                       onChange={(e) => toggleSelectAll(e.target.checked)}
+                       className="w-5 h-5 rounded border-gray-300 accent-orange-500 cursor-pointer"
+                     />
                     <span className="text-sm font-bold text-text-main dark:text-white">
                       Chọn tất cả ({cartItems.length} món)
                     </span>
                   </div>
-                  {cartItems.some((i) => i.selected === false) && (
-                     <button 
-                        onClick={() => toggleSelectAll(true)}
-                        className="text-xs text-orange-600 font-bold hover:underline"
-                     >
-                        Chọn lại tất cả
-                     </button>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {cartItems.some((i) => i.selected === false) && (
+                       <button 
+                          onClick={() => toggleSelectAll(true)}
+                          className="text-xs text-orange-600 font-bold hover:underline"
+                       >
+                          Chọn lại tất cả
+                       </button>
+                    )}
+                    <button 
+                      onClick={() => {
+                        if (window.confirm("Bạn có chắc chắn muốn xóa tất cả món ăn trong giỏ hàng?")) {
+                          clearCart();
+                          toast.success("Đã xóa tất cả món ăn");
+                        }
+                      }}
+                      className="flex items-center gap-1 text-xs text-red-500 font-bold hover:text-red-700 transition-colors"
+                    >
+                      <X size={14} />
+                      {t("common:actions.deleteAll", "Xóa tất cả")}
+                    </button>
+                  </div>
                 </div>
               )}
               {cartItems.length === 0 ? (
@@ -203,11 +248,11 @@ const ShoppingCartPage = () => {
                   >
                     <div className="flex items-center self-start sm:self-center">
                       <input
-                        type="checkbox"
-                        checked={item.selected !== false}
-                        onChange={() => toggleSelectItem(itemKey(item))}
-                        className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                      />
+                         type="checkbox"
+                         checked={item.selected !== false}
+                         onChange={() => toggleSelectItem(itemKey(item))}
+                         className="w-5 h-5 rounded border-gray-300 accent-orange-500 cursor-pointer"
+                       />
                     </div>
                     <div
                       className="bg-center bg-no-repeat aspect-video bg-cover rounded-lg h-[100px] w-full sm:w-[160px] shrink-0 bg-gray-100"
@@ -458,16 +503,16 @@ const ShoppingCartPage = () => {
                     </div>
                   </div>
                     <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          toast(t("customer:cart.loginToCheckout", "Vui lòng đăng nhập để thanh toán"), "warning");
-                          setTimeout(() => {
-                            navigate("/login", { state: { from: { pathname: "/checkout" } } });
-                          }, 2000);
-                          return;
-                        }
-                        navigate("/checkout");
-                      }}
+                       onClick={() => {
+                         if (!isAuthenticated) {
+                           toast.error(t("customer:cart.loginToCheckout", "Vui lòng đăng nhập để thanh toán"));
+                           setTimeout(() => {
+                             navigate("/login", { state: { from: { pathname: "/checkout" } } });
+                           }, 2000);
+                           return;
+                         }
+                         navigate("/checkout");
+                       }}
                       disabled={totalPrice === 0}
                       className="w-full bg-orange-600 text-white py-4 rounded-xl font-bold text-lg mt-8 hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
                     >
@@ -526,11 +571,11 @@ const ShoppingCartPage = () => {
                             productId: item._id,
                             name: item.name,
                             image: imageUrl,
-                            price: item.price,
-                            quantity: 1,
-                          });
-                          toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
-                        }}
+                             price: item.price,
+                             quantity: 1,
+                           });
+                           toast.success(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'));
+                         }}
                         className="bg-orange-50 dark:bg-white/5 p-1.5 rounded-lg text-orange-600 hover:bg-orange-600 hover:text-white transition-all shadow-sm active:scale-90"
                       >
                         <Plus className="w-4 h-4" />

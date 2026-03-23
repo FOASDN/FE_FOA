@@ -6,7 +6,7 @@ import { FoodCard } from '@/components/shared/FoodCard';
 import productAPI from '@/services/product.service';
 import type { Product } from '@/types/product';
 import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/hooks/useToast';
+import toast from 'react-hot-toast';
 
 const FlashSaleSection: React.FC = () => {
   const { t } = useTranslation();
@@ -19,7 +19,6 @@ const FlashSaleSection: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
-  const { toast } = useToast();
 
   // Countdown logic
   useEffect(() => {
@@ -156,7 +155,7 @@ const FlashSaleSection: React.FC = () => {
                 price: p.salePrice,
                 quantity: 1
               });
-              toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+              toast.success(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'));
             }}
           />
         ))}

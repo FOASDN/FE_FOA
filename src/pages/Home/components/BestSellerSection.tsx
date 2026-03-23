@@ -6,7 +6,7 @@ import productAPI from "@/services/product.service";
 import type { Product } from "@/types/product";
 import { FoodCard } from "@/components/shared/FoodCard";
 import { useCart } from "@/hooks/useCart";
-import { useToast } from "@/hooks/useToast";
+import toast from "react-hot-toast";
 
 // ── Skeleton ─────────────────────────────────────────────
 const BestSellerSkeleton = () => (
@@ -26,7 +26,6 @@ const BestSellerSection = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
-  const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +100,7 @@ const BestSellerSection = () => {
                           price: dish.price,
                           quantity: 1
                       });
-                      toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+                      toast.success(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'));
                   }}
               />
             ))}

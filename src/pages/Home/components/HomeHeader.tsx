@@ -7,9 +7,10 @@ import type { Notification } from "@/types/notification";
 import notificationService from "@/services/notification.service";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { getSupportSocket } from "@/lib/support-socket";
-// import { apiClient } from "@/lib/api-client";
 import logo from "@/assets/logo.png";
 import { useCart } from "@/hooks/useCart";
+import { useSupportChatStore } from "@/store/supportChatStore";
+import supportChatService from "@/services/support-chat.service";
 
 interface HomeHeaderProps {
   searchQuery?: string;
@@ -32,7 +33,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const [showCartPreview, setShowCartPreview] = useState(false);
-//   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  //   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -133,14 +134,27 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     }
   }, [isAuthenticated]);
 
-//   const fetchActiveOrders = useCallback(async () => {
-//     try {
-//       const res = await apiClient.get("/orders/active-count");
-//       setActiveOrdersCount(res.data.data?.count || 0);
-//     } catch (error) {
-//       console.error("Failed to fetch active orders count", error);
-//     }
-//   }, [isAuthenticated]);
+  const fetchUnreadSupportMessages = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await supportChatService.listConversations();
+      const convs = res.data?.conversations || [];
+      const totalUnreadStr = convs.reduce((sum: number, c: any) => sum + (Number(c.unreadCount) || 0), 0);
+
+      const store = useSupportChatStore.getState();
+      store.setUnreadCount(totalUnreadStr);
+
+      const latestUnreadConv = convs.find((c: any) => (Number(c.unreadCount) || 0) > 0);
+      if (latestUnreadConv) {
+        useSupportChatStore.setState({ latestUnreadOrderId: latestUnreadConv.orderId || latestUnreadConv.order_id });
+      } else {
+        useSupportChatStore.setState({ latestUnreadOrderId: null });
+      }
+    } catch (error) {
+      console.error("Failed to fetch support unread count", error);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       if (notifications.length > 0) setNotifications([]);
@@ -151,15 +165,15 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
     }
 
     fetchNotifications();
-    // fetchActiveOrders();
+    fetchUnreadSupportMessages();
 
     const interval = setInterval(() => {
       fetchNotifications();
-      // fetchActiveOrders();
+      fetchUnreadSupportMessages();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, fetchNotifications]);
+  }, [isAuthenticated, fetchNotifications, fetchUnreadSupportMessages]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -201,8 +215,28 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
       playNotification();
     });
 
+    socket.on("support:inbox_updated", async (data: { conversationId: string, message: any }) => {
+      console.log("Header received support:inbox_updated:", data);
+      const store = useSupportChatStore.getState();
+
+      try {
+        const res = await supportChatService.listConversations();
+        const convs = res.data?.conversations || [];
+        const targetConv = convs.find((c: any) => c.id === data.conversationId || c._id === data.conversationId);
+        if (targetConv) {
+          store.incrementUnread(targetConv.orderId || targetConv.order_id);
+        } else {
+          store.setUnreadCount(store.unreadCount + 1);
+        }
+      } catch (err) {
+        store.setUnreadCount(store.unreadCount + 1);
+      }
+      playNotification();
+    });
+
     return () => {
       socket.off("order:status_updated");
+      socket.off("support:inbox_updated");
     };
   }, [isAuthenticated, user?._id, playNotification]);
 
@@ -327,6 +361,7 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                 </span>
               </button>
 
+
               {isAuthenticated && (
                 <div className="relative" ref={notificationRef}>
                   <button
@@ -439,19 +474,68 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
               )}
 
               {/* Cart */}
-              <button
-                onClick={() => navigate("/cart")}
-                className="p-2.5 rounded-xl text-gray-500 hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 relative group"
+              <div
+                className="relative"
+                onMouseEnter={() => setShowCartPreview(true)}
+                onMouseLeave={() => setShowCartPreview(false)}
               >
-                <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">
-                  shopping_cart
-                </span>
-                {cartCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-black w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white shadow-sm">
-                    {cartCount > 99 ? "99+" : cartCount}
+                <button
+                  onClick={() => navigate("/cart")}
+                  className={`p-2.5 rounded-xl transition-all duration-200 relative group ${showCartPreview ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-orange-50 hover:text-orange-600'}`}
+                >
+                  <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">
+                    shopping_cart
                   </span>
+                  {cartCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 bg-orange-500 text-white text-[10px] font-black w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </button>
+
+                {showCartPreview && (
+                  <div className="absolute right-0 top-full pt-2 -mt-1 w-80 z-50">
+                    <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="p-4 border-b border-gray-100">
+                        <h3 className="font-bold text-gray-900">Giỏ hàng ({cartCount})</h3>
+                      </div>
+
+                    {cartCount === 0 ? (
+                      <div className="p-8 text-center flex flex-col items-center">
+                        <span className="material-symbols-outlined text-6xl text-gray-200 mb-3">shopping_cart</span>
+                        <p className="text-sm text-gray-500 font-medium">Giỏ hàng của bạn đang trống</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="max-h-[300px] overflow-y-auto">
+                          {cartItems.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 hover:bg-orange-50/30 transition-colors">
+                              <img src={item.image || 'https://via.placeholder.com/150'} alt={item.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
+                                <p className="text-xs font-semibold text-orange-600 mt-0.5">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</p>
+                              </div>
+                              <div className="text-xs font-bold text-gray-500 shrink-0">x{item.quantity}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="p-4 bg-gray-50/80">
+                          <button
+                            onClick={() => {
+                              setShowCartPreview(false);
+                              navigate("/cart");
+                            }}
+                            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                          >
+                            Xem giỏ hàng chi tiết
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
                 )}
-              </button>
+              </div>
 
               <div className="h-7 w-px bg-gray-200 mx-2 hidden sm:block"></div>
 
@@ -576,6 +660,21 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
                           <div>
                             <p className="font-semibold">Đơn hàng</p>
                             <p className="text-xs text-gray-500">Xem lại lịch sử đơn hàng</p>
+                          </div>
+                        </Link>
+                        <Link
+                          to="/profile/messages"
+                          className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-all group"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all relative">
+                            <span className="material-symbols-outlined text-[18px] text-blue-600">
+                              chat
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Tin nhắn</p>
+                            <p className="text-xs text-gray-500">Hỗ trợ với nhân viên</p>
                           </div>
                         </Link>
                       </div>
@@ -725,8 +824,8 @@ const HomeHeader = ({ searchQuery, onSearchChange }: HomeHeaderProps) => {
       <div
         ref={mobileMenuRef}
         className={`fixed inset-0 z-[100] lg:hidden transition-opacity duration-300 ${isMobileMenuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
           }`}
         aria-hidden={!isMobileMenuOpen}
       >
