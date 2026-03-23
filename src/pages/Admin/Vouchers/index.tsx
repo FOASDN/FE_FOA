@@ -1,21 +1,98 @@
 import { useState, useEffect } from "react";
 import { clsx } from "clsx";
 import VoucherAPI from '@/services/voucher.service';
-import type { Voucher } from '@/types/voucher';
+import type { Voucher, CreateVoucherRequest } from '@/types/voucher';
+
+type VoucherFormState = {
+  code: string;
+  title: string;
+  description: string;
+  category: CreateVoucherRequest["category"];
+  discount_type: CreateVoucherRequest["discount_type"];
+  discount_value: number;
+  max_discount_amount: number;
+  min_order_amount: number;
+  start_date: string;
+  end_date: string;
+  usage_limit_per_user: number;
+  total_usage_limit: number;
+  is_active: boolean;
+  is_stackable: boolean;
+  conditions: string;
+};
 
 const AdminVouchers = () => {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     active: 0,
     used: 0,
     expiring: 0
   });
   const LIMIT = 10;
+
+  const getDefaultForm = (): VoucherFormState => {
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(end.getDate() + 30);
+    return {
+      code: "",
+      title: "",
+      description: "",
+      category: "discount",
+      discount_type: "percentage",
+      discount_value: 10,
+      max_discount_amount: 0,
+      min_order_amount: 0,
+      start_date: today.toISOString().slice(0, 10),
+      end_date: end.toISOString().slice(0, 10),
+      usage_limit_per_user: 1,
+      total_usage_limit: 100,
+      is_active: true,
+      is_stackable: false,
+      conditions: "",
+    };
+  };
+
+  const [form, setForm] = useState<VoucherFormState>(getDefaultForm());
+
+  const openCreateModal = () => {
+    setEditingVoucher(null);
+    setForm(getDefaultForm());
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (v: Voucher) => {
+    setEditingVoucher(v);
+    setForm({
+      code: v.code,
+      title: v.title,
+      description: v.description,
+      category: v.category,
+      discount_type: v.discount_type,
+      discount_value: v.discount_value,
+      max_discount_amount: v.max_discount_amount ?? 0,
+      min_order_amount: v.min_order_amount,
+      start_date: v.start_date.slice(0, 10),
+      end_date: v.end_date.slice(0, 10),
+      usage_limit_per_user: v.usage_limit_per_user,
+      total_usage_limit: v.total_usage_limit ?? 0,
+      is_active: v.is_active,
+      is_stackable: v.is_stackable,
+      conditions: (v.conditions || []).join(", "),
+    });
+    setFormError(null);
+    setIsModalOpen(true);
+  };
 
   const fetchVouchers = async () => {
     setLoading(true);
@@ -93,6 +170,53 @@ const AdminVouchers = () => {
     }
   };
 
+  const handleSubmitVoucher = async () => {
+    setFormError(null);
+    if (!form.code.trim()) return setFormError("Vui lòng nhập mã voucher");
+    if (!form.title.trim()) return setFormError("Vui lòng nhập tiêu đề voucher");
+    if (form.discount_value <= 0) return setFormError("Giá trị giảm phải lớn hơn 0");
+    if (new Date(form.end_date) < new Date(form.start_date)) {
+      return setFormError("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu");
+    }
+
+    const payload: CreateVoucherRequest = {
+      code: form.code.trim().toUpperCase(),
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category: form.category,
+      discount_type: form.discount_type,
+      discount_value: Number(form.discount_value),
+      max_discount_amount: form.max_discount_amount > 0 ? Number(form.max_discount_amount) : undefined,
+      min_order_amount: Number(form.min_order_amount),
+      start_date: form.start_date,
+      end_date: form.end_date,
+      usage_limit_per_user: Number(form.usage_limit_per_user),
+      total_usage_limit: form.total_usage_limit > 0 ? Number(form.total_usage_limit) : undefined,
+      conditions: form.conditions
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      is_active: form.is_active,
+      is_stackable: form.is_stackable,
+    };
+
+    try {
+      setSubmitting(true);
+      if (editingVoucher) {
+        await VoucherAPI.updateVoucher(editingVoucher._id, payload);
+      } else {
+        await VoucherAPI.createVoucher(payload);
+      }
+      setIsModalOpen(false);
+      await fetchVouchers();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Không thể lưu voucher";
+      setFormError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const STAT_CARDS = [
     { label: "Voucher đang hoạt động", value: stats.active.toString(), trend: "", icon: "confirmation_number" },
     { label: "Lượt đã sử dụng", value: stats.used.toLocaleString("vi-VN"), trend: "", icon: "local_mall" },
@@ -112,6 +236,7 @@ const AdminVouchers = () => {
         </div>
         <button
           type="button"
+          onClick={openCreateModal}
           className="flex items-center justify-center gap-2 h-12 px-6 bg-[#ee8c2b] hover:bg-[#d87c24] text-white text-sm font-bold rounded-lg shadow-sm transition-all"
         >
           <span className="material-symbols-outlined text-xl">add</span>
@@ -247,7 +372,12 @@ const AdminVouchers = () => {
                             <div className="w-9 h-5 bg-[#e7dbcf] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#ee8c2b] peer-disabled:opacity-50" />
                           </label>
                         </div>
-                        <button type="button" className="p-1 hover:text-[#ee8c2b] transition-colors" title="Sửa">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(v)}
+                          className="p-1 hover:text-[#ee8c2b] transition-colors"
+                          title="Sửa"
+                        >
                           <span className="material-symbols-outlined text-xl">edit</span>
                         </button>
                         <button
@@ -305,6 +435,162 @@ const AdminVouchers = () => {
           </div>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-3xl rounded-xl border border-[#e7dbcf] bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-black text-[#1b140d]">
+                {editingVoucher ? "Chỉnh sửa voucher" : "Tạo voucher mới"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg p-2 hover:bg-[#f3ede7]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <input
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Mã voucher"
+                value={form.code}
+                onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
+              />
+              <input
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Tiêu đề"
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              />
+              <input
+                className="md:col-span-2 rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Mô tả"
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              />
+
+              <select
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                value={form.category}
+                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as VoucherFormState["category"] }))}
+              >
+                <option value="discount">discount</option>
+                <option value="freeship">freeship</option>
+                <option value="newuser">newuser</option>
+                <option value="special">special</option>
+              </select>
+
+              <select
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                value={form.discount_type}
+                onChange={(e) => setForm((p) => ({ ...p, discount_type: e.target.value as VoucherFormState["discount_type"] }))}
+              >
+                <option value="percentage">percentage</option>
+                <option value="fixed_amount">fixed_amount</option>
+                <option value="none">none</option>
+              </select>
+
+              <input
+                type="number"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Giá trị giảm"
+                value={form.discount_value}
+                onChange={(e) => setForm((p) => ({ ...p, discount_value: Number(e.target.value) }))}
+              />
+              <input
+                type="number"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Giảm tối đa"
+                value={form.max_discount_amount}
+                onChange={(e) => setForm((p) => ({ ...p, max_discount_amount: Number(e.target.value) }))}
+              />
+              <input
+                type="number"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Đơn tối thiểu"
+                value={form.min_order_amount}
+                onChange={(e) => setForm((p) => ({ ...p, min_order_amount: Number(e.target.value) }))}
+              />
+              <input
+                type="number"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Giới hạn tổng"
+                value={form.total_usage_limit}
+                onChange={(e) => setForm((p) => ({ ...p, total_usage_limit: Number(e.target.value) }))}
+              />
+              <input
+                type="number"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Giới hạn/user"
+                value={form.usage_limit_per_user}
+                onChange={(e) => setForm((p) => ({ ...p, usage_limit_per_user: Number(e.target.value) }))}
+              />
+              <input
+                type="date"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                value={form.start_date}
+                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+              />
+              <input
+                type="date"
+                className="rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                value={form.end_date}
+                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+              />
+              <input
+                className="md:col-span-2 rounded-lg border border-[#e7dbcf] px-3 py-2 text-sm"
+                placeholder="Điều kiện (phân tách bằng dấu phẩy)"
+                value={form.conditions}
+                onChange={(e) => setForm((p) => ({ ...p, conditions: e.target.value }))}
+              />
+            </div>
+
+            <div className="mt-4 flex items-center gap-4">
+              <label className="text-sm font-medium text-[#1b140d]">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={form.is_active}
+                  onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+                />
+                Đang hoạt động
+              </label>
+              <label className="text-sm font-medium text-[#1b140d]">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={form.is_stackable}
+                  onChange={(e) => setForm((p) => ({ ...p, is_stackable: e.target.checked }))}
+                />
+                Cho phép cộng dồn
+              </label>
+            </div>
+
+            {formError && <p className="mt-3 text-sm font-semibold text-red-600">{formError}</p>}
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg border border-[#e7dbcf] px-4 py-2 text-sm font-semibold text-[#1b140d]"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitVoucher}
+                disabled={submitting}
+                className="rounded-lg bg-[#ee8c2b] px-4 py-2 text-sm font-bold text-white hover:bg-[#d87c24] disabled:opacity-70"
+              >
+                {submitting ? "Đang lưu..." : editingVoucher ? "Lưu thay đổi" : "Tạo voucher"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
