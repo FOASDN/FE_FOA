@@ -1,19 +1,23 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Flame, ChevronRight, Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { FoodCard } from '@/components/shared/FoodCard';
-import productAPI from '@/services/product.service';
-import type { Product } from '@/types/product';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/hooks/useToast';
+import React, { useEffect, useState, useMemo } from "react";
+import { Flame, ChevronRight, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { FoodCard } from "@/components/shared/FoodCard";
+import productAPI from "@/services/product.service";
+import type { Product } from "@/types/product";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/useToast";
 
 const FlashSaleSection: React.FC = () => {
   const { t } = useTranslation();
-  const [timeLeft, setTimeLeft] = useState<{ hours: string; minutes: string; seconds: string }>({
-    hours: '02',
-    minutes: '00',
-    seconds: '00',
+  const [timeLeft, setTimeLeft] = useState<{
+    hours: string;
+    minutes: string;
+    seconds: string;
+  }>({
+    hours: "02",
+    minutes: "00",
+    seconds: "00",
   });
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -40,9 +44,9 @@ const FlashSaleSection: React.FC = () => {
       const seconds = Math.floor((diff / 1000) % 60);
 
       setTimeLeft({
-        hours: hours.toString().padStart(2, '0'),
-        minutes: minutes.toString().padStart(2, '0'),
-        seconds: seconds.toString().padStart(2, '0'),
+        hours: hours.toString().padStart(2, "0"),
+        minutes: minutes.toString().padStart(2, "0"),
+        seconds: seconds.toString().padStart(2, "0"),
       });
     }, 1000);
 
@@ -67,12 +71,12 @@ const FlashSaleSection: React.FC = () => {
 
   // Standardize product data for the card
   const flashSaleProducts = useMemo(() => {
-    return products.map(p => ({
+    return products.map((p) => ({
       ...p,
       salePrice: p.price * 0.5, // 50% discount for flash sale
       originalPrice: p.price,
       soldCount: Math.floor(Math.random() * 50) + 10,
-      totalStock: 100
+      totalStock: 100,
     }));
   }, [products]);
 
@@ -84,17 +88,20 @@ const FlashSaleSection: React.FC = () => {
     );
   }
 
-  if (flashSaleProducts.length === 0) return (
-    <section className="my-12 p-12 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
-      <p className="text-slate-400 font-medium">Hiện chưa có deal chớp nhoáng nào.</p>
-      <Link
-        to="/menu"
-        className="inline-flex items-center gap-2 mt-4 text-orange-600 hover:text-orange-700 font-bold transition-colors"
-      >
-        Khám phá thực đơn ngay <ChevronRight className="w-5 h-5" />
-      </Link>
-    </section>
-  );
+  if (flashSaleProducts.length === 0)
+    return (
+      <section className="my-12 p-12 bg-white rounded-3xl border border-dashed border-slate-200 text-center">
+        <p className="text-slate-400 font-medium">
+          Hiện chưa có deal chớp nhoáng nào.
+        </p>
+        <Link
+          to="/menu"
+          className="inline-flex items-center gap-2 mt-4 text-orange-600 hover:text-orange-700 font-bold transition-colors"
+        >
+          Khám phá thực đơn ngay <ChevronRight className="w-5 h-5" />
+        </Link>
+      </section>
+    );
 
   return (
     <section className="my-12 overflow-hidden">
@@ -116,17 +123,29 @@ const FlashSaleSection: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4 bg-orange-50 p-2.5 rounded-[2rem] border border-orange-100">
-          <span className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] px-3 hidden sm:block">Kết thúc trong</span>
+          <span className="text-[10px] font-black text-orange-400 uppercase tracking-[0.2em] px-3 hidden sm:block">
+            Kết thúc trong
+          </span>
           <div className="flex items-center gap-2.5">
-            {[timeLeft.hours, timeLeft.minutes, timeLeft.seconds].map((unit, idx) => (
-              <React.Fragment key={idx}>
-                <div className="w-12 h-14 bg-orange-100 rounded-2xl flex flex-col items-center justify-center shadow-lg shadow-orange-200/50 border-b-4 border-orange-200">
-                  <span className="text-orange-600 text-xl font-black tabular-nums leading-none">{unit}</span>
-                  <span className="text-[8px] text-orange-400 font-bold uppercase mt-1">{idx === 0 ? 'Hrs' : idx === 1 ? 'Min' : 'Sec'}</span>
-                </div>
-                {idx < 2 && <span className="text-red-600 font-black text-2xl animate-pulse">:</span>}
-              </React.Fragment>
-            ))}
+            {[timeLeft.hours, timeLeft.minutes, timeLeft.seconds].map(
+              (unit, idx) => (
+                <React.Fragment key={idx}>
+                  <div className="w-12 h-14 bg-orange-100 rounded-2xl flex flex-col items-center justify-center shadow-lg shadow-orange-200/50 border-b-4 border-orange-200">
+                    <span className="text-orange-600 text-xl font-black tabular-nums leading-none">
+                      {unit}
+                    </span>
+                    <span className="text-[8px] text-orange-400 font-bold uppercase mt-1">
+                      {idx === 0 ? "Hrs" : idx === 1 ? "Min" : "Sec"}
+                    </span>
+                  </div>
+                  {idx < 2 && (
+                    <span className="text-red-600 font-black text-2xl animate-pulse">
+                      :
+                    </span>
+                  )}
+                </React.Fragment>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -138,31 +157,36 @@ const FlashSaleSection: React.FC = () => {
             key={p._id}
             id={p._id}
             name={p.name}
-            image={typeof p.image === 'string' ? p.image : p.image?.secure_url || ''}
+            image={
+              typeof p.image === "string" ? p.image : p.image?.secure_url || ""
+            }
             price={p.salePrice}
             originalPrice={p.originalPrice}
             rating={p.rating}
             restaurant={p.restaurant}
             time={p.time}
             progress={{
-              value: (p.soldCount / p.totalStock) * 100,
-              label: `Đã bán ${p.soldCount}`
+              label: `Đã bán ${p.soldCount}`,
             }}
             onAddToCart={() => {
               addItem({
                 productId: p._id,
                 name: p.name,
-                image: typeof p.image === 'string' ? p.image : p.image?.secure_url || '',
+                image:
+                  typeof p.image === "string"
+                    ? p.image
+                    : p.image?.secure_url || "",
                 price: p.salePrice,
-                quantity: 1
+                quantity: 1,
               });
-              toast(t('customer:foodCard.addToCart', 'Đã thêm vào giỏ hàng!'), 'success');
+              toast(
+                t("customer:foodCard.addToCart", "Đã thêm vào giỏ hàng!"),
+                "success",
+              );
             }}
           />
         ))}
       </div>
-
-
     </section>
   );
 };
