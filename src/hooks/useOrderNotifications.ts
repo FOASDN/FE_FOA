@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { getSupportSocket } from "@/lib/support-socket";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
 import { useNotificationSound } from "./useNotificationSound";
 
 interface OrderStatusUpdate {
@@ -24,8 +25,11 @@ const statusColorMap: Record<string, string> = {
 export const useOrderNotifications = () => {
     const navigate = useNavigate();
     const { playNotification } = useNotificationSound();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const socket = getSupportSocket();
 
         socket.on("order:status_updated", (data: OrderStatusUpdate) => {
@@ -53,5 +57,5 @@ export const useOrderNotifications = () => {
         return () => {
             socket.off("order:status_updated");
         };
-    }, [playNotification, navigate]);
+    }, [playNotification, navigate, isAuthenticated]);
 };
