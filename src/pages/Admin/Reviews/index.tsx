@@ -1,32 +1,75 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { clsx } from "clsx";
+import { apiClient } from "@/lib/api-client";
 
-const REVIEWS_MOCK = [
-    { id: "1", customerName: "Nguyễn Văn A", avatar: null, dishName: "Burger Gà Cay", rating: 5, comment: "Ngon tuyệt vời! Burger rất juicy và sốt cay vừa phải. Sẽ order lại.", date: "2024-01-28", time: "14:30", status: "published", hasResponse: false },
-    { id: "2", customerName: "Trần Thị B", avatar: null, dishName: "Pizza Margherita", rating: 4, comment: "Pizza khá ổn, phô mai thơm. Tuy nhiên phần crust hơi mỏng.", date: "2024-01-28", time: "12:15", status: "published", hasResponse: true },
-    { id: "3", customerName: "Lê Văn C", avatar: null, dishName: "Salad Caesar", rating: 3, comment: "Rau tươi nhưng nước sốt hơi nhạt. Giá hơi cao so với chất lượng.", date: "2024-01-27", time: "18:45", status: "published", hasResponse: false },
-    { id: "4", customerName: "Phạm Thị D", avatar: null, dishName: "Burger Nấm Truffle", rating: 5, comment: "Tuyệt vời! Nấm truffle rất thơm, burger chế biến chuẩn. Highly recommended!", date: "2024-01-27", time: "20:10", status: "published", hasResponse: true },
-    { id: "5", customerName: "Hoàng Văn E", avatar: null, dishName: "Trà sữa trân châu", rating: 2, comment: "Trân châu không được tươi lắm, hơi cứng. Trà sữa quá ngọt.", date: "2024-01-26", time: "16:20", status: "flagged", hasResponse: false },
-    { id: "6", customerName: "Đặng Thị F", avatar: null, dishName: "Pasta Carbonara", rating: 4, comment: "Vị ổn, phần ăn vừa đủ. Giao hàng nhanh.", date: "2024-01-26", time: "19:30", status: "published", hasResponse: false },
-];
+type AdminReview = {
+  id: string;
+  customerName: string;
+  avatar: string | null;
+  dishName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  time: string;
+  status: "published" | "flagged";
+  hasResponse: boolean;
+};
 
 const RATING_FILTERS = [
-    { id: "all", label: "Tất cả", count: 156 },
-    { id: "5", label: "5 sao", count: 89, color: "text-green-600" },
-    { id: "4", label: "4 sao", count: 42, color: "text-blue-600" },
-    { id: "3", label: "3 sao", count: 15, color: "text-amber-600" },
-    { id: "2", label: "2 sao", count: 7, color: "text-orange-600" },
-    { id: "1", label: "1 sao", count: 3, color: "text-red-600" },
+  { id: "all", label: "Tất cả" },
+  { id: "5", label: "5 sao", color: "text-green-600" },
+  { id: "4", label: "4 sao", color: "text-blue-600" },
+  { id: "3", label: "3 sao", color: "text-amber-600" },
+  { id: "2", label: "2 sao", color: "text-orange-600" },
+  { id: "1", label: "1 sao", color: "text-red-600" },
 ];
 
 const AdminReviews = () => {
     const [activeFilter, setActiveFilter] = useState("all");
     const [showResponseModal, setShowResponseModal] = useState(false);
     const [selectedReview, setSelectedReview] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState("");
 
-    // Calculate average rating
-    const avgRating = 4.6;
-    const totalReviews = 156;
+    const [reviews, setReviews] = useState<AdminReview[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchReviews = async () => {
+        try {
+            setLoading(true);
+            const res = await apiClient.get("/admin/reviews", { params: { page: 1, limit: 1000 } });
+            const items: AdminReview[] = res.data?.data?.reviews || [];
+            setReviews(items);
+        } catch (e) {
+            console.error(e);
+            setReviews([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void fetchReviews();
+    }, []);
+
+    const ratingCounts = useMemo(() => {
+        const m = new Map<number, number>();
+        for (const r of reviews) m.set(r.rating, (m.get(r.rating) || 0) + 1);
+        return m;
+    }, [reviews]);
+
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews
+        ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews
+        : 0;
+
+    const noResponseCount = reviews.filter((r) => !r.hasResponse).length;
+    const flaggedCount = reviews.filter((r) => r.status === "flagged").length;
+
+    const filteredReviews = useMemo(() => {
+        if (activeFilter === "all") return reviews;
+        const rating = Number(activeFilter);
+        return reviews.filter((r) => r.rating === rating);
+    }, [activeFilter, reviews]);
 
     const getRatingColor = (rating: number) => {
         if (rating >= 4.5) return "text-green-600";
@@ -86,7 +129,7 @@ const AdminReviews = () => {
                             <span className="material-symbols-outlined text-[#ee8c2b]">star</span>
                         </div>
                         <span className={clsx("text-2xl font-black", getRatingColor(avgRating))}>
-                            {avgRating}
+                            {avgRating.toFixed(1)}
                         </span>
                     </div>
                     <p className="text-xs font-medium text-[#9a734c]">Điểm trung bình</p>
@@ -98,7 +141,7 @@ const AdminReviews = () => {
                         <div className="p-2 bg-blue-100 rounded-lg">
                             <span className="material-symbols-outlined text-blue-600">chat</span>
                         </div>
-                        <span className="text-2xl font-black text-[#1b140d]">12</span>
+                        <span className="text-2xl font-black text-[#1b140d]">{noResponseCount}</span>
                     </div>
                     <p className="text-xs font-medium text-[#9a734c]">Chưa phản hồi</p>
                     <p className="text-sm text-[#9a734c] mt-1">Cần xử lý</p>
@@ -109,7 +152,7 @@ const AdminReviews = () => {
                         <div className="p-2 bg-green-100 rounded-lg">
                             <span className="material-symbols-outlined text-green-600">trending_up</span>
                         </div>
-                        <span className="text-2xl font-black text-green-600">+8%</span>
+                        <span className="text-2xl font-black text-green-600">+0%</span>
                     </div>
                     <p className="text-xs font-medium text-[#9a734c]">Tăng trưởng</p>
                     <p className="text-sm text-[#9a734c] mt-1">So với tuần trước</p>
@@ -120,7 +163,7 @@ const AdminReviews = () => {
                         <div className="p-2 bg-red-100 rounded-lg">
                             <span className="material-symbols-outlined text-red-600">flag</span>
                         </div>
-                        <span className="text-2xl font-black text-red-600">3</span>
+                        <span className="text-2xl font-black text-red-600">{flaggedCount}</span>
                     </div>
                     <p className="text-xs font-medium text-[#9a734c]">Đã báo cáo</p>
                     <p className="text-sm text-[#9a734c] mt-1">Cần kiểm duyệt</p>
@@ -132,8 +175,8 @@ const AdminReviews = () => {
                 <h3 className="text-lg font-bold text-[#1b140d] mb-4">Phân bổ đánh giá</h3>
                 <div className="space-y-3">
                     {[5, 4, 3, 2, 1].map((rating) => {
-                        const count = RATING_FILTERS.find((f) => f.id === rating.toString())?.count || 0;
-                        const percentage = (count / totalReviews) * 100;
+                        const count = ratingCounts.get(rating) || 0;
+                        const percentage = totalReviews ? (count / totalReviews) * 100 : 0;
                         return (
                             <div key={rating} className="flex items-center gap-4">
                                 <div className="flex items-center gap-1 w-16">
@@ -168,7 +211,11 @@ const AdminReviews = () => {
                                     : "border-transparent text-[#9a734c] hover:text-[#1b140d]"
                             )}
                         >
-                            {filter.label} ({filter.count})
+                            {filter.label} (
+                                {filter.id === "all"
+                                    ? totalReviews
+                                    : (ratingCounts.get(Number(filter.id)) || 0)}
+                            )
                         </button>
                     ))}
                 </div>
@@ -176,7 +223,7 @@ const AdminReviews = () => {
 
             {/* Reviews List */}
             <div className="space-y-4">
-                {REVIEWS_MOCK.map((review) => (
+                {filteredReviews.map((review) => (
                     <div
                         key={review.id}
                         className={clsx(
@@ -251,6 +298,7 @@ const AdminReviews = () => {
                                             onClick={() => {
                                                 setSelectedReview(review.id);
                                                 setShowResponseModal(true);
+                                                setReplyText("");
                                             }}
                                             className="px-4 py-2 bg-[#ee8c2b] text-white text-sm font-bold rounded-lg hover:bg-[#d87c24] transition-colors"
                                         >
@@ -297,11 +345,26 @@ const AdminReviews = () => {
                         <textarea
                             className="w-full h-32 p-4 border border-[#e7dbcf] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#ee8c2b] text-sm"
                             placeholder="Nhập phản hồi của bạn..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
                         />
                         <div className="flex gap-3 mt-4">
                             <button
                                 type="button"
-                                onClick={() => setShowResponseModal(false)}
+                                onClick={async () => {
+                                    try {
+                                        if (!selectedReview) return;
+                                        await apiClient.post(`/admin/reviews/${selectedReview}/reply`, {
+                                            comment: replyText,
+                                        });
+                                        setShowResponseModal(false);
+                                        setReplyText("");
+                                        await fetchReviews();
+                                    } catch (e) {
+                                        console.error(e);
+                                    }
+                                }}
+                                disabled={!replyText.trim()}
                                 className="flex-1 px-4 py-2.5 bg-[#ee8c2b] text-white font-bold rounded-lg hover:bg-[#d87c24]"
                             >
                                 Gửi phản hồi
